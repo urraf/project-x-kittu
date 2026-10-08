@@ -10,6 +10,7 @@ export function CoverImage({
   priority = false,
   className,
   fallbackSize = "md",
+  variant = "full",
 }: {
   image?: ImageDTO;
   title: string;
@@ -17,12 +18,15 @@ export function CoverImage({
   priority?: boolean;
   className?: string;
   fallbackSize?: "sm" | "md" | "lg";
+  /** "thumb" uses the small (720px) stored version: much lighter for cards. */
+  variant?: "thumb" | "full";
 }) {
   if (image?.url) {
+    const src = variant === "thumb" ? image.url.replace(/(\/api\/media\/[a-f0-9]{24}\/)full\.webp$/, "$1thumb.webp") : image.url;
     return (
       <div className={cn("img-zoom relative overflow-hidden bg-paper-3", className)}>
         <Image
-          src={image.url}
+          src={src}
           alt={image.alt || title}
           fill
           sizes={sizes}

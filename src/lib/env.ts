@@ -27,13 +27,26 @@ export const env = {
   get mongoUri() {
     return required("MONGODB_URI");
   },
+  /**
+   * Database name. Uses MONGODB_DB, else the name inside MONGODB_URI, else
+   * "lifeofkittukun". (A URI copied from Atlas often has no database name,
+   * which would otherwise silently fall back to an empty "test" database.)
+   */
   get mongoDb() {
-    return read("MONGODB_DB");
+    const explicit = read("MONGODB_DB");
+    if (explicit) return explicit;
+    const uri = read("MONGODB_URI") ?? "";
+    const path = uri.replace(/^mongodb(\+srv)?:\/\/[^/]*/, "").split("?")[0]?.replace(/^\//, "") ?? "";
+    return path ? undefined : "lifeofkittukun";
   },
   get authSecret() {
     const secret = required("AUTH_SECRET");
     if (secret.length < 32) throw new ConfigError("AUTH_SECRET must be at least 32 characters long");
     return secret;
+  },
+  /** Optional starting login email (until one is saved from the admin panel). */
+  get adminEmail() {
+    return read("ADMIN_EMAIL")?.toLowerCase();
   },
   get adminPasswordHash() {
     return read("ADMIN_PASSWORD_HASH");

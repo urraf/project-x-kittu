@@ -16,8 +16,10 @@ const nextConfig: NextConfig = {
   turbopack: { root: path.resolve(__dirname) },
   outputFileTracingRoot: path.resolve(__dirname),
   images: {
-    formats: ["image/avif", "image/webp"],
-    qualities: [70, 75, 85],
+    // Images are already optimised (uploads are stored as resized WebP; YouTube
+    // serves its own CDN thumbnails), so skip the on-the-fly optimiser: on small
+    // hosts it re-encodes every image on first view, which made images slow to appear.
+    unoptimized: true,
     remotePatterns: [
       { protocol: "https", hostname: "i.ytimg.com" },
       { protocol: "https", hostname: "yt3.googleusercontent.com" },

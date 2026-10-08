@@ -143,11 +143,15 @@ export default async function Dashboard() {
                 </span>
               </li>
               <li className="flex items-start gap-2.5">
-                {account.passwordChangedAt ? <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-moss" /> : <CircleAlert className="mt-0.5 size-4 shrink-0 text-[#c08a1e]" />}
+                {account.passwordChangedAt && account.email ? <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-moss" /> : <CircleAlert className="mt-0.5 size-4 shrink-0 text-[#c08a1e]" />}
                 <span>
-                  <span className="text-ink">{account.passwordChangedAt ? "Password set by you" : "Still using the starting password"}</span>
-                  {!account.passwordChangedAt && (
-                    <Link href="/admin/settings?tab=password" className="block text-xs text-accent-deep underline">Change it now</Link>
+                  <span className="text-ink">
+                    {!account.passwordChangedAt ? "Still using the starting password" : !account.email ? "No login email set yet" : "Login secured by you"}
+                  </span>
+                  {(!account.passwordChangedAt || !account.email) && (
+                    <Link href="/admin/settings?tab=password" className="block text-xs text-accent-deep underline">
+                      {!account.passwordChangedAt ? "Change it now" : "Add a login email"}
+                    </Link>
                   )}
                 </span>
               </li>

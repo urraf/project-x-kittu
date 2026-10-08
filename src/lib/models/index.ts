@@ -158,9 +158,12 @@ export const CaptchaNonce: Model<InferSchemaType<typeof CaptchaNonceSchema>> =
 const AdminAccountSchema = new Schema(
   {
     key: { type: String, required: true, unique: true, default: "admin" },
+    /** Login email (lowercase). */
+    email: { type: String, trim: true, lowercase: true, maxlength: 200 },
+    emailChangedAt: Date,
     /** scrypt hash (never the plain password). */
-    passwordHash: { type: String, required: true, select: false },
-    passwordChangedAt: { type: Date, required: true },
+    passwordHash: { type: String, select: false },
+    passwordChangedAt: Date,
   },
   { timestamps: true },
 );

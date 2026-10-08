@@ -1,12 +1,13 @@
 /**
- * Recovery: sets a new admin password directly in the database and signs out
- * every device. Run on the server if the password is forgotten.
- *   npm run admin:reset-password
+ * Recovery: sets a new admin password (and optionally a new login email)
+ * directly in the database and signs out every device.
+ *   npm run admin:reset-password                      (prompts)
+ *   npm run admin:reset-password -- "new-password" "new@email.com"
  */
 import "./load-env";
 import mongoose from "mongoose";
 import { createInterface } from "node:readline";
-import { newPasswordSchema, setAdminPassword } from "../src/lib/services/admin-account";
+import { emailSchema, getAdminEmail, newPasswordSchema, setAdminEmail, setAdminPassword } from "../src/lib/services/admin-account";
 
 async function prompt(question: string): Promise<string> {
   const rl = createInterface({ input: process.stdin, output: process.stdout, terminal: true });
@@ -27,6 +28,8 @@ async function prompt(question: string): Promise<string> {
 
 async function main() {
   let password = process.argv[2];
+  let email = process.argv[3];
+  const interactive = !password;
   if (!password) {
     password = await prompt("New admin password: ");
     if ((await prompt("Confirm password: ")) !== password) {
@@ -38,6 +41,20 @@ async function main() {
   if (!check.success) {
     console.error(check.error.issues[0]?.message);
     process.exit(1);
+  }
+  if (interactive) {
+    const current = await getAdminEmail();
+    const rl = createInterface({ input: process.stdin, output: process.stdout });
+    email = await new Promise<string>((r) => rl.question(`Login email${current ? ` (Enter to keep ${current})` : " (Enter to skip)"}: `, (a) => (rl.close(), r(a.trim()))));
+  }
+  if (email) {
+    const parsed = emailSchema.safeParse(email);
+    if (!parsed.success) {
+      console.error(parsed.error.issues[0]?.message);
+      process.exit(1);
+    }
+    await setAdminEmail(parsed.data);
+    console.log(`✓ Login email set to ${parsed.data}.`);
   }
   const { signedOutSessions } = await setAdminPassword(password);
   console.log(`\n✓ Admin password updated in the database. Signed out ${signedOutSessions} session(s).`);

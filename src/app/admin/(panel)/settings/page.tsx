@@ -7,5 +7,5 @@ export const dynamic = "force-dynamic";
 
 export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const [{ tab }, settings, account] = await Promise.all([searchParams, getSettingsStrict(), getAccountInfo()]);
-  return <SettingsForm initial={settings} initialTab={tab} passwordChangedAt={account.passwordChangedAt} />;
+  return <SettingsForm initial={settings} initialTab={tab} account={account} />;
 }

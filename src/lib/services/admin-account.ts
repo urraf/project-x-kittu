@@ -25,10 +25,51 @@ export async function getAdminPasswordHash(): Promise<{ hash: string; source: "d
   return { hash: envHash, source: "env" };
 }
 
+/** The login email: saved in the database, else ADMIN_EMAIL, else none (password-only login). */
+export async function getAdminEmail(): Promise<string | null> {
+  await connectDB();
+  const account = await AdminAccount.findOne({ key: "admin" }).select("email").lean<{ email?: string }>();
+  return account?.email || env.adminEmail || null;
+}
+
 export async function getAccountInfo() {
   await connectDB();
-  const account = await AdminAccount.findOne({ key: "admin" }).lean<{ passwordChangedAt: Date }>();
-  return { passwordChangedAt: account?.passwordChangedAt ? new Date(account.passwordChangedAt).toISOString() : null };
+  const account = await AdminAccount.findOne({ key: "admin" }).lean<{ email?: string; passwordChangedAt?: Date; emailChangedAt?: Date }>();
+  return {
+    email: account?.email || env.adminEmail || null,
+    passwordChangedAt: account?.passwordChangedAt ? new Date(account.passwordChangedAt).toISOString() : null,
+    emailChangedAt: account?.emailChangedAt ? new Date(account.emailChangedAt).toISOString() : null,
+  };
+}
+
+export const emailSchema = z.string().trim().toLowerCase().max(200, "That email is too long").pipe(z.email("Enter a valid email address"));
+
+/** Saves a new login email and signs out every other device. */
+export async function setAdminEmail(email: string, opts: { keepSessionId?: string } = {}) {
+  const clean = emailSchema.parse(email);
+  await connectDB();
+  await AdminAccount.updateOne({ key: "admin" }, { $set: { email: clean, emailChangedAt: new Date() } }, { upsert: true });
+  const res = await Session.deleteMany(opts.keepSessionId ? { _id: { $ne: opts.keepSessionId } } : {});
+  logger.info("auth.email_changed", { signedOutSessions: res.deletedCount });
+  return { email: clean, signedOutSessions: res.deletedCount };
+}
+
+/**
+ * Checks login credentials. The password is always verified (constant work),
+ * and the email is only required once one is configured.
+ */
+export async function verifyAdminLogin(email: string | undefined, password: string) {
+  const [configuredEmail, stored] = await Promise.all([getAdminEmail(), getAdminPasswordHash()]);
+  const passwordOk = await verifyPassword(password, stored.hash);
+  const emailOk = !configuredEmail || (email ?? "").trim().toLowerCase() === configuredEmail;
+  const ok = passwordOk && emailOk;
+  // First successful login with the starting password: move it into the database,
+  // so the database becomes the only place the password lives.
+  if (ok && stored.source === "env") {
+    await AdminAccount.updateOne({ key: "admin", passwordHash: { $exists: false } }, { $set: { passwordHash: stored.hash } }, { upsert: true }).catch(() => {});
+    logger.info("auth.password_moved_to_database");
+  }
+  return { ok, emailRequired: Boolean(configuredEmail) };
 }
 
 const COMMON = new Set(["password", "password123", "admin123", "admin@123", "qwerty123", "1234567890", "iloveyou", "letmein123", "welcome123"]);

@@ -7,8 +7,9 @@ import { Button } from "@/components/admin/ui";
 
 type Captcha = { question: string; token: string; expiresInSec: number };
 
-export function LoginForm({ next }: { next?: string }) {
+export function LoginForm({ next, emailRequired = false }: { next?: string; emailRequired?: boolean }) {
   const [captcha, setCaptcha] = useState<Captcha | null>(null);
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [answer, setAnswer] = useState("");
   const [show, setShow] = useState(false);
@@ -43,7 +44,7 @@ export function LoginForm({ next }: { next?: string }) {
     setLoading(true);
     try {
       const res = await api<{ redirect: string }>("/api/admin/auth/login", {
-        body: { password, captchaAnswer: answer, captchaToken: captcha.token, next },
+        body: { email: emailRequired ? email : undefined, password, captchaAnswer: answer, captchaToken: captcha.token, next },
       });
       // Full navigation so the server re-renders with the new session cookie.
       window.location.assign(res.redirect);
@@ -59,6 +60,22 @@ export function LoginForm({ next }: { next?: string }) {
 
   return (
     <form onSubmit={onSubmit} className="space-y-6" noValidate>
+      {emailRequired && (
+        <div>
+          <label htmlFor="email" className="label">Email</label>
+          <input
+            id="email"
+            type="email"
+            autoComplete="username"
+            required
+            autoFocus
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="field !h-12"
+            placeholder="you@example.com"
+          />
+        </div>
+      )}
       <div>
         <label htmlFor="password" className="label">Password</label>
         <div className="relative">
@@ -67,7 +84,7 @@ export function LoginForm({ next }: { next?: string }) {
             type={show ? "text" : "password"}
             autoComplete="current-password"
             required
-            autoFocus
+            autoFocus={!emailRequired}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="field !h-12 pr-11"
@@ -107,7 +124,7 @@ export function LoginForm({ next }: { next?: string }) {
         </p>
       )}
 
-      <Button type="submit" variant="primary" loading={loading} disabled={!captcha || !password || !answer || locked} className="!h-12 w-full">
+      <Button type="submit" variant="primary" loading={loading} disabled={!captcha || !password || !answer || locked || (emailRequired && !email.trim())} className="!h-12 w-full">
         <ShieldCheck className="size-4" /> Sign in
       </Button>
     </form>

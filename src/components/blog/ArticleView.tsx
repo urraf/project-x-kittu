@@ -24,7 +24,7 @@ function SuggestedPost({ post }: { post: PostSummary }) {
   return (
     <li>
       <Link href={href} className="group flex items-start gap-3">
-        <CoverImage image={post.thumbnail ?? post.coverImage} title={post.title} sizes="88px" fallbackSize="sm" className="aspect-[4/3] w-[5.5rem] shrink-0 rounded-lg" />
+        <CoverImage image={post.thumbnail ?? post.coverImage} title={post.title} sizes="88px" fallbackSize="sm" variant="thumb" className="aspect-[4/3] w-[5.5rem] shrink-0 rounded-lg" />
         <span className="min-w-0">
           <span className="kicker block !text-[0.62rem] text-accent-deep">{post.category}</span>
           <span className="mt-0.5 line-clamp-2 block text-[0.88rem] font-medium leading-snug text-ink group-hover:text-accent-deep">{post.title}</span>

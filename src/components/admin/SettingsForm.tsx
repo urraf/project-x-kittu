@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Plus, X } from "lucide-react";
 import { toast } from "sonner";
 import { api, ApiClientError, errorMessage } from "@/lib/admin/api";
-import { PasswordForm } from "@/components/admin/PasswordForm";
+import { AccountSettings, type AccountInfo } from "@/components/admin/AccountSettings";
 import { Button, Card, Field, PageHeader, Toggle } from "@/components/admin/ui";
 import { cn } from "@/lib/utils/cn";
 import type { SiteSettings } from "@/lib/validation/settings";
@@ -18,7 +18,7 @@ const TABS = [
   { id: "ai", label: "AI writing" },
   { id: "comments", label: "Comments" },
   { id: "automation", label: "Automation" },
-  { id: "password", label: "Password" },
+  { id: "password", label: "Login & password" },
 ] as const;
 type Tab = (typeof TABS)[number]["id"];
 
@@ -54,7 +54,7 @@ function PairList<T extends Record<string, string>>({
   );
 }
 
-export function SettingsForm({ initial, initialTab, passwordChangedAt = null }: { initial: SiteSettings; initialTab?: string; passwordChangedAt?: string | null }) {
+export function SettingsForm({ initial, initialTab, account }: { initial: SiteSettings; initialTab?: string; account: AccountInfo }) {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>(TABS.some((t) => t.id === initialTab) ? (initialTab as Tab) : "profile");
   const [s, setS] = useState(initial);
@@ -230,7 +230,7 @@ export function SettingsForm({ initial, initialTab, passwordChangedAt = null }: 
         </div>
       )}
 
-      {tab === "password" && <PasswordForm passwordChangedAt={passwordChangedAt} />}
+      {tab === "password" && <AccountSettings initial={account} />}
 
       {tab === "comments" && (
         <Card className="max-w-2xl space-y-6">

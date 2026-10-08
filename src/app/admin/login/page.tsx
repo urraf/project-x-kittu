@@ -1,12 +1,21 @@
 import type { Metadata } from "next";
 import { SunMark } from "@/components/site/Logo";
 import { LoginForm } from "@/components/admin/LoginForm";
+import { getAdminEmail } from "@/lib/services/admin-account";
 
 export const metadata: Metadata = { title: "Sign in" };
 export const dynamic = "force-dynamic";
 
+async function emailRequired() {
+  try {
+    return Boolean(await getAdminEmail());
+  } catch {
+    return Boolean(process.env.ADMIN_EMAIL);
+  }
+}
+
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
-  const { next } = await searchParams;
+  const [{ next }, needsEmail] = await Promise.all([searchParams, emailRequired()]);
   return (
     <main className="grid min-h-[100svh] lg:grid-cols-2">
       <div className="grain relative hidden overflow-hidden bg-night p-12 text-cream lg:flex lg:flex-col lg:justify-between">
@@ -27,7 +36,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           <h1 className="display mt-6 text-5xl lg:mt-0">Welcome back.</h1>
           <p className="mt-3 text-ink-2">Sign in to manage your blog, videos and journey.</p>
           <div className="mt-10">
-            <LoginForm next={next} />
+            <LoginForm next={next} emailRequired={needsEmail} />
           </div>
         </div>
       </div>

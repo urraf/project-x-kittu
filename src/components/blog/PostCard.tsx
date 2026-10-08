@@ -68,7 +68,7 @@ export function PostCard({
           <Meta post={post} className="mt-2" />
         </div>
         <Link href={href} tabIndex={-1} aria-hidden className="shrink-0">
-          <CoverImage image={post.thumbnail ?? post.coverImage} title={post.title} sizes="128px" fallbackSize="sm" className="aspect-[4/3] w-28 rounded-lg md:w-32" />
+          <CoverImage image={post.thumbnail ?? post.coverImage} title={post.title} sizes="128px" fallbackSize="sm" variant="thumb" className="aspect-[4/3] w-28 rounded-lg md:w-32" />
         </Link>
       </article>
     );
@@ -77,7 +77,7 @@ export function PostCard({
   return (
     <article className="group flex flex-col">
       <Link href={href} tabIndex={-1} aria-hidden>
-        <CoverImage image={post.thumbnail ?? post.coverImage} title={post.title} sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 100vw" priority={priority} className="aspect-[3/2] rounded-xl" />
+        <CoverImage image={post.thumbnail ?? post.coverImage} title={post.title} sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 100vw" priority={priority} variant="thumb" className="aspect-[3/2] rounded-xl" />
       </Link>
       <p className="kicker mt-5 text-accent-deep">{post.category}</p>
       <h3 className={cn("display mt-3 leading-[1.05]", size === "lg" ? "text-4xl md:text-[3.2rem] md:leading-[1]" : "text-[1.8rem]")}>

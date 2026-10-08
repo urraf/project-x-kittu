@@ -69,6 +69,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <head>
         {/* Marks JS as available before paint so scroll-reveal never flashes content. */}
         <script dangerouslySetInnerHTML={{ __html: "document.documentElement.classList.add('js')" }} />
+        {/* Open connections to the image CDNs early so thumbnails start downloading sooner. */}
+        <link rel="preconnect" href="https://i.ytimg.com" />
+        <link rel="preconnect" href="https://yt3.googleusercontent.com" />
       </head>
       <body>
         <Suspense fallback={null}>

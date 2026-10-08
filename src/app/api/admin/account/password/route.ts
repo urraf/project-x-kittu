@@ -15,7 +15,7 @@ const schema = z
   .refine((d) => d.newPassword === d.confirmPassword, { path: ["confirmPassword"], message: "The new passwords don't match." })
   .refine((d) => d.newPassword !== d.currentPassword, { path: ["newPassword"], message: "Choose a password different from your current one." });
 
-const KEY = "password-change";
+const KEY = "account-change";
 
 export const POST = route(async (req) => {
   const session = await requireAdmin(req);

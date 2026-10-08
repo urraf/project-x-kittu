@@ -44,7 +44,7 @@ export function LiteYouTube({
           aria-label={`Play video: ${title}`}
           className="group absolute inset-0 size-full cursor-pointer"
         >
-          <YouTubeThumb id={id} alt="" priority={priority} sizes={sizes} className="object-cover transition-transform duration-[1.2s] ease-[var(--ease-out-expo)] group-hover:scale-[1.03]" />
+          <YouTubeThumb id={id} alt="" quality="max" priority={priority} sizes={sizes} className="object-cover transition-transform duration-[1.2s] ease-[var(--ease-out-expo)] group-hover:scale-[1.03]" />
           <span className="absolute inset-0 bg-gradient-to-t from-night/70 via-night/10 to-transparent" />
           <span className="absolute left-1/2 top-1/2 grid size-20 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-accent text-white shadow-[0_20px_60px_-10px_rgba(217,72,43,0.7)] transition-transform duration-500 ease-[var(--ease-out-expo)] group-hover:scale-110 md:size-24">
             <PlayGlyph className="ml-1 size-8 md:size-9" />

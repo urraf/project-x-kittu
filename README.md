@@ -37,7 +37,8 @@ Sign in at **http://localhost:3000/admin**. There is deliberately no link to it 
 | `MONGODB_URI` | ✅ | MongoDB connection string (Atlas free tier works). |
 | `NEXT_PUBLIC_SITE_URL` | ✅ | Public URL, used for SEO, sitemap and Open Graph. |
 | `AUTH_SECRET` | ✅ | ≥32 chars. Signs admin sessions and captcha tokens. |
-| `ADMIN_PASSWORD_HASH` | ✅ (first run) | The **starting** admin password, as a scrypt hash from `npm run admin:hash-password`. Once the admin changes the password in **Settings → Password**, the hash stored in MongoDB is used instead. |
+| `ADMIN_PASSWORD_HASH` | ✅ (first run) | The **starting** admin password, as a scrypt hash from `npm run admin:hash-password`. It is copied into MongoDB on the first successful login; after that the database copy is used and the admin changes it in **Settings → Login & password**. |
+| `ADMIN_EMAIL` | – | Optional starting login email. The admin can set or change the email in **Settings → Login & password**; until an email exists, login is password-only. |
 | `CRON_SECRET` | for automation | ≥24 chars. Your cron service sends it as a Bearer token. |
 | `GROQ_API_KEY` | for AI | From console.groq.com. |
 | `GROQ_MODEL` | – | Default `openai/gpt-oss-120b`. Any chat model your Groq account lists works. |
@@ -111,7 +112,7 @@ Every run, including skips and failures, is visible in **Studio → AI writer �
 | **Videos** | Sync from YouTube, add any video by link, set series, feature on the homepage or hide. |
 | **Journey** | Add, edit, hide or delete timeline chapters (photo and related video optional). |
 | **Messages** | Enquiries from the Collaborate page: read, reply by email, archive. |
-| **Settings** | Hero copy, bio, story, quick facts, stats, principles, social links, AI voice/guidelines/topics/categories/avoid-list, comments, automation rules and **Password** (change it any time; other devices are signed out). |
+| **Settings** | Hero copy, bio, story, quick facts, stats, principles, social links, AI voice/guidelines/topics/categories/avoid-list, comments, automation rules and **Login & password** (change the login email or password any time; other devices are signed out). |
 
 ---
 
@@ -177,5 +178,5 @@ Public pages use ISR (revalidated every 5 min, plus instantly after any Studio c
 | `npm run db:local` | Local development MongoDB on port 27017 (data in `./.data`) |
 | `npm run seed` | Idempotent starter content + ensures DB indexes |
 | `npm run admin:hash-password` | Create `ADMIN_PASSWORD_HASH` (the starting password) |
-| `npm run admin:reset-password` | Forgot the password? Sets a new one directly in the database and signs out all devices |
+| `npm run admin:reset-password` | Forgot the login? Sets a new password (and optionally email) directly in the database and signs out all devices |
 | `npm run secrets` | Generate `AUTH_SECRET` and `CRON_SECRET` |

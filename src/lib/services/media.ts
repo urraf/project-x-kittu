@@ -1,5 +1,4 @@
 import "server-only";
-import { Readable } from "node:stream";
 import mongoose, { Types } from "mongoose";
 import sharp, { type Metadata } from "sharp";
 import { connectDB, getDb } from "@/lib/db/connect";
@@ -172,20 +171,57 @@ export async function deleteMedia(id: string) {
   await Media.deleteOne({ _id: id });
 }
 
-/** Opens a read stream for a media variant. Returns null if missing. */
-export async function openMediaStream(id: string, variant: "full" | "thumb") {
+/* ------------------------------------------------------------------ */
+/* Serving: small in-memory LRU cache in front of GridFS               */
+/* ------------------------------------------------------------------ */
+
+const CACHE_LIMIT_BYTES = 48 * 1024 * 1024;
+type Cached = { body: Buffer; etag: string };
+const memCache = new Map<string, Cached>();
+let memBytes = 0;
+
+function cacheGet(key: string) {
+  const hit = memCache.get(key);
+  if (hit) {
+    // refresh recency
+    memCache.delete(key);
+    memCache.set(key, hit);
+  }
+  return hit;
+}
+
+function cachePut(key: string, value: Cached) {
+  if (value.body.length > 4 * 1024 * 1024) return;
+  memCache.set(key, value);
+  memBytes += value.body.length;
+  for (const [k, v] of memCache) {
+    if (memBytes <= CACHE_LIMIT_BYTES) break;
+    memCache.delete(k);
+    memBytes -= v.body.length;
+  }
+}
+
+/**
+ * Returns the bytes for a media variant, from memory when possible.
+ * Media files never change (a new upload gets a new id), so caching is safe.
+ */
+export async function getMediaFile(id: string, variant: "full" | "thumb"): Promise<Cached | null> {
   if (!Types.ObjectId.isValid(id)) return null;
+  const key = `${id}:${variant}`;
+  const hit = cacheGet(key);
+  if (hit) return hit;
+
   await connectDB();
-  const doc = await Media.findById(id).select("variants updatedAt").lean<MediaDoc>();
+  const doc = await Media.findById(id).select("variants").lean<MediaDoc>();
   if (!doc?.variants) return null;
   const fileId = variant === "thumb" ? doc.variants.thumb : doc.variants.full;
-  const files = await bucket().find({ _id: fileId }).limit(1).toArray();
-  const file = files[0];
-  if (!file) return null;
-  const nodeStream = bucket().openDownloadStream(fileId);
-  return {
-    stream: Readable.toWeb(nodeStream) as ReadableStream<Uint8Array>,
-    length: file.length,
-    etag: `"${String(fileId)}"`,
-  };
+  const chunks: Buffer[] = [];
+  try {
+    for await (const chunk of bucket().openDownloadStream(fileId)) chunks.push(chunk as Buffer);
+  } catch {
+    return null;
+  }
+  const value = { body: Buffer.concat(chunks), etag: `"${String(fileId)}"` };
+  cachePut(key, value);
+  return value;
 }

@@ -4,7 +4,7 @@ import { hitLimit, peekLimit, resetLimit } from "@/lib/auth/rate-limit";
 import { createSession, setSessionCookie } from "@/lib/auth/session";
 import { ApiError, assertSameOrigin, clientIp, ok, readJson, route, tooMany } from "@/lib/http";
 import { logger } from "@/lib/logger";
-import { verifyAdminPassword } from "@/lib/services/admin-account";
+import { verifyAdminLogin } from "@/lib/services/admin-account";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +13,7 @@ const GLOBAL_LIMIT = 40; // failed attempts per window across all IPs
 const WINDOW_MS = 15 * 60 * 1000;
 
 const schema = z.object({
+  email: z.string().max(200).optional(),
   password: z.string().min(1, "Enter your password").max(256),
   captchaAnswer: z.union([z.string(), z.number()]).refine((v) => String(v).trim() !== "", "Answer the math question"),
   captchaToken: z.string().min(10, "Captcha expired, please refresh").max(2000),
@@ -53,11 +54,12 @@ export const POST = route(async (req) => {
     throw new ApiError(400, message, "captcha_failed");
   }
 
-  const valid = await verifyAdminPassword(body.password);
-  if (!valid) {
+  const login = await verifyAdminLogin(body.email, body.password);
+  if (!login.ok) {
     await fail();
     logger.warn("auth.login_failed", { ip });
-    throw new ApiError(401, "Incorrect password.", "invalid_credentials");
+    // Same message for a wrong email or a wrong password: never reveal which.
+    throw new ApiError(401, login.emailRequired ? "Incorrect email or password." : "Incorrect password.", "invalid_credentials");
   }
 
   await resetLimit(ipKey);
