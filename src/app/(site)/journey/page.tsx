@@ -46,18 +46,18 @@ export default async function JourneyPage() {
       />
 
       {/* Opening */}
-      <section className="pb-20 pt-36 md:pb-28 md:pt-44">
+      <section className="pb-20 pt-28 md:pb-28 md:pt-32">
         <div className="container-x">
           <p className="kicker flex items-center gap-3 text-muted" data-reveal>
             <span className="h-px w-8 bg-accent" /> The journey
           </p>
-          <h1 className="display mt-6 max-w-5xl text-[3.4rem] leading-[0.95] md:text-[6.5rem]" data-reveal>
+          <h1 className="display mt-5 text-[2.9rem] leading-[0.95] sm:text-6xl lg:text-[4.75rem] max-w-4xl" data-reveal>
             The road, as it <em className="text-accent">actually</em> happened.
           </h1>
 
-          <div className="mt-16 grid gap-14 md:mt-24 md:grid-cols-12 md:gap-10">
+          <div className="mt-10 grid grid-cols-1 gap-12 md:mt-12 md:grid-cols-12 md:gap-10">
             <div className="md:col-span-5" data-reveal>
-              <div className="relative mx-auto aspect-square max-w-sm md:mx-0">
+              <div className="relative mx-auto aspect-square max-w-[19rem] md:mx-0 lg:max-w-[21rem]">
                 <div className="absolute right-0 top-0 aspect-square w-[78%] rounded-full bg-accent" />
                 {portrait && (
                   <div className="absolute bottom-0 left-0 aspect-square w-[78%] overflow-hidden rounded-full ring-[10px] ring-paper">
@@ -75,7 +75,7 @@ export default async function JourneyPage() {
               </dl>
             </div>
             <div className="md:col-span-7 md:pl-8" data-reveal style={{ "--reveal-delay": "120ms" } as React.CSSProperties}>
-              {firstPara && <p className="display text-[2rem] leading-[1.15] text-ink md:text-[2.5rem]">{firstPara}</p>}
+              {firstPara && <p className="display text-[1.8rem] leading-[1.15] text-ink md:text-[2.15rem]">{firstPara}</p>}
               <div className="mt-8 space-y-6 font-[family-name:var(--font-prose)] text-[1.18rem] leading-[1.75] text-ink-2">
                 {restParas.map((p, i) => (
                   <p key={i}>{p}</p>

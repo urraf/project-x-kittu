@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { ArticleView } from "@/components/blog/ArticleView";
 import { JsonLd } from "@/components/ui/JsonLd";
 import { safe } from "@/lib/safe";
-import { getPublishedPostBySlug, getRelatedPosts } from "@/lib/services/posts";
+import { getPublishedPostBySlug, getRelatedPosts, listCategories } from "@/lib/services/posts";
 import { getSettings } from "@/lib/services/settings";
 import { SITE_NAME, absoluteUrl } from "@/lib/site";
 import { slugify } from "@/lib/utils/text";
@@ -53,7 +53,11 @@ export default async function ArticlePage({ params }: Props) {
   const { slug } = await params;
   const post = await load(slug);
   if (!post) notFound();
-  const [settings, related] = await Promise.all([getSettings(), safe("post.related", () => getRelatedPosts(post, 3), [])]);
+  const [settings, related, categories] = await Promise.all([
+    getSettings(),
+    safe("post.related", () => getRelatedPosts(post, 5), []),
+    safe("post.categories", () => listCategories(), []),
+  ]);
   const url = absoluteUrl(`/blog/${post.slug}`);
 
   return (
@@ -86,7 +90,7 @@ export default async function ArticlePage({ params }: Props) {
           },
         ]}
       />
-      <ArticleView post={post} related={related} settings={settings} />
+      <ArticleView post={post} related={related} settings={settings} categories={categories} />
     </>
   );
 }

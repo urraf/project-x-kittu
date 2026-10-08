@@ -202,11 +202,11 @@
 
 .prose-kk {
   font-family: var(--font-prose);
-  font-size: 1.165rem;
+  font-size: 1.1rem;
   line-height: 1.75;
   color: var(--color-ink-2);
 }
-@media (min-width: 768px) { .prose-kk { font-size: 1.22rem; } }
+@media (min-width: 768px) { .prose-kk { font-size: 1.16rem; } }
 .prose-kk > * + * { margin-top: 1.35em; }
 .prose-kk[data-dropcap="true"] > p:first-of-type::first-letter {
   font-family: var(--font-display);
@@ -224,7 +224,7 @@
   letter-spacing: -0.015em;
   margin-top: 2.2em;
 }
-@media (min-width: 768px) { .prose-kk h2 { font-size: 2.45rem; } }
+@media (min-width: 768px) { .prose-kk h2 { font-size: 2.15rem; } }
 .prose-kk h3 {
   font-family: var(--font-sans);
   font-weight: 600;

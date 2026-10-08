@@ -22,13 +22,13 @@ const OFFERS = [
 export default async function CollaboratePage() {
   const settings = await getSettings();
   return (
-    <section className="pb-28 pt-36 md:pt-44">
+    <section className="pb-24 pt-28 md:pt-32">
       <div className="container-x grid gap-16 lg:grid-cols-12">
         <div className="lg:col-span-5">
           <p className="kicker flex items-center gap-3 text-muted" data-reveal>
             <span className="h-px w-8 bg-accent" /> Collaborate
           </p>
-          <h1 className="display mt-6 text-[3.4rem] leading-[0.95] md:text-[5.4rem]" data-reveal>
+          <h1 className="display mt-5 text-[2.9rem] leading-[0.95] sm:text-6xl lg:text-[4.75rem]" data-reveal>
             Let&apos;s make something <em className="text-accent">useful.</em>
           </h1>
           <p className="mt-6 max-w-md text-lg leading-relaxed text-ink-2" data-reveal>

@@ -43,14 +43,14 @@ export function BlogIndex({
 
   return (
     <>
-      <section className="pb-12 pt-36 md:pt-44">
+      <section className="pb-10 pt-28 md:pt-32">
         <div className="container-x">
           <div className="grid gap-10 md:grid-cols-12 md:items-end">
             <div className="md:col-span-8">
               <p className="kicker flex items-center gap-3 text-muted" data-reveal>
                 <span className="h-px w-8 bg-accent" /> {kicker}
               </p>
-              <h1 className="display mt-6 text-[3.4rem] leading-[0.95] md:text-[6rem]" data-reveal>{title}</h1>
+              <h1 className="display mt-5 text-[2.9rem] leading-[0.95] sm:text-6xl lg:text-[4.75rem]" data-reveal>{title}</h1>
               {description && <p className="mt-6 max-w-2xl text-lg leading-relaxed text-ink-2" data-reveal>{description}</p>}
             </div>
             <form action="/blog" method="get" role="search" className="md:col-span-4" data-reveal>
@@ -64,7 +64,7 @@ export function BlogIndex({
           </div>
 
           {categories.length > 0 && (
-            <nav aria-label="Categories" className="no-scrollbar -mx-4 mt-12 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:px-0">
+            <nav aria-label="Categories" className="no-scrollbar -mx-4 mt-8 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:px-0">
               <Link href="/blog" className="chip" data-active={!activeCategory && !query}>All</Link>
               {categories.map((c) => (
                 <Link key={c.slug} href={`/blog/category/${c.slug}`} className="chip" data-active={activeCategory === c.slug}>

@@ -11,7 +11,8 @@ import { safe } from "@/lib/safe";
 import { getSettings } from "@/lib/services/settings";
 import { getFeaturedVideos, getPopularVideos, pagePublicVideos, seriesCounts } from "@/lib/services/videos";
 import { VIDEO_SERIES, absoluteUrl, seriesLabel } from "@/lib/site";
-import { cleanTitle, formatCompact, formatDate } from "@/lib/utils/text";
+import { cleanTitle, formatCompact, formatDate, truncate } from "@/lib/utils/text";
+import { youtubeWatchUrl } from "@/lib/utils/youtube";
 import { cn } from "@/lib/utils/cn";
 
 export const revalidate = 300;
@@ -53,13 +54,13 @@ export default async function VideosPage({ searchParams }: Props) {
   return (
     <>
       <section className="grain relative overflow-hidden bg-night text-cream">
-        <div className="container-x relative z-[2] pb-20 pt-36 md:pb-24 md:pt-44">
-          <div className="flex flex-col gap-10 md:flex-row md:items-end md:justify-between">
+        <div className="container-x relative z-[2] pb-16 pt-28 md:pb-20 md:pt-32">
+          <div className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
             <div className="max-w-3xl">
               <p className="kicker flex items-center gap-3 text-cream-muted" data-reveal>
                 <span className="h-px w-8 bg-accent" /> The channel
               </p>
-              <h1 className="display mt-6 text-[3.4rem] leading-[0.95] md:text-[6rem]" data-reveal>
+              <h1 className="display mt-5 text-[2.9rem] leading-[0.95] sm:text-6xl lg:text-[4.75rem]" data-reveal>
                 {series ? (
                   <>
                     {seriesLabel(series)} <em className="text-accent">videos</em>
@@ -70,7 +71,7 @@ export default async function VideosPage({ searchParams }: Props) {
                   </>
                 )}
               </h1>
-              <p className="mt-6 max-w-xl text-lg leading-relaxed text-cream/70" data-reveal>
+              <p className="mt-5 max-w-xl text-[1.05rem] leading-relaxed text-cream/70" data-reveal>
                 Step-by-step guides to fully funded internships and scholarships, and the vlogs from everything in between.
               </p>
             </div>
@@ -96,16 +97,27 @@ export default async function VideosPage({ searchParams }: Props) {
           </div>
 
           {showIntro && spotlight && (
-            <div className="mt-16 grid gap-8 lg:grid-cols-12 lg:items-end" data-reveal>
-              <LiteYouTube id={spotlight.youtubeId} title={cleanTitle(spotlight.title)} priority className="lg:col-span-9" />
-              <div className="lg:col-span-3">
-                <p className="kicker text-accent">{featured[0] ? "Featured" : "Latest upload"}</p>
-                <h2 className="display mt-3 text-3xl leading-[1.05]">
+            <div className="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-center lg:gap-12" data-reveal>
+              <LiteYouTube id={spotlight.youtubeId} title={cleanTitle(spotlight.title)} priority className="lg:col-span-8" sizes="(min-width: 1024px) 60vw, 100vw" />
+              <div className="lg:col-span-4">
+                <p className="kicker text-accent">{featured[0] ? "Featured" : "Latest upload"} · {seriesLabel(spotlight.series)}</p>
+                <h2 className="display mt-3 text-[2rem] leading-[1.05] md:text-[2.3rem]">
                   <Link href={`/videos/${spotlight.youtubeId}`} className="link-underline">{cleanTitle(spotlight.title)}</Link>
                 </h2>
                 <p className="mt-3 text-sm text-cream-muted">
                   {[formatDate(spotlight.publishedAt), spotlight.views ? `${formatCompact(spotlight.views)} views` : null].filter(Boolean).join(" · ")}
                 </p>
+                {spotlight.description && (
+                  <p className="mt-4 leading-relaxed text-cream/70">
+                    {truncate(cleanTitle(spotlight.description.replace(/https?:\/\/\S+/g, "").replace(/\s+/g, " ")).trim(), 180)}
+                  </p>
+                )}
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <Link href={`/videos/${spotlight.youtubeId}`} className="btn btn-accent">Watch here</Link>
+                  <a href={youtubeWatchUrl(spotlight.youtubeId)} target="_blank" rel="noopener noreferrer" className="btn btn-ghost text-cream">
+                    <YouTubeIcon className="size-4" /> On YouTube
+                  </a>
+                </div>
               </div>
             </div>
           )}
