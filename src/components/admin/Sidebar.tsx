@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { BookOpenText, CalendarDays, ExternalLink, Star, Images, LayoutDashboard, LogOut, Mail, Menu, MessageCircle, Milestone, Settings, Sparkles, Video, X } from "lucide-react";
+import { BookOpenText, CalendarDays, ExternalLink, GraduationCap, Star, Images, Wallet, LayoutDashboard, LogOut, Mail, Menu, MessageCircle, Milestone, Settings, Sparkles, Video, X } from "lucide-react";
 import { SunMark } from "@/components/site/Logo";
 import { api } from "@/lib/admin/api";
 import { cn } from "@/lib/utils/cn";
@@ -11,6 +11,8 @@ import { cn } from "@/lib/utils/cn";
 const NAV = [
   { href: "/admin", label: "Dashboard", Icon: LayoutDashboard, exact: true },
   { href: "/admin/sessions", label: "Sessions", Icon: CalendarDays },
+  { href: "/admin/payments", label: "Payments", Icon: Wallet },
+  { href: "/admin/students", label: "Students", Icon: GraduationCap },
   { href: "/admin/posts", label: "Blog posts", Icon: BookOpenText },
   { href: "/admin/comments", label: "Comments", Icon: MessageCircle, badge: "comments" as const },
   { href: "/admin/reviews", label: "Reviews", Icon: Star },

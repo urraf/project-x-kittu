@@ -694,6 +694,18 @@ export async function cancelBooking(bookingId: string, opts: { refund: boolean }
   return { refunded };
 }
 
+/** Refunds a booking that was cancelled while keeping the money (or whose refund failed). */
+export async function refundCancelledBooking(bookingId: string) {
+  if (!Types.ObjectId.isValid(bookingId)) throw notFound("Booking not found");
+  await connectDB();
+  const b = await Booking.findById(bookingId).lean<BookingDoc>();
+  if (!b) throw notFound("Booking not found");
+  if (b.status !== "cancelled") throw badRequest("Only cancelled bookings can be refunded here. Cancel the booking first.");
+  if (b.payment?.refundedAt) throw badRequest("This payment was already refunded.");
+  if (!isPaid(b.payment)) throw badRequest("There's no payment to refund on this booking.");
+  return { refunded: await refundBooking(b._id, b.payment!.paymentId!) };
+}
+
 /** Sends the feedback request now (e.g. if the admin ended early). */
 export async function sendFeedbackRequestsNow(sessionId: string) {
   await connectDB();
