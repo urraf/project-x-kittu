@@ -429,6 +429,14 @@ export async function listStudentBookings(studentId: Types.ObjectId | string) {
   });
 }
 
+/** One booking, only if it belongs to this student (for receipts and calendar files). */
+export async function getStudentBooking(studentId: Types.ObjectId | string, bookingId: string) {
+  if (!Types.ObjectId.isValid(bookingId)) return null;
+  await connectDB();
+  const doc = await Booking.findOne({ _id: bookingId, student: studentId, status: { $in: ["confirmed", "cancelled"] } }).populate("session").lean();
+  return doc ? toBookingDTO(doc as unknown as BookingDoc) : null;
+}
+
 /* ================================================================== */
 /* Feedback                                                           */
 /* ================================================================== */

@@ -33,7 +33,7 @@ export function SocialLinks({ social, className = "" }: { social: SiteSettings["
 export function Footer({ settings }: { settings: SiteSettings }) {
   const year = new Date().getFullYear();
   return (
-    <footer className="grain relative overflow-hidden bg-night text-cream">
+    <footer className="grain relative overflow-hidden bg-night text-cream print:hidden">
       <div aria-hidden className="pointer-events-none absolute -right-40 -top-40 size-[34rem] rounded-full bg-accent/10 blur-3xl" />
       <div className="container-x relative z-[2] pb-10 pt-20 md:pt-28">
         <div className="grid gap-14 md:grid-cols-12">

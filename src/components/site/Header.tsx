@@ -60,7 +60,7 @@ export function Header({ youtube, instagram }: { youtube?: string; instagram?: s
       </a>
       <header
         className={cn(
-          "fixed inset-x-0 top-0 z-50 transition-[background-color,border-color,backdrop-filter] duration-500",
+          "fixed inset-x-0 top-0 z-50 print:hidden transition-[background-color,border-color,backdrop-filter] duration-500",
           overHero ? "border-b border-transparent bg-transparent" : "border-b border-line/70 bg-paper/85 backdrop-blur-xl",
         )}
       >
