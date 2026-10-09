@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
-import { Menu, X } from "lucide-react";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { Menu, UserRound, X } from "lucide-react";
 import { Logo } from "@/components/site/Logo";
 import { InstagramIcon, YouTubeIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils/cn";
@@ -12,8 +12,13 @@ const NAV = [
   { href: "/journey", label: "Journey" },
   { href: "/videos", label: "Videos" },
   { href: "/blog", label: "Blog" },
+  { href: "/sessions", label: "Sessions" },
   { href: "/collaborate", label: "Collaborate" },
 ];
+
+/** Set (non-secret) by the server on student login, so the header can say "My account". */
+const subscribeNoop = () => () => {};
+const readSignedIn = () => /(?:^|;\s*)kk_signed_in=1/.test(document.cookie);
 
 /** Routes that open with a dark, cinematic hero — the header starts transparent there. */
 const DARK_HERO = [/^\/$/, /^\/videos(\/.*)?$/];
@@ -45,6 +50,8 @@ export function Header({ youtube, instagram }: { youtube?: string; instagram?: s
   }, [open]);
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
+  const signedIn = useSyncExternalStore(subscribeNoop, readSignedIn, () => false);
+  const account = signedIn ? { href: "/account", label: "My account" } : { href: "/account/login", label: "Log in" };
 
   return (
     <>
@@ -79,6 +86,18 @@ export function Header({ youtube, instagram }: { youtube?: string; instagram?: s
           </nav>
 
           <div className="flex items-center gap-2">
+            <Link
+              href={account.href}
+              aria-label={account.label}
+              className={cn(
+                "inline-flex h-10 items-center gap-2 rounded-full border px-3 text-[0.9rem] font-medium transition-colors sm:px-4",
+                overHero ? "border-cream/30 text-cream hover:border-cream/70" : "border-line text-ink hover:border-ink/40",
+                isActive("/account") && (overHero ? "border-cream/70" : "border-ink/50"),
+              )}
+            >
+              <UserRound className="size-4" />
+              <span className="hidden sm:inline">{account.label}</span>
+            </Link>
             {instagram && (
               <a
                 href={instagram}
@@ -142,11 +161,16 @@ export function Header({ youtube, instagram }: { youtube?: string; instagram?: s
               {item.label}
             </Link>
           ))}
-          {youtube && (
-            <a href={`${youtube}?sub_confirmation=1`} target="_blank" rel="noopener noreferrer" className="btn btn-accent mt-10 self-start">
-              <YouTubeIcon className="size-4" /> Subscribe on YouTube
-            </a>
-          )}
+          <div className="mt-10 flex flex-wrap gap-3">
+            <Link href={account.href} className="btn btn-ghost text-cream">
+              <UserRound className="size-4" /> {account.label}
+            </Link>
+            {youtube && (
+              <a href={`${youtube}?sub_confirmation=1`} target="_blank" rel="noopener noreferrer" className="btn btn-accent">
+                <YouTubeIcon className="size-4" /> Subscribe on YouTube
+              </a>
+            )}
+          </div>
         </nav>
       </div>
     </>

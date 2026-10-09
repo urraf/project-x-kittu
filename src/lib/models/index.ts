@@ -2,6 +2,7 @@ import { Schema, model, models, type InferSchemaType, type Model, type Types } f
 import { MILESTONE_KINDS, VIDEO_SERIES_IDS } from "@/lib/site";
 
 export { Post, type PostDoc } from "./Post";
+export * from "./mentorship";
 
 /* ------------------------------------------------------------------ */
 /* Media: metadata for optimised images stored in GridFS               */

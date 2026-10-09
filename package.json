@@ -12,7 +12,8 @@
     "admin:hash-password": "tsx --conditions=react-server scripts/hash-password.ts",
     "secrets": "tsx scripts/gen-secrets.ts",
     "db:local": "tsx scripts/local-db.ts",
-    "admin:reset-password": "tsx --conditions=react-server scripts/reset-admin-password.ts"
+    "admin:reset-password": "tsx --conditions=react-server scripts/reset-admin-password.ts",
+    "google:auth": "tsx scripts/google-auth.ts"
   },
   "dependencies": {
     "@tiptap/extension-image": "^3.31.4",

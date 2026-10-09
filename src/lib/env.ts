@@ -68,6 +68,50 @@ export const env = {
   get groqBaseUrl() {
     return (read("GROQ_BASE_URL") ?? "https://api.groq.com/openai/v1").replace(/\/$/, "");
   },
+  /* Payments (Razorpay) */
+  get razorpayKeyId() {
+    return read("RAZORPAY_KEY_ID");
+  },
+  get razorpayKeySecret() {
+    return read("RAZORPAY_KEY_SECRET");
+  },
+  get razorpayWebhookSecret() {
+    return read("RAZORPAY_WEBHOOK_SECRET");
+  },
+  /** Practice checkout with no real money. Ignored once real Razorpay keys are set. */
+  get paymentsDemo() {
+    return read("PAYMENTS_DEMO") === "true";
+  },
+  get razorpayApiBase() {
+    return (read("RAZORPAY_API_BASE") ?? "https://api.razorpay.com/v1").replace(/\/$/, "");
+  },
+  /* Email (Brevo or Resend, both HTTPS APIs that work on Render's free plan) */
+  get brevoApiKey() {
+    return read("BREVO_API_KEY");
+  },
+  get brevoApiBase() {
+    return (read("BREVO_API_BASE") ?? "https://api.brevo.com/v3").replace(/\/$/, "");
+  },
+  get resendApiKey() {
+    return read("RESEND_API_KEY");
+  },
+  /** e.g. "Life of KittuKun <hello@yourdomain.com>" */
+  get emailFrom() {
+    return read("EMAIL_FROM");
+  },
+  /* Google Meet (optional): OAuth client + refresh token of the host's Google account */
+  get googleClientId() {
+    return read("GOOGLE_CLIENT_ID");
+  },
+  get googleClientSecret() {
+    return read("GOOGLE_CLIENT_SECRET");
+  },
+  get googleRefreshToken() {
+    return read("GOOGLE_REFRESH_TOKEN");
+  },
+  get googleCalendarId() {
+    return read("GOOGLE_CALENDAR_ID") ?? "primary";
+  },
   get youtubeApiKey() {
     return read("YOUTUBE_API_KEY");
   },

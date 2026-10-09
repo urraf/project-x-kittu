@@ -55,6 +55,18 @@ export const settingsSchema = z.object({
     enabled: z.boolean(),
     requireApproval: z.boolean(),
   }),
+  mentorship: z.object({
+    enabled: z.boolean(),
+    headline: str(160).min(1),
+    intro: str(800),
+    /** Where booking notifications go. Falls back to the admin login email. */
+    notifyEmail: z.union([z.literal(""), z.email().max(200)]),
+    /** Sessions/students from before the website, added to the public counters. */
+    pastSessions: z.number().int().min(0).max(100000),
+    pastStudents: z.number().int().min(0).max(1000000),
+    benefits: z.array(str(200).min(1)).max(8),
+    faqs: z.array(z.object({ q: str(200).min(1), a: str(800).min(1) })).max(10),
+  }),
 });
 
 export type SiteSettings = z.infer<typeof settingsSchema>;
@@ -175,5 +187,25 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   comments: {
     enabled: true,
     requireApproval: false,
+  },
+  mentorship: {
+    enabled: true,
+    headline: "Get guidance from someone who's done it.",
+    intro:
+      "Live group sessions on international internships, fully funded scholarships and building a profile that gets noticed. Bring your questions: we go through applications, timelines and real examples together.",
+    notifyEmail: "",
+    pastSessions: 0,
+    pastStudents: 0,
+    benefits: [
+      "A clear plan for your target programmes (Japan, Korea, Europe)",
+      "How to cold-email professors and write a strong research proposal",
+      "Motivation letter and CV feedback patterns that actually help",
+      "Honest answers about funding, timelines and low CGPA",
+    ],
+    faqs: [
+      { q: "How do I join the session?", a: "You'll get the meeting link by email right after booking, and again 1 hour before the session. It's also in your account." },
+      { q: "Is it a group session?", a: "Yes. Each session is a small live group, so you also hear other students' questions. There's time for everyone." },
+      { q: "Can I get a refund?", a: "If the session is cancelled, you'll get a full refund. For anything else, reply to your confirmation email and we'll help." },
+    ],
   },
 };

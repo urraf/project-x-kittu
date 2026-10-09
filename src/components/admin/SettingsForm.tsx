@@ -7,6 +7,7 @@ import { Plus, X } from "lucide-react";
 import { toast } from "sonner";
 import { api, ApiClientError, errorMessage } from "@/lib/admin/api";
 import { AccountSettings, type AccountInfo } from "@/components/admin/AccountSettings";
+import { IntegrationNotice, type PaymentStatus } from "@/components/admin/IntegrationNotice";
 import { Button, Card, Field, PageHeader, Toggle } from "@/components/admin/ui";
 import { cn } from "@/lib/utils/cn";
 import type { SiteSettings } from "@/lib/validation/settings";
@@ -16,6 +17,7 @@ const TABS = [
   { id: "about", label: "About & story" },
   { id: "social", label: "Social links" },
   { id: "ai", label: "AI writing" },
+  { id: "sessions", label: "Sessions" },
   { id: "comments", label: "Comments" },
   { id: "automation", label: "Automation" },
   { id: "password", label: "Login & password" },
@@ -25,21 +27,23 @@ type Tab = (typeof TABS)[number]["id"];
 const lines = (s: string) => s.split("\n").map((l) => l.trim()).filter(Boolean);
 
 function PairList<T extends Record<string, string>>({
-  items, onChange, fields, max, addLabel,
+  items, onChange, fields, max, addLabel, stacked = false,
 }: {
-  items: T[]; onChange: (v: T[]) => void; fields: { key: keyof T; placeholder: string; className?: string; multiline?: boolean }[]; max: number; addLabel: string;
+  items: T[]; onChange: (v: T[]) => void; fields: { key: keyof T; placeholder: string; className?: string; multiline?: boolean }[]; max: number; addLabel: string; stacked?: boolean;
 }) {
   return (
-    <div className="space-y-2">
+    <div className={stacked ? "space-y-4" : "space-y-2"}>
       {items.map((item, i) => (
         <div key={i} className="flex items-start gap-2">
-          {fields.map((f) =>
-            f.multiline ? (
-              <textarea key={String(f.key)} rows={2} value={item[f.key]} placeholder={f.placeholder} className={cn("field text-sm", f.className)} onChange={(e) => onChange(items.map((x, j) => (j === i ? { ...x, [f.key]: e.target.value } : x)))} />
-            ) : (
-              <input key={String(f.key)} value={item[f.key]} placeholder={f.placeholder} className={cn("field text-sm", f.className)} onChange={(e) => onChange(items.map((x, j) => (j === i ? { ...x, [f.key]: e.target.value } : x)))} />
-            ),
-          )}
+          <div className={cn("flex min-w-0 flex-1 gap-2", stacked ? "flex-col" : "items-start")}>
+            {fields.map((f) =>
+              f.multiline ? (
+                <textarea key={String(f.key)} rows={2} value={item[f.key]} placeholder={f.placeholder} className={cn("field text-sm", f.className)} onChange={(e) => onChange(items.map((x, j) => (j === i ? { ...x, [f.key]: e.target.value } : x)))} />
+              ) : (
+                <input key={String(f.key)} value={item[f.key]} placeholder={f.placeholder} className={cn("field text-sm", f.className)} onChange={(e) => onChange(items.map((x, j) => (j === i ? { ...x, [f.key]: e.target.value } : x)))} />
+              ),
+            )}
+          </div>
           <button type="button" onClick={() => onChange(items.filter((_, j) => j !== i))} aria-label="Remove" className="mt-1.5 grid size-8 shrink-0 place-items-center rounded-full text-muted hover:bg-paper-2 hover:text-ink">
             <X className="size-4" />
           </button>
@@ -54,7 +58,9 @@ function PairList<T extends Record<string, string>>({
   );
 }
 
-export function SettingsForm({ initial, initialTab, account }: { initial: SiteSettings; initialTab?: string; account: AccountInfo }) {
+type Integrations = { payments: PaymentStatus; email: boolean; googleMeet: boolean };
+
+export function SettingsForm({ initial, initialTab, account, integrations }: { initial: SiteSettings; initialTab?: string; account: AccountInfo; integrations: Integrations }) {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>(TABS.some((t) => t.id === initialTab) ? (initialTab as Tab) : "profile");
   const [s, setS] = useState(initial);
@@ -66,14 +72,16 @@ export function SettingsForm({ initial, initialTab, account }: { initial: SiteSe
   const [bannedText, setBannedText] = useState(initial.ai.bannedPhrases.join("\n"));
   const [catsText, setCatsText] = useState(initial.ai.categories.join("\n"));
   const [interestsText, setInterestsText] = useState(initial.profile.interests.join(", "));
+  const [benefitsText, setBenefitsText] = useState(initial.mentorship.benefits.join("\n"));
 
   const current = useMemo<SiteSettings>(
     () => ({
       ...s,
       profile: { ...s.profile, interests: interestsText.split(",").map((t) => t.trim()).filter(Boolean) },
       ai: { ...s.ai, topics: lines(topicsText), bannedPhrases: lines(bannedText), categories: lines(catsText) },
+      mentorship: { ...s.mentorship, benefits: lines(benefitsText) },
     }),
-    [s, topicsText, bannedText, catsText, interestsText],
+    [s, topicsText, bannedText, catsText, interestsText, benefitsText],
   );
   const dirty = JSON.stringify(current) !== JSON.stringify(saved);
 
@@ -88,6 +96,7 @@ export function SettingsForm({ initial, initialTab, account }: { initial: SiteSe
   const ai = <K extends keyof SiteSettings["ai"]>(k: K, v: SiteSettings["ai"][K]) => setS((x) => ({ ...x, ai: { ...x.ai, [k]: v } }));
   const cm = <K extends keyof SiteSettings["comments"]>(k: K, v: SiteSettings["comments"][K]) => setS((x) => ({ ...x, comments: { ...x.comments, [k]: v } }));
   const au = <K extends keyof SiteSettings["automation"]>(k: K, v: SiteSettings["automation"][K]) => setS((x) => ({ ...x, automation: { ...x.automation, [k]: v } }));
+  const mt = <K extends keyof SiteSettings["mentorship"]>(k: K, v: SiteSettings["mentorship"][K]) => setS((x) => ({ ...x, mentorship: { ...x.mentorship, [k]: v } }));
   const err = (k: string) => errors[k];
 
   async function save() {
@@ -101,13 +110,14 @@ export function SettingsForm({ initial, initialTab, account }: { initial: SiteSe
       setBannedText(next.ai.bannedPhrases.join("\n"));
       setCatsText(next.ai.categories.join("\n"));
       setInterestsText(next.profile.interests.join(", "));
+      setBenefitsText(next.mentorship.benefits.join("\n"));
       toast.success("Settings saved. The website updates within a moment.");
       router.refresh();
     } catch (e) {
       if (e instanceof ApiClientError) {
         setErrors(e.fieldErrors);
         const first = Object.keys(e.fieldErrors)[0] ?? "";
-        const t = first.startsWith("social") ? "social" : first.startsWith("ai") ? "ai" : first.startsWith("automation") ? "automation" : first.startsWith("comments") ? "comments" : first.match(/longBio|quickFacts|interests|principles/) ? "about" : first ? "profile" : null;
+        const t = first.startsWith("social") ? "social" : first.startsWith("ai") ? "ai" : first.startsWith("automation") ? "automation" : first.startsWith("comments") ? "comments" : first.startsWith("mentorship") ? "sessions" : first.match(/longBio|quickFacts|interests|principles/) ? "about" : first ? "profile" : null;
         if (t) setTab(t as Tab);
       }
       toast.error(errorMessage(e));
@@ -232,6 +242,54 @@ export function SettingsForm({ initial, initialTab, account }: { initial: SiteSe
 
       {tab === "password" && <AccountSettings initial={account} />}
 
+      {tab === "sessions" && (
+        <>
+          <IntegrationNotice {...integrations} />
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <Card className="space-y-5">
+              <Toggle checked={s.mentorship.enabled} onChange={(v) => mt("enabled", v)} label="Show Sessions on the website" description="When off, the Sessions page and homepage section are hidden. Existing bookings still work." />
+              <Field label="Sessions page headline" error={err("mentorship.headline")} counter={{ value: s.mentorship.headline.length, max: 160 }}>
+                <input className="field" value={s.mentorship.headline} onChange={(e) => mt("headline", e.target.value)} />
+              </Field>
+              <Field label="Introduction" error={err("mentorship.intro")} counter={{ value: s.mentorship.intro.length, max: 800 }}>
+                <textarea rows={4} className="field" value={s.mentorship.intro} onChange={(e) => mt("intro", e.target.value)} />
+              </Field>
+              <Field label="What students get" hint="One per line, up to 8. Shown as a checklist on the Sessions page." error={err("mentorship.benefits")}>
+                <textarea rows={5} className="field text-sm" value={benefitsText} onChange={(e) => setBenefitsText(e.target.value)} />
+              </Field>
+              <Field label="Send new-booking emails to" hint={account.email ? `Leave empty to use your login email (${account.email}).` : "Where you want to hear about new bookings."} error={err("mentorship.notifyEmail")}>
+                <input type="email" className="field" value={s.mentorship.notifyEmail} onChange={(e) => mt("notifyEmail", e.target.value)} placeholder={account.email ?? "you@example.com"} />
+              </Field>
+            </Card>
+            <div className="space-y-6">
+              <Card className="space-y-4">
+                <div>
+                  <h2 className="font-medium text-ink">Sessions before this website</h2>
+                  <p className="mt-1 text-sm text-muted">Added to the public counters (“sessions taken”, “students guided”). Sessions booked here are counted automatically.</p>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Past sessions" error={err("mentorship.pastSessions")}><input type="number" min={0} className="field" value={s.mentorship.pastSessions} onChange={(e) => mt("pastSessions", Number(e.target.value))} /></Field>
+                  <Field label="Past students" error={err("mentorship.pastStudents")}><input type="number" min={0} className="field" value={s.mentorship.pastStudents} onChange={(e) => mt("pastStudents", Number(e.target.value))} /></Field>
+                </div>
+              </Card>
+              <Card className="space-y-3">
+                <h2 className="font-medium text-ink">Questions & answers</h2>
+                <p className="text-sm text-muted">Shown at the bottom of the Sessions page.</p>
+                <PairList
+                  items={s.mentorship.faqs}
+                  onChange={(v) => mt("faqs", v)}
+                  max={10}
+                  addLabel="Add a question"
+                  stacked
+                  fields={[{ key: "q", placeholder: "Question", className: "font-medium" }, { key: "a", placeholder: "Answer", multiline: true }]}
+                />
+                {Object.keys(errors).some((k) => k.startsWith("mentorship.faqs")) && <p className="text-[0.78rem] text-accent-deep">Fill in both the question and the answer, or remove the empty row.</p>}
+              </Card>
+            </div>
+          </div>
+        </>
+      )}
+
       {tab === "comments" && (
         <Card className="max-w-2xl space-y-6">
           <Toggle checked={s.comments.enabled} onChange={(v) => cm("enabled", v)} label="Allow comments on blog posts" description="Readers can comment without an account. They answer a quick math question to keep bots out." />
@@ -282,7 +340,7 @@ export function SettingsForm({ initial, initialTab, account }: { initial: SiteSe
         <div className="fixed inset-x-4 bottom-4 z-30 flex items-center justify-between gap-3 rounded-full border border-line bg-ink px-5 py-2.5 text-sm text-cream shadow-2xl lg:left-[calc(16rem+2rem)] lg:right-8">
           <span>You have unsaved changes</span>
           <div className="flex gap-2">
-            <button type="button" className="rounded-full px-3 py-1.5 text-cream-muted hover:text-cream" onClick={() => { setS(saved); setTopicsText(saved.ai.topics.join("\n")); setBannedText(saved.ai.bannedPhrases.join("\n")); setCatsText(saved.ai.categories.join("\n")); setInterestsText(saved.profile.interests.join(", ")); }}>Discard</button>
+            <button type="button" className="rounded-full px-3 py-1.5 text-cream-muted hover:text-cream" onClick={() => { setS(saved); setTopicsText(saved.ai.topics.join("\n")); setBannedText(saved.ai.bannedPhrases.join("\n")); setCatsText(saved.ai.categories.join("\n")); setInterestsText(saved.profile.interests.join(", ")); setBenefitsText(saved.mentorship.benefits.join("\n")); }}>Discard</button>
             <Button variant="accent" size="sm" onClick={save} loading={saving}>Save</Button>
           </div>
         </div>

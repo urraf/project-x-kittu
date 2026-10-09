@@ -4,6 +4,8 @@ import { ArrowRight } from "lucide-react";
 import { Hero } from "@/components/home/Hero";
 import { JourneyRail } from "@/components/home/JourneyRail";
 import { Routes } from "@/components/home/Routes";
+import { SessionsTeaser } from "@/components/home/SessionsTeaser";
+import { getMentorStats, listPublicReviews, listUpcomingSessions } from "@/lib/services/mentorship";
 import { PostCard } from "@/components/blog/PostCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { JsonLd } from "@/components/ui/JsonLd";
@@ -24,12 +26,15 @@ export const revalidate = 300;
 
 export default async function HomePage() {
   const settings = await getSettings();
-  const [videos, featured, posts, milestones, counts] = await Promise.all([
+  const [videos, featured, posts, milestones, counts, upcomingSessions, sessionReviews, mentorStats] = await Promise.all([
     safe("home.videos", () => listPublicVideos({ limit: 9 }), []),
     safe("home.featured", () => getFeaturedVideos(1), []),
     safe("home.posts", () => listPublishedPosts({ pageSize: 4 }), { items: [], total: 0, page: 1, pages: 1 }),
     safe("home.milestones", () => listMilestones(), []),
     safe("home.counts", () => seriesCounts(), {} as Record<string, number>),
+    safe("home.sessions", () => listUpcomingSessions(3), []),
+    safe("home.reviews", () => listPublicReviews(3), []),
+    safe("home.mentorStats", () => getMentorStats(), { sessions: 0, students: 0, avgRating: 0, reviewCount: 0 }),
   ]);
 
   const { profile, social } = settings;
@@ -159,6 +164,11 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Sessions */}
+      {settings.mentorship.enabled && (
+        <SessionsTeaser headline={settings.mentorship.headline} intro={settings.mentorship.intro} sessions={upcomingSessions} reviews={sessionReviews} stats={mentorStats} />
+      )}
 
       {/* Blog */}
       <section className="border-t border-line py-24 md:py-32">

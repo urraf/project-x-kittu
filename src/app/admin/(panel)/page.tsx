@@ -1,21 +1,23 @@
 import Link from "next/link";
-import { ArrowRight, CheckCircle2, CircleAlert, FilePlus2, Sparkles } from "lucide-react";
+import { ArrowRight, CalendarPlus, CheckCircle2, CircleAlert, FilePlus2, Sparkles, Users } from "lucide-react";
 import { SyncVideosButton } from "@/components/admin/SyncVideosButton";
 import { Card, PageHeader, StatusBadge } from "@/components/admin/ui";
 import { env, isGroqConfigured } from "@/lib/env";
 import { listRuns } from "@/lib/services/automation";
 import { countUnreadComments, engagementTotals, recentComments } from "@/lib/services/engagement";
 import { getAccountInfo } from "@/lib/services/admin-account";
+import { listAdminSessions, mentorshipOverview } from "@/lib/services/mentorship";
 import { countNewMessages } from "@/lib/services/messages";
 import { getPostStats, listAdminPosts } from "@/lib/services/posts";
 import { getSettings } from "@/lib/services/settings";
 import { formatCompact, formatDate, timeAgo, truncate } from "@/lib/utils/text";
 import { cn } from "@/lib/utils/cn";
+import { formatPrice, formatSessionDate, formatSessionTime } from "@/lib/utils/session-time";
 
 export const dynamic = "force-dynamic";
 
 export default async function Dashboard() {
-  const [stats, recent, runs, messages, settings, totals, unreadComments, comments, account] = await Promise.all([
+  const [stats, recent, runs, messages, settings, totals, unreadComments, comments, account, upcomingSessions, mentor] = await Promise.all([
     getPostStats(),
     listAdminPosts({ limit: 6 }),
     listRuns(5),
@@ -25,6 +27,8 @@ export default async function Dashboard() {
     countUnreadComments(),
     recentComments(4),
     getAccountInfo(),
+    listAdminSessions("upcoming").then((l) => l.filter((s) => s.status !== "cancelled" && !s.ended).slice(0, 3)),
+    mentorshipOverview(),
   ]);
   const hour = Number(new Date().toLocaleString("en-IN", { hour: "numeric", hour12: false, timeZone: "Asia/Kolkata" }));
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
@@ -123,6 +127,39 @@ export default async function Dashboard() {
         </div>
 
         <div className="space-y-6">
+          <Card className="!p-0">
+            <div className="flex items-center justify-between border-b border-line px-5 py-4">
+              <h2 className="font-medium">Upcoming sessions</h2>
+              <Link href="/admin/sessions" className="inline-flex items-center gap-1 text-sm text-ink-2 hover:text-ink">All <ArrowRight className="size-3.5" /></Link>
+            </div>
+            {upcomingSessions.length ? (
+              <ul className="divide-y divide-line">
+                {upcomingSessions.map((s) => (
+                  <li key={s.id}>
+                    <Link href={`/admin/sessions/${s.id}`} className="block px-5 py-3.5 hover:bg-paper-2/60">
+                      <p className="truncate text-[0.92rem] font-medium">{s.title}</p>
+                      <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-muted">
+                        <span>{formatSessionDate(s.startsAt)} · {formatSessionTime(s.startsAt)}</span>
+                        <span className="inline-flex items-center gap-1"><Users className="size-3" /> {s.seatsTaken}/{s.capacity}</span>
+                        {s.status === "draft" && <span className="rounded-full bg-paper-3 px-1.5 text-ink-2">Draft</span>}
+                      </p>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="px-5 py-6 text-sm text-ink-2">
+                <p>No sessions scheduled.</p>
+                <Link href="/admin/sessions/new" className="mt-3 inline-flex items-center gap-1.5 font-medium text-accent-deep"><CalendarPlus className="size-4" /> Schedule one</Link>
+              </div>
+            )}
+            {mentor.bookings > 0 && (
+              <p className="border-t border-line px-5 py-3 text-xs text-muted">
+                {mentor.bookings} seat{mentor.bookings === 1 ? "" : "s"} booked in total{mentor.revenue > 0 ? ` · ${formatPrice(mentor.revenue)} collected` : ""}{mentor.reviewCount ? ` · ${mentor.avgRating.toFixed(1)}★ from ${mentor.reviewCount} review${mentor.reviewCount === 1 ? "" : "s"}` : ""}
+              </p>
+            )}
+          </Card>
+
           <Card>
             <h2 className="font-medium">Website status</h2>
             <ul className="mt-4 space-y-3 text-sm">

@@ -134,3 +134,66 @@ export type AdminCommentDTO = CommentDTO & {
 export type EngagementDTO = { views: number; likes: number; liked: boolean; commentCount: number };
 
 export type ApiResult<T> = { ok: true; data: T } | { ok: false; error: { code: string; message: string; details?: unknown } };
+
+/* ------------------------------------------------------------------ */
+/* Mentorship                                                          */
+/* ------------------------------------------------------------------ */
+
+export type MentorSessionDTO = {
+  id: string;
+  title: string;
+  slug: string;
+  summary: string;
+  description: string;
+  highlights: string[];
+  startsAt: string;
+  durationMin: number;
+  price: number;
+  capacity: number;
+  seatsTaken: number;
+  seatsLeft: number;
+  status: "draft" | "published" | "cancelled";
+  /** true once the session's start time has passed */
+  started: boolean;
+  /** true once start + duration has passed */
+  ended: boolean;
+};
+
+export type AdminMentorSessionDTO = MentorSessionDTO & {
+  meeting: { provider: "google" | "jitsi" | "manual"; url: string };
+  confirmedCount: number;
+  revenue: number;
+  reminderSentAt?: string;
+  feedbackSentAt?: string;
+};
+
+export type BookingDTO = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  notes: string;
+  amount: number;
+  status: "pending" | "confirmed" | "cancelled" | "expired";
+  paidAt?: string;
+  paymentId?: string;
+  paymentProvider?: "razorpay" | "demo" | "free";
+  refundedAt?: string;
+  createdAt: string;
+  session?: { id: string; title: string; slug: string; startsAt: string; durationMin: number; meetingUrl?: string; ended: boolean; status: string };
+  review?: { rating: number; text: string };
+  feedbackUrl?: string;
+};
+
+export type ReviewDTO = {
+  id: string;
+  name: string;
+  rating: number;
+  text: string;
+  createdAt: string;
+  sessionTitle?: string;
+  status: "visible" | "hidden";
+  featured: boolean;
+};
+
+export type MentorStats = { sessions: number; students: number; avgRating: number; reviewCount: number };

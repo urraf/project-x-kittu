@@ -47,6 +47,13 @@ Sign in at **http://localhost:3000/admin**. There is deliberately no link to it 
 | `YOUTUBE_CHANNEL_ID` | – | Defaults to the Life of KittuKun channel. |
 | `UNSPLASH_ACCESS_KEY` | – | Stock-photo covers for AI posts. Otherwise video thumbnails or branded covers are used. |
 | `MAX_UPLOAD_MB` | – | Image upload limit (default 8). |
+| `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` | for paid sessions | Razorpay API keys. Without them, only free sessions can be booked. |
+| `PAYMENTS_DEMO` | – | `true` = practice checkout for paid sessions while there are no Razorpay keys (no real money, marked "demo" in the Studio). Ignored once keys are set. |
+| `RAZORPAY_WEBHOOK_SECRET` | recommended | Confirms bookings even if the student closes the tab right after paying. |
+| `BREVO_API_KEY` or `RESEND_API_KEY` | for emails | Booking confirmations, reminders, feedback links, sign-in links. HTTPS APIs (work where SMTP is blocked). |
+| `EMAIL_FROM` | for emails | Verified sender, e.g. `Life of KittuKun <hello@your-domain.com>`. |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_REFRESH_TOKEN` | – | Real Google Meet links + calendar invites. Otherwise Jitsi links are generated. |
+| `GOOGLE_CALENDAR_ID` | – | Default `primary`. |
 
 All secrets are read server-side only (`src/lib/env.ts` is `server-only`). Only `NEXT_PUBLIC_SITE_URL` reaches the browser.
 
@@ -100,11 +107,40 @@ Every run, including skips and failures, is visible in **Studio → AI writer �
 
 ---
 
+## Sessions (live group mentorship)
+
+The creator schedules group sessions in **Studio → Sessions** (title, date, start time in IST, duration, price, seats). Students book on **/sessions**:
+
+1. They enter name, email and phone (plus a quick math question) and pay with Razorpay, or book instantly if the session is free. A seat is held for 15 minutes while they pay, so a full session can't be oversold.
+2. On payment, the booking is confirmed (in the browser **and** via the Razorpay webhook, whichever comes first). The student's account is created automatically from their email.
+3. The student and the admin both get an email. Everyone booked into the same session gets the **same meeting link**.
+4. One hour before the start, everyone gets a reminder with the link.
+5. When the session ends, each student gets a personal, unguessable feedback link (also shown in their account). Their star rating and review appear on the Sessions page; the creator can hide, pin or delete reviews in **Studio → Reviews**.
+
+**Student accounts.** The first booking with a new email creates an account automatically: the confirmation email contains the meeting link **and the login email + a generated password**. Booking again with the same email just confirms the seat and sends the link. Students log in at **/account/login** (also linked as "Log in" in the header), where they can also **sign up** themselves (name, email, phone, password, confirmed with a 6-digit code sent to their email) or reset a forgotten password with an emailed code. In **My account** they see their next session with a join button, past sessions, receipts and feedback links, and can edit their details or change their password (other devices get signed out). Passwords are stored only as scrypt hashes; codes are hashed, expire in 10 minutes and allow 5 tries. Accounts need email to be set up (codes and passwords arrive by email); in local development without an email service, emails are printed to the terminal instead.
+
+**Meeting links.** With Google connected, each session gets a Google Calendar event with a Meet link, and booked students are added as guests. Without it, a free Jitsi Meet room is created (the host signs in on Jitsi when starting the call). The creator can also paste any Zoom/Meet link per session.
+
+**Background emails need the keep-alive ping.** Reminders and feedback emails are sent whenever `GET /api/health` is called (at most once every 2 minutes, guarded by a database lock). Point an uptime/cron service at it every 5–10 minutes; on Render's free plan this ping also keeps the app awake.
+
+### Setup
+
+- **Trying it before Razorpay is ready:** set `PAYMENTS_DEMO=true`. Paid bookings open a practice checkout (pay or simulate a failure), and are confirmed, emailed and listed exactly like real ones, marked "demo". Delete demo bookings/sessions before going live.
+- **Razorpay:** create API keys (test keys first), set `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET`. Add a webhook to `https://YOUR-DOMAIN/api/payments/razorpay/webhook` with the events `payment.captured` and `order.paid`, and put its secret in `RAZORPAY_WEBHOOK_SECRET`. Refunds for cancelled sessions are issued automatically through the API.
+- **Email:** create a Brevo account (free: 300 emails/day), verify a sender, set `BREVO_API_KEY` and `EMAIL_FROM`. (Or Resend with a verified domain.) Every email attempt is logged in the `emaillogs` collection for 90 days.
+- **Google Meet (optional):** in Google Cloud, enable the *Google Calendar API*, configure the OAuth consent screen (**publish it to "In production"**; in "Testing" mode Google expires the token after 7 days), create an OAuth client of type **Desktop app**, put the client ID/secret in `.env.local`, then run `npm run google:auth` and sign in with the host account. Copy the printed `GOOGLE_REFRESH_TOKEN` to your host.
+
+Each service is optional, and **Settings → Sessions** shows the creator, in plain words, which ones are connected.
+
+---
+
 ## Studio guide (for the creator)
 
 | Section | What you can do |
 | --- | --- |
 | **Dashboard** | Post counts, recent posts, system status, automation runs, one-click YouTube sync. |
+| **Sessions** | Schedule group sessions, see who booked (with phone, notes, payment, rating), copy emails or download the list, cancel a booking with refund, cancel a whole session (everyone is emailed and refunded), or repeat it next week in one click. |
+| **Reviews** | Ratings from students. Hide, pin to the top, or delete. |
 | **Blog posts** | Search and filter; publish/unpublish, preview or delete any post. |
 | **Editor** | Rich text (headings, lists, quotes, links, images, YouTube embeds); paste or drop images straight in. Cover + optional card thumbnail, category, tags, featured, companion video, author, SEO with a live Google preview and **Suggest** (AI). Set a future publish date to schedule. Ctrl/⌘+S saves. |
 | **AI writer** | Generate a draft from your topic list or your own idea. It lands as a draft for review. Also shows the automation settings, the cron URL and run history, plus a "Run automation now" button. |
@@ -180,3 +216,4 @@ Public pages use ISR (revalidated every 5 min, plus instantly after any Studio c
 | `npm run admin:hash-password` | Create `ADMIN_PASSWORD_HASH` (the starting password) |
 | `npm run admin:reset-password` | Forgot the login? Sets a new password (and optionally email) directly in the database and signs out all devices |
 | `npm run secrets` | Generate `AUTH_SECRET` and `CRON_SECRET` |
+| `npm run google:auth` | One-time Google sign-in that prints `GOOGLE_REFRESH_TOKEN` for Meet links |

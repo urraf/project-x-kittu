@@ -60,6 +60,7 @@ export function Footer({ settings }: { settings: SiteSettings }) {
                 <li><Link className="link-underline" href="/journey">Journey</Link></li>
                 <li><Link className="link-underline" href="/videos">Videos</Link></li>
                 <li><Link className="link-underline" href="/blog">Blog</Link></li>
+                <li><Link className="link-underline" href="/sessions">Sessions</Link></li>
                 <li><Link className="link-underline" href="/collaborate">Collaborate</Link></li>
               </ul>
             </div>
