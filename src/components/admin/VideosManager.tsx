@@ -173,7 +173,7 @@ export function VideosManager() {
                 <p className="font-medium text-ink">{blogs.pending} of {blogs.eligible} videos don&apos;t have a blog post yet</p>
                 <p className="mt-0.5 text-muted">
                   {blogs.aiReady
-                    ? `Each one gets an article written from the video's title and description, with the video embedded.${blogs.autoEnabled ? " New uploads get one automatically when you sync." : ""}`
+                    ? `Each one gets an article written from what you say in the video (its captions), with the video embedded.${blogs.autoEnabled ? " New uploads get one automatically when you sync." : ""}`
                     : "Add GROQ_API_KEY on the server to write blog posts with AI."}
                 </p>
               </>
