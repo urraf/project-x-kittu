@@ -144,6 +144,92 @@ export async function fetchOEmbed(youtubeId: string): Promise<{ title: string; a
   }
 }
 
+const ANDROID_UA = "com.google.android.youtube/20.10.38 (Linux; U; Android 11) gzip";
+
+/**
+ * Best-effort caption text for a public video (English, or auto-translated to
+ * English). Uses YouTube's app API, which needs no key but is unofficial and
+ * may be blocked from some servers, so callers must cope with `null`.
+ */
+export async function fetchTranscript(youtubeId: string): Promise<string | null> {
+  try {
+    const res = await fetch("https://www.youtube.com/youtubei/v1/player?prettyPrint=false", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "User-Agent": ANDROID_UA },
+      body: JSON.stringify({ context: { client: { clientName: "ANDROID", clientVersion: "20.10.38", androidSdkVersion: 30, hl: "en", gl: "IN" } }, videoId: youtubeId }),
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { captions?: { playerCaptionsTracklistRenderer?: { captionTracks?: { baseUrl: string; languageCode?: string; kind?: string }[] } } };
+    const tracks = data.captions?.playerCaptionsTracklistRenderer?.captionTracks ?? [];
+    if (!tracks.length) return null;
+    const english = (t: { languageCode?: string }) => (t.languageCode ?? "").startsWith("en");
+    // Prefer hand-made English captions, then auto English, then any track translated to English.
+    const track = tracks.find((t) => english(t) && t.kind !== "asr") ?? tracks.find(english);
+    const url = track ? track.baseUrl : `${tracks[0]!.baseUrl}&tlang=en`;
+    const cap = await fetch(url, { headers: { "User-Agent": ANDROID_UA }, signal: AbortSignal.timeout(15_000) });
+    if (!cap.ok) return null;
+    const xml = await cap.text();
+    const text = decodeXml(xml.replace(/<[^>]+>/g, " ")).replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n))).replace(/\s+/g, " ").trim();
+    return text.length >= 200 ? text.slice(0, 60000) : null;
+  } catch (error) {
+    logger.warn("youtube.transcript_failed", { youtubeId, error });
+    return null;
+  }
+}
+
+export type RemoteComment = { commentId: string; author: string; text: string; likes: number };
+
+function findAll(node: unknown, test: (o: Record<string, unknown>) => boolean, out: Record<string, unknown>[] = []) {
+  if (Array.isArray(node)) for (const v of node) findAll(v, test, out);
+  else if (node && typeof node === "object") {
+    const o = node as Record<string, unknown>;
+    if (test(o)) out.push(o);
+    for (const v of Object.values(o)) findAll(v, test, out);
+  }
+  return out;
+}
+
+const parseLikes = (s: unknown) => {
+  const m = String(s ?? "").trim().match(/^([\d.]+)\s*([KM]?)/i);
+  if (!m) return 0;
+  return Math.round(Number(m[1]) * (m[2]?.toUpperCase() === "K" ? 1000 : m[2]?.toUpperCase() === "M" ? 1_000_000 : 1));
+};
+
+/**
+ * Best-effort first page of a video's top comments (YouTube's web API, no key).
+ * Unofficial, so it returns [] whenever the response shape isn't what we expect.
+ */
+export async function fetchTopComments(youtubeId: string): Promise<RemoteComment[]> {
+  const call = async (body: Record<string, unknown>) => {
+    const res = await fetch("https://www.youtube.com/youtubei/v1/next?prettyPrint=false", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "User-Agent": "Mozilla/5.0" },
+      body: JSON.stringify({ context: { client: { clientName: "WEB", clientVersion: "2.20251001.00.00", hl: "en", gl: "IN" } }, ...body }),
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!res.ok) throw new Error(`YouTube responded ${res.status}`);
+    return res.json() as Promise<unknown>;
+  };
+  try {
+    const page = await call({ videoId: youtubeId });
+    const section = findAll(page, (o) => o.sectionIdentifier === "comment-item-section")[0];
+    const token = section && (JSON.stringify(section).match(/"token":"([^"]+)"/)?.[1] ?? null);
+    if (!token) return [];
+    const data = await call({ continuation: token });
+    return findAll(data, (o) => "commentEntityPayload" in o).flatMap((o) => {
+      const p = o.commentEntityPayload as { author?: { displayName?: string }; properties?: { commentId?: string; content?: { content?: string } }; toolbar?: { likeCountNotliked?: string } };
+      const text = p.properties?.content?.content?.trim();
+      const commentId = p.properties?.commentId;
+      if (!text || !commentId) return [];
+      return [{ commentId, author: (p.author?.displayName ?? "").replace(/^@/, "") || "YouTube viewer", text, likes: parseLikes(p.toolbar?.likeCountNotliked) }];
+    });
+  } catch (error) {
+    logger.warn("youtube.comments_failed", { youtubeId, error });
+    return [];
+  }
+}
+
 /** Heuristic series classification from a video title. Admin can override. */
 export function classifySeries(title: string): VideoSeries {
   const t = title.toLowerCase();

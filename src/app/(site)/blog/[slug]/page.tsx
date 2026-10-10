@@ -76,7 +76,7 @@ export default async function ArticlePage({ params }: Props) {
             articleSection: post.category,
             keywords: post.tags.join(", "),
             mainEntityOfPage: url,
-            author: { "@type": "Person", name: post.author.name || settings.profile.name, url: absoluteUrl("/journey") },
+            author: { "@type": "Person", name: post.author.name || settings.profile.name, url: absoluteUrl("/about") },
             publisher: { "@type": "Person", name: settings.profile.name, url: absoluteUrl("/") },
           },
           {

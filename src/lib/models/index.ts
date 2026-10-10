@@ -49,6 +49,9 @@ const VideoSchema = new Schema(
     hidden: { type: Boolean, default: false },
     source: { type: String, enum: ["sync", "manual", "seed"], default: "sync" },
     syncedAt: Date,
+    /** Caption text, cached for writing the video's companion blog post. */
+    transcript: { type: String, maxlength: 60000, select: false },
+    transcriptFetchedAt: Date,
   },
   { timestamps: true },
 );
@@ -239,3 +242,7 @@ AutomationRunSchema.index({ startedAt: -1 });
 export type AutomationRunDoc = InferSchemaType<typeof AutomationRunSchema> & { _id: Types.ObjectId };
 export const AutomationRun: Model<InferSchemaType<typeof AutomationRunSchema>> =
   models.AutomationRun || model("AutomationRun", AutomationRunSchema);
+export * from "./store";
+export * from "./opportunity";
+export * from "./university";
+export * from "./testimonial";

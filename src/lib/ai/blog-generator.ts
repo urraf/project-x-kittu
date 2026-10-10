@@ -1,7 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import { groqChat, GroqError, parseJsonObject } from "@/lib/ai/groq";
-import { metadataPrompt, planPrompt, PROMPT_VERSION, writePrompt } from "@/lib/ai/prompts";
+import { metadataPrompt, planPrompt, PROMPT_VERSION, writePrompt, type SourceVideo } from "@/lib/ai/prompts";
 import { markdownToHtml } from "@/lib/content/html";
 import { logger } from "@/lib/logger";
 import { cleanTitle, countWords, slugify, titleSimilarity, truncate } from "@/lib/utils/text";
@@ -26,6 +26,8 @@ export type GenerateOptions = {
   category?: string;
   keywords?: string[];
   notes?: string;
+  /** Write a companion article for this YouTube video. */
+  video?: SourceVideo;
 };
 
 export type GenerationContext = {
@@ -106,6 +108,7 @@ async function createPlan(opts: GenerateOptions, ctx: GenerationContext, topic: 
     notes: opts.notes,
     recentTitles: [...avoid, ...ctx.recent.map((r) => r.title)].slice(0, 50),
     videos: ctx.videos.slice(0, 40),
+    sourceVideo: opts.video,
   });
   const res = await groqChat({
     messages: [
@@ -210,7 +213,7 @@ function finaliseMeta(plan: Plan, settings: SiteSettings, opts: GenerateOptions)
  */
 export async function generateArticle(opts: GenerateOptions, ctx: GenerationContext): Promise<GeneratedArticle> {
   const { settings } = ctx;
-  const topic = opts.topic?.trim() || pickTopic(settings.ai.topics, ctx.recent);
+  const topic = opts.video ? cleanTitle(opts.video.title) : opts.topic?.trim() || pickTopic(settings.ai.topics, ctx.recent);
   const recentTitles = ctx.recent.map((r) => r.title);
   const avoid: string[] = [];
   let lastError: unknown;
@@ -219,7 +222,11 @@ export async function generateArticle(opts: GenerateOptions, ctx: GenerationCont
     try {
       const { plan, model } = await createPlan(opts, ctx, topic, avoid);
       const meta = finaliseMeta(plan, settings, opts);
-      const relatedVideo = plan.relatedVideoId ? ctx.videos.find((v) => v.youtubeId === plan.relatedVideoId) : undefined;
+      const relatedVideo = opts.video
+        ? { youtubeId: opts.video.youtubeId, title: opts.video.title }
+        : plan.relatedVideoId
+          ? ctx.videos.find((v) => v.youtubeId === plan.relatedVideoId)
+          : undefined;
 
       // Duplicate check on the planned title before spending tokens on the body.
       validateTitleOnly(meta.title, recentTitles);
@@ -232,6 +239,7 @@ export async function generateArticle(opts: GenerateOptions, ctx: GenerationCont
           settings,
           plan: { title: meta.title, angle: plan.angle, outline: plan.outline, category: meta.category },
           relatedVideoTitle: relatedVideo?.title,
+          sourceVideo: opts.video,
           expandFrom: w > 1 ? { words } : undefined,
         });
         const res = await groqChat({
@@ -239,7 +247,8 @@ export async function generateArticle(opts: GenerateOptions, ctx: GenerationCont
             { role: "system", content: system },
             { role: "user", content: user },
           ],
-          temperature: 0.75,
+          // Companion posts stay closer to the source material.
+          temperature: opts.video ? 0.55 : 0.75,
           maxTokens: Math.min(8000, Math.round(settings.ai.maxWords * 2.2) + 600),
           timeoutMs: 120_000,
         });

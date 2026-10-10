@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { logger } from "@/lib/logger";
 import { confirmBooking, findBookingByOrderId } from "@/lib/services/mentorship";
 import { verifyWebhookSignature } from "@/lib/services/razorpay";
+import { confirmOrder, findOrderByPaymentOrderId } from "@/lib/services/store";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,10 @@ export async function POST(req: NextRequest) {
       if (orderId) {
         const booking = await findBookingByOrderId(orderId);
         if (booking) await confirmBooking(String(booking._id), { provider: "razorpay", paymentId: payment?.id });
+        else {
+          const order = await findOrderByPaymentOrderId(orderId);
+          if (order) await confirmOrder(String(order._id), { provider: "razorpay", paymentId: payment?.id });
+        }
       }
     }
     return NextResponse.json({ ok: true });

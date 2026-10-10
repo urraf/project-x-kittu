@@ -11,7 +11,6 @@ import {
   Download,
   ExternalLink,
   FileText,
-  Hourglass,
   LayoutDashboard,
   ListChecks,
   MessageSquareQuote,
@@ -20,6 +19,7 @@ import {
   UserRound,
   Video,
   Wallet,
+  Library as LibraryIcon,
 } from "lucide-react";
 import { ChangePasswordForm, LogoutButton, ProfileForm } from "@/components/mentorship/AccountForms";
 import { Countdown } from "@/components/mentorship/Countdown";
@@ -28,6 +28,8 @@ import { Stars } from "@/components/mentorship/Stars";
 import { getStudent } from "@/lib/auth/student";
 import { safe } from "@/lib/safe";
 import { listStudentBookings, listUpcomingSessions } from "@/lib/services/mentorship";
+import { listStudentOrders } from "@/lib/services/store";
+import { ProductCover } from "@/components/store/ProductCard";
 import { getSettings } from "@/lib/services/settings";
 import { formatDuration, formatPrice, formatSessionDate, formatSessionTime, googleCalendarLink, sessionEnd } from "@/lib/utils/session-time";
 import { cn } from "@/lib/utils/cn";
@@ -39,6 +41,7 @@ export const dynamic = "force-dynamic";
 const TABS = [
   { id: "overview", label: "Overview", Icon: LayoutDashboard },
   { id: "sessions", label: "My sessions", Icon: CalendarDays },
+  { id: "library", label: "My library", Icon: LibraryIcon },
   { id: "payments", label: "Payments", Icon: Wallet },
   { id: "profile", label: "Profile & security", Icon: UserRound },
 ] as const;
@@ -152,22 +155,22 @@ function NextUp({ b }: { b: BookingDTO }) {
   const s = b.session!;
   const state = liveState(s.startsAt, s.durationMin);
   return (
-    <div className="grain relative overflow-hidden rounded-3xl bg-night p-6 text-cream md:p-8">
-      <span aria-hidden className="absolute -right-16 -top-16 size-48 rounded-full bg-accent/80" />
+    <div className="seigaiha relative overflow-hidden rounded-3xl border border-line bg-indigo-soft p-6 text-ink md:p-8">
+      <span aria-hidden className="absolute -right-16 -top-16 size-48 rounded-full bg-accent/85" />
       <div className="relative z-[2]">
-        <p className="kicker flex items-center gap-2 text-cream-muted">
+        <p className="kicker flex items-center gap-2 text-muted">
           {state === "live" && <span className="size-2 animate-pulse rounded-full bg-accent" />}
           {state === "live" ? "Happening now" : "Your next session"}
         </p>
         <h2 className="display mt-3 max-w-xl text-3xl leading-tight md:text-4xl">{s.title}</h2>
-        <p className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-[0.95rem] text-cream/80">
+        <p className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-[0.95rem] text-ink-2">
           <span className="inline-flex items-center gap-1.5"><CalendarDays className="size-4 text-accent" /> {formatSessionDate(s.startsAt)}</span>
           <span className="inline-flex items-center gap-1.5"><Clock className="size-4 text-accent" /> {formatSessionTime(s.startsAt)} IST · {formatDuration(s.durationMin)}</span>
         </p>
         {state === "upcoming" && (
           <div className="mt-5">
-            <p className="mb-2 text-xs uppercase tracking-wider text-cream-muted">Starts in</p>
-            <Countdown to={s.startsAt} tone="dark" />
+            <p className="mb-2 text-xs uppercase tracking-wider text-muted">Starts in</p>
+            <Countdown to={s.startsAt} />
           </div>
         )}
         <div className="mt-6 flex flex-wrap gap-2">
@@ -176,9 +179,9 @@ function NextUp({ b }: { b: BookingDTO }) {
               <Video className="size-4" /> {state === "live" ? "Join now, it's live" : "Join the session"}
             </a>
           )}
-          <CalendarLinks b={b} tone="dark" />
+          <CalendarLinks b={b} />
         </div>
-        {s.meetingUrl && <p className="mt-4 break-all text-xs text-cream/55">Meeting link: {s.meetingUrl}</p>}
+        {s.meetingUrl && <p className="mt-4 break-all text-xs text-muted">Meeting link: {s.meetingUrl}</p>}
       </div>
     </div>
   );
@@ -211,10 +214,11 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
   const { tab: rawTab } = await searchParams;
   const tab: Tab = TABS.some((t) => t.id === rawTab) ? (rawTab as Tab) : "overview";
 
-  const [bookings, upcomingAll, settings] = await Promise.all([
+  const [bookings, upcomingAll, settings, orders] = await Promise.all([
     listStudentBookings(student._id),
     safe("account.recommended", () => listUpcomingSessions(8), []),
     getSettings(),
+    safe("account.orders", () => listStudentOrders(student._id), []),
   ]);
 
   const active = bookings.filter((b) => b.session && !isCancelled(b));
@@ -224,12 +228,16 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
   const attended = active.filter((b) => liveState(b.session!.startsAt, b.session!.durationMin) === "ended");
   const past = bookings.filter((b) => !upcoming.includes(b)).sort((a, b) => new Date(b.session?.startsAt ?? 0).getTime() - new Date(a.session?.startsAt ?? 0).getTime());
   const toRate = attended.filter((b) => !b.review && b.feedbackUrl);
-  const hours = Math.round((attended.reduce((m, b) => m + (b.session?.durationMin ?? 0), 0) / 60) * 10) / 10;
-  const payments = bookings.filter((b) => b.amount > 0 && b.paidAt).sort((a, b) => new Date(b.paidAt!).getTime() - new Date(a.paidAt!).getTime());
+  const owned = orders.filter((o) => o.status === "paid" && !o.refundedAt);
+  // Sessions and store purchases in one list, newest first.
+  const payments = [
+    ...bookings.filter((b) => b.amount > 0 && b.paidAt).map((b) => ({ id: b.id, kind: "Session", title: b.session?.title ?? "Session", amount: b.amount, paidAt: b.paidAt!, refundedAt: b.refundedAt, provider: b.paymentProvider, paymentId: b.paymentId })),
+    ...orders.filter((o) => o.amount > 0 && o.paidAt).map((o) => ({ id: o.orderId, kind: "Store", title: o.product?.title ?? "Product", amount: o.amount, paidAt: o.paidAt!, refundedAt: o.refundedAt, provider: o.provider, paymentId: o.paymentId })),
+  ].sort((a, b) => new Date(b.paidAt).getTime() - new Date(a.paidAt).getTime());
   const bookedIds = new Set(bookings.map((b) => b.session?.id));
   const recommended = upcomingAll.filter((s) => !bookedIds.has(s.id) && s.seatsLeft > 0).slice(0, 3);
   const next = upcoming[0];
-  const counts: Partial<Record<Tab, number>> = { sessions: upcoming.length, payments: payments.length };
+  const counts: Partial<Record<Tab, number>> = { sessions: upcoming.length, library: owned.length, payments: payments.length };
 
   return (
     <section className="container-x max-w-6xl pb-24 pt-28 md:pt-32">
@@ -276,7 +284,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
               <Stat Icon={CalendarDays} value={upcoming.length} label="Upcoming" />
               <Stat Icon={BadgeCheck} value={attended.length} label="Attended" />
-              <Stat Icon={Hourglass} value={hours} label="Hours of mentoring" />
+              <Stat Icon={LibraryIcon} value={owned.length} label="In your library" />
               <Stat Icon={MessageSquareQuote} value={attended.filter((b) => b.review).length} label="Reviews given" />
             </div>
 
@@ -362,6 +370,50 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
           </div>
         )}
 
+        {/* ------------------------------ Library ------------------------------ */}
+        {tab === "library" && (
+          <div>
+            {owned.length ? (
+              <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {owned.map((o) => {
+                  const active = o.status === "paid" && !o.refundedAt;
+                  return (
+                    <li key={o.orderId} className={cn("flex flex-col overflow-hidden rounded-3xl border border-line bg-[#fffdf9]", !active && "opacity-70")}>
+                      {o.product && <ProductCover product={o.product} sizes="(min-width: 1024px) 22rem, 100vw" className="aspect-[4/3]" />}
+                      <div className="flex flex-1 flex-col p-5">
+                        <p className="kicker !text-[0.65rem] text-accent-deep">{o.product?.category ?? "Product"}</p>
+                        <p className="display mt-2 text-2xl leading-tight">{o.product?.title ?? "Product no longer available"}</p>
+                        <p className="mt-1 text-xs text-muted">
+                          {o.paidAt ? `Added ${shortDate(o.paidAt)}` : ""}
+                          {o.product?.deliveryNote ? ` · ${o.product.deliveryNote}` : ""}
+                        </p>
+                        <div className="mt-auto flex flex-wrap items-center gap-2 pt-5">
+                          {active ? (
+                            <a href={`/api/account/library/${o.orderId}/download`} className="btn btn-accent !py-2.5" {...(o.product?.deliveryType === "link" ? { target: "_blank", rel: "noopener noreferrer" } : {})}>
+                              {o.product?.deliveryType === "link" ? <ExternalLink className="size-4" /> : <Download className="size-4" />}
+                              {o.product?.deliveryType === "link" ? "Open" : "Download"}
+                            </a>
+                          ) : (
+                            <span className="text-sm text-muted">Refunded, access removed</span>
+                          )}
+                          {o.amount > 0 && o.paidAt && <Link href={`/account/receipts/${o.orderId}`} className="btn btn-ghost !py-2.5 text-ink"><FileText className="size-4" /> Receipt</Link>}
+                        </div>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <div className="rounded-3xl border border-dashed border-line p-8 text-center">
+                <LibraryIcon className="mx-auto size-8 text-accent" />
+                <p className="display mt-3 text-3xl">Your library is empty</p>
+                <p className="mt-2 text-ink-2">Guides and templates you get from the store appear here, ready to download any time.</p>
+                <Link href="/store" className="btn btn-accent mt-5">Browse the store</Link>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ------------------------------ Payments ------------------------------ */}
         {tab === "payments" && (
           <div>
@@ -371,11 +423,11 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
                   {payments.map((b) => (
                     <li key={b.id} className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center">
                       <div className="min-w-0 flex-1">
-                        <p className="truncate font-medium text-ink">{b.session?.title ?? "Session"}</p>
+                        <p className="truncate font-medium text-ink">{b.title}</p>
                         <p className="mt-0.5 text-xs text-muted">
-                          Paid {shortDate(b.paidAt!)}
-                          {b.paymentId && b.paymentProvider === "razorpay" && <> · <span className="font-mono">{b.paymentId}</span></>}
-                          {b.paymentProvider === "demo" && " · demo payment"}
+                          {b.kind} · Paid {shortDate(b.paidAt)}
+                          {b.paymentId && b.provider === "razorpay" && <> · <span className="font-mono">{b.paymentId}</span></>}
+                          {b.provider === "demo" && " · demo payment"}
                         </p>
                       </div>
                       <div className="flex items-center gap-4">
@@ -398,7 +450,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
               <div className="rounded-3xl border border-dashed border-line p-8 text-center">
                 <Wallet className="mx-auto size-8 text-accent" />
                 <p className="display mt-3 text-3xl">No payments yet</p>
-                <p className="mt-2 text-ink-2">Receipts for paid sessions show up here. Free sessions don&apos;t need one.</p>
+                <p className="mt-2 text-ink-2">Receipts for paid sessions and store purchases show up here.</p>
               </div>
             )}
           </div>

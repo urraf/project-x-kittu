@@ -17,8 +17,10 @@ export function SyncVideosButton({ onDone, variant = "secondary" }: { onDone?: (
       onClick={async () => {
         setLoading(true);
         try {
-          const r = await api<{ fetched: number; added: number; updated: number; source: string }>("/api/admin/videos/sync", { method: "POST" });
-          toast.success("Videos synced from YouTube", { description: `${r.added} new · ${r.updated} updated · checked ${r.fetched}` });
+          const r = await api<{ fetched: number; added: number; updated: number; source: string; blogsQueued?: number }>("/api/admin/videos/sync", { method: "POST" });
+          toast.success("Videos synced from YouTube", {
+            description: `${r.added} new · ${r.updated} updated · checked ${r.fetched}${r.blogsQueued ? ` · writing ${r.blogsQueued} blog post${r.blogsQueued === 1 ? "" : "s"} in the background` : ""}`,
+          });
           onDone?.();
           router.refresh();
         } catch (e) {

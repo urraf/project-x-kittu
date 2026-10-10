@@ -300,6 +300,7 @@ export function SettingsForm({ initial, initialTab, account, integrations }: { i
       {tab === "automation" && (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <Card className="space-y-6">
+            <Toggle checked={s.automation.videoPosts} onChange={(v) => au("videoPosts", v)} label="Write a blog post for every new video" description="When a new YouTube video comes in (Sync from YouTube, or the scheduled check), a companion article is written from its title and description, with the video embedded at the top." />
             <Toggle checked={s.automation.enabled} onChange={(v) => au("enabled", v)} label="Write new posts automatically" description="When off, no posts are written automatically. You can still write with AI from the AI writer page." />
             <Field label="When a post is generated automatically">
               <div className="grid gap-2">
@@ -331,6 +332,7 @@ export function SettingsForm({ initial, initialTab, account, integrations }: { i
             <h2 className="font-medium text-ink">How automatic posting works</h2>
             <p>On a regular schedule, the website writes a new article for you, following the rules on the left.</p>
             <p>Each time, it picks the topic from your list that hasn&apos;t been covered for the longest time, writes it in your voice using your guidelines, adds a cover image, checks that it&apos;s complete and not a repeat of an earlier post, then publishes it or saves it as a draft.</p>
+            <p>Video posts are separate: each new video gets one article about that video, using its thumbnail as the cover. They don&apos;t count towards the daily limit.</p>
             <p>You&apos;ll find every automatically written post in <Link href="/admin/posts" className="underline">Blog posts</Link> (marked “Auto”) and in the <Link href="/admin/ai" className="underline">AI writer</Link> history.</p>
           </Card>
         </div>

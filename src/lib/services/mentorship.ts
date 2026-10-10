@@ -20,6 +20,7 @@ import { logger } from "@/lib/logger";
 import { absoluteUrl } from "@/lib/site";
 import { sanitizePlain } from "@/lib/content/html";
 import { slugify } from "@/lib/utils/text";
+import { imageSchema } from "@/lib/validation/post";
 import { fromIstInputs, sessionEnd } from "@/lib/utils/session-time";
 import { sendEmail } from "@/lib/services/email";
 import { getSettings } from "@/lib/services/settings";
@@ -51,6 +52,9 @@ export function toSessionDTO(s: MentorSessionDoc): MentorSessionDTO {
     summary: s.summary ?? "",
     description: s.description ?? "",
     highlights: s.highlights ?? [],
+    coverImage: s.coverImage?.url
+      ? { url: s.coverImage.url, alt: s.coverImage.alt ?? "", mediaId: s.coverImage.mediaId ? String(s.coverImage.mediaId) : undefined, width: s.coverImage.width ?? undefined, height: s.coverImage.height ?? undefined, blurDataURL: s.coverImage.blurDataURL ?? undefined }
+      : undefined,
     startsAt: new Date(s.startsAt).toISOString(),
     durationMin: s.durationMin,
     price: s.price ?? 0,
@@ -111,7 +115,7 @@ function toReviewDTO(r: ReviewDoc & { session?: unknown }): ReviewDTO {
 
 const feedbackUrl = (token: string) => absoluteUrl(`/feedback/${token}`);
 
-async function adminNotifyEmail() {
+export async function adminNotifyEmail() {
   const settings = await getSettings();
   if (settings.mentorship.notifyEmail) return settings.mentorship.notifyEmail;
   const account = await AdminAccount.findOne({ key: "admin" }).select("email").lean<{ email?: string }>();
@@ -498,6 +502,7 @@ export const sessionInputSchema = z.object({
   capacity: z.coerce.number().int().min(1, "At least 1 seat").max(1000),
   status: z.enum(["draft", "published"]).default("draft"),
   meetingMode: z.enum(["auto", "manual"]).default("auto"),
+  coverImage: imageSchema.nullable().optional(),
   meetingUrl: z
     .string()
     .trim()
@@ -566,6 +571,7 @@ export async function createSession(raw: unknown) {
     summary: sanitizePlain(input.summary),
     description: sanitizePlain(input.description),
     highlights: input.highlights.map(sanitizePlain),
+    coverImage: input.coverImage ?? undefined,
     startsAt,
     durationMin: input.durationMin,
     price: input.price,
@@ -603,6 +609,7 @@ export async function updateSession(id: string, raw: unknown) {
         summary: sanitizePlain(input.summary),
         description: sanitizePlain(input.description),
         highlights: input.highlights.map(sanitizePlain),
+        ...(input.coverImage ? { coverImage: input.coverImage } : {}),
         startsAt,
         durationMin: input.durationMin,
         price: input.price,
@@ -611,6 +618,7 @@ export async function updateSession(id: string, raw: unknown) {
         meeting,
         ...(timeChanged ? { reminderSentAt: null, feedbackSentAt: null } : {}),
       },
+      ...(input.coverImage ? {} : { $unset: { coverImage: 1 } }),
     },
     { returnDocument: "after", runValidators: true },
   ).lean<MentorSessionDoc>();
@@ -636,6 +644,7 @@ export async function duplicateSession(id: string) {
     summary: s.summary,
     description: s.description,
     highlights: s.highlights,
+    coverImage: s.coverImage ?? undefined,
     startsAt,
     durationMin: s.durationMin,
     price: s.price,

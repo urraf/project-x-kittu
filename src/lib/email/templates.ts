@@ -165,3 +165,51 @@ export function otpEmail(p: { name: string; code: string; purpose: "signup" | "r
     text: `Your ${SITE_NAME} code is ${p.code}. Use it to ${what}. It expires in ${p.minutes} minutes.\nDidn't ask for this? Ignore this email.`,
   };
 }
+
+export function orderConfirmedEmail(p: { name: string; email: string; product: { title: string; price: number }; libraryUrl: string; loginUrl: string; newPassword?: string | null }) {
+  const first = p.name.split(" ")[0] || p.name;
+  const account = p.newPassword
+    ? `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:22px 0 0;border:1px solid #ded3c3;border-radius:12px"><tr><td style="padding:16px 18px;font:400 14px/1.6 Helvetica,Arial,sans-serif;color:#3b342d">
+        <div style="font:600 15px/1.3 Helvetica,Arial,sans-serif;color:#16120f">Your account is ready</div>
+        <div style="margin-top:4px">Your purchase is saved in your library. Log in to download it any time.</div>
+        <div style="margin-top:12px">Email: <strong style="color:#16120f">${esc(p.email)}</strong></div>
+        <div>Password: <code style="font:600 15px/1 'Courier New',monospace;background:#f6f1e9;padding:3px 8px;border-radius:6px;color:#16120f">${esc(p.newPassword)}</code></div>
+        <div style="margin-top:10px;color:#776c60;font-size:13px">Tip: change it after you log in (My account → Profile &amp; security).</div>
+      </td></tr></table>`
+    : `<p style="margin:18px 0 0">It's saved in <strong>My library</strong> in your account. Log in with your existing password to download it any time.</p>`;
+  return {
+    subject: `Your download is ready: ${p.product.title}`,
+    html: layout({
+      preheader: `Thanks for your purchase, ${first}. Your download is ready.`,
+      heading: `Thank you, ${esc(first)}!`,
+      body: `<p style="margin:0">Your purchase is complete:</p>
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:16px 0;background:#f6f1e9;border-radius:12px"><tr><td style="padding:16px 18px;font:400 14px/1.6 Helvetica,Arial,sans-serif;color:#3b342d">
+          <div style="font:600 16px/1.3 Helvetica,Arial,sans-serif;color:#16120f">${esc(p.product.title)}</div>
+          <div style="margin-top:4px">${esc(formatPrice(p.product.price))}</div>
+        </td></tr></table>${account}`,
+      cta: { label: "Open my library", url: p.newPassword ? p.loginUrl : p.libraryUrl },
+    }),
+    text: [
+      `Thank you, ${first}!`,
+      "",
+      `Your purchase is complete: ${p.product.title} (${formatPrice(p.product.price)}).`,
+      "",
+      p.newPassword ? `Your account is ready.\nEmail: ${p.email}\nPassword: ${p.newPassword}\n(Change it after you log in.)` : "It's saved in My library. Log in with your existing password to download it.",
+      `Open your library: ${p.newPassword ? p.loginUrl : p.libraryUrl}`,
+    ].join("\n"),
+  };
+}
+
+export function adminNewOrderEmail(p: { name: string; email: string; phone: string; product: string; amount: number; adminUrl: string }) {
+  return {
+    subject: `New store order: ${p.product}`,
+    html: layout({
+      preheader: `${p.name} bought ${p.product}`,
+      heading: "New store order",
+      body: `<p style="margin:0"><strong>${esc(p.name)}</strong> ${p.amount ? `bought <strong>${esc(p.product)}</strong> for <strong>${esc(formatPrice(p.amount))}</strong>` : `got <strong>${esc(p.product)}</strong> (free)`}.</p>
+        <p style="margin:12px 0 0">📧 ${esc(p.email)}${p.phone ? `<br>📱 ${esc(p.phone)}` : ""}</p>`,
+      cta: { label: "Open payments", url: p.adminUrl },
+    }),
+    text: `${p.name} (${p.email}${p.phone ? `, ${p.phone}` : ""}) ${p.amount ? `bought ${p.product} for ${formatPrice(p.amount)}` : `got ${p.product} (free)`}.\n${p.adminUrl}`,
+  };
+}

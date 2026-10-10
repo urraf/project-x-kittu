@@ -6,6 +6,7 @@ import { SunMark } from "@/components/site/Logo";
 import { PrintButton } from "@/components/mentorship/PrintButton";
 import { getStudent } from "@/lib/auth/student";
 import { getStudentBooking } from "@/lib/services/mentorship";
+import { getStudentOrder } from "@/lib/services/store";
 import { getSettings } from "@/lib/services/settings";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 import { formatDuration, formatPrice, formatSessionWhen } from "@/lib/utils/session-time";
@@ -19,9 +20,22 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
   const { id } = await params;
   const student = await getStudent();
   if (!student) redirect(`/account/login?next=${encodeURIComponent(`/account/receipts/${id}`)}`);
-  const [b, settings] = await Promise.all([getStudentBooking(student._id, id), getSettings()]);
-  if (!b?.session || !b.amount || !b.paidAt) notFound();
-  const s = b.session;
+  const [booking, order, settings] = await Promise.all([getStudentBooking(student._id, id), getStudentOrder(student._id, id), getSettings()]);
+  // One receipt layout for both session bookings and store orders.
+  const b = booking?.session
+    ? {
+        id: booking.id, name: booking.name, email: booking.email, phone: booking.phone, amount: booking.amount, paidAt: booking.paidAt, refundedAt: booking.refundedAt,
+        paymentId: booking.paymentId, paymentProvider: booking.paymentProvider, status: booking.status,
+        item: booking.session.title, itemLine: `Live group session · ${formatSessionWhen(booking.session.startsAt, booking.session.durationMin)} · ${formatDuration(booking.session.durationMin)}`, qty: "1 seat",
+      }
+    : order
+      ? {
+          id: order.orderId, name: order.name, email: order.email, phone: order.phone, amount: order.amount, paidAt: order.paidAt, refundedAt: order.refundedAt,
+          paymentId: order.paymentId, paymentProvider: order.provider, status: order.status,
+          item: order.product?.title ?? "Digital product", itemLine: `Digital product · ${order.product?.category ?? "Download"}`, qty: "Lifetime access",
+        }
+      : null;
+  if (!b || !b.amount || !b.paidAt) notFound();
   const demo = b.paymentProvider === "demo";
   const number = `KK-${b.id.slice(-8).toUpperCase()}`;
 
@@ -64,7 +78,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
           </div>
           <div>
             <dt className="text-xs uppercase tracking-wider text-muted">Paid on</dt>
-            <dd className="mt-1.5 text-ink">{fmtDate(b.paidAt)}</dd>
+            <dd className="mt-1.5 text-ink">{fmtDate(b.paidAt!)}</dd>
           </div>
           <div>
             <dt className="text-xs uppercase tracking-wider text-muted">Payment</dt>
@@ -85,9 +99,9 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
           <tbody>
             <tr className="border-b border-line align-top">
               <td className="py-4 pr-4">
-                <p className="font-medium text-ink">{s.title}</p>
-                <p className="mt-1 text-ink-2">Live group session · {formatSessionWhen(s.startsAt, s.durationMin)} · {formatDuration(s.durationMin)}</p>
-                <p className="mt-0.5 text-xs text-muted">1 seat</p>
+                <p className="font-medium text-ink">{b.item}</p>
+                <p className="mt-1 text-ink-2">{b.itemLine}</p>
+                <p className="mt-0.5 text-xs text-muted">{b.qty}</p>
               </td>
               <td className="py-4 text-right font-medium text-ink">{formatPrice(b.amount)}</td>
             </tr>

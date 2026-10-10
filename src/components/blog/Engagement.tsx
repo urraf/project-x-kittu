@@ -219,7 +219,7 @@ export function CommentsSection({ author }: { author: { name: string; avatar?: s
                       <div className="mt-4 flex gap-3 border-l-2 border-accent pl-4">
                         {author.avatar ? (
                           <span className="relative size-8 shrink-0 overflow-hidden rounded-full ring-2 ring-accent">
-                            <Image src={author.avatar} alt="" fill sizes="32px" className="object-cover" />
+                            <Image referrerPolicy="no-referrer" src={author.avatar} alt="" fill sizes="32px" className="object-cover" />
                           </span>
                         ) : null}
                         <div className="min-w-0">

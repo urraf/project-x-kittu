@@ -3,23 +3,27 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { BookOpenText, CalendarDays, ExternalLink, GraduationCap, Star, Images, Wallet, LayoutDashboard, LogOut, Mail, Menu, MessageCircle, Milestone, Settings, Sparkles, Video, X } from "lucide-react";
+import { BookOpenText, CalendarDays, Quote, ExternalLink, GraduationCap, Landmark, Package, Search, Star, Images, Wallet, LayoutDashboard, LogOut, Mail, Menu, MessageCircle, Milestone, Settings, Sparkles, Video, X } from "lucide-react";
 import { SunMark } from "@/components/site/Logo";
 import { api } from "@/lib/admin/api";
 import { cn } from "@/lib/utils/cn";
 
 const NAV = [
   { href: "/admin", label: "Dashboard", Icon: LayoutDashboard, exact: true },
+  { href: "/admin/opportunities", label: "Opportunities", Icon: Search },
+  { href: "/admin/universities", label: "Universities", Icon: Landmark },
   { href: "/admin/sessions", label: "Sessions", Icon: CalendarDays },
+  { href: "/admin/products", label: "Store products", Icon: Package },
   { href: "/admin/payments", label: "Payments", Icon: Wallet },
   { href: "/admin/students", label: "Students", Icon: GraduationCap },
   { href: "/admin/posts", label: "Blog posts", Icon: BookOpenText },
   { href: "/admin/comments", label: "Comments", Icon: MessageCircle, badge: "comments" as const },
   { href: "/admin/reviews", label: "Reviews", Icon: Star },
+  { href: "/admin/testimonials", label: "Testimonials", Icon: Quote },
   { href: "/admin/ai", label: "AI writer", Icon: Sparkles },
   { href: "/admin/media", label: "Media library", Icon: Images },
   { href: "/admin/videos", label: "Videos", Icon: Video },
-  { href: "/admin/journey", label: "Journey", Icon: Milestone },
+  { href: "/admin/journey", label: "Timeline (About)", Icon: Milestone },
   { href: "/admin/messages", label: "Messages", Icon: Mail, badge: "messages" as const },
   { href: "/admin/settings", label: "Settings", Icon: Settings },
 ];

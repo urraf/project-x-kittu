@@ -35,11 +35,15 @@ const nextConfig: NextConfig = {
     "/opengraph-image": ["./src/assets/fonts/**/*"],
   },
   experimental: {
-    proxyClientMaxBodySize: "10mb",
+    proxyClientMaxBodySize: "55mb",
   },
   async redirects() {
     // Friendly alias: the dashboard lives at /admin.
-    return [{ source: "/admin/dashboard", destination: "/admin", permanent: false }];
+    return [
+      { source: "/admin/dashboard", destination: "/admin", permanent: false },
+      // The story page became "About" when the site turned into a platform.
+      { source: "/journey", destination: "/about", permanent: true },
+    ];
   },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];

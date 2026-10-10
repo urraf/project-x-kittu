@@ -25,12 +25,13 @@ function loadFonts() {
   return fontsPromise;
 }
 
+// Light washi palettes to match the site (indigo ink, never black).
 const PALETTES: Record<string, { bg: string; sun: string; ink: string; muted: string }> = {
-  japan: { bg: "#16110E", sun: "#D9482B", ink: "#F4EDE2", muted: "#B9AA97" },
-  korea: { bg: "#0F1522", sun: "#C9473A", ink: "#EEF0F4", muted: "#9AA6BC" },
-  europe: { bg: "#0F1A16", sun: "#D9A441", ink: "#EEF1EA", muted: "#9DB0A4" },
-  career: { bg: "#1A1712", sun: "#E0A43A", ink: "#F5EFE3", muted: "#BDB19A" },
-  default: { bg: "#141210", sun: "#D9482B", ink: "#F4EDE2", muted: "#B3A795" },
+  japan: { bg: "#FBF7F0", sun: "#D9482B", ink: "#1D2B45", muted: "#6E7387" },
+  korea: { bg: "#E6ECF6", sun: "#C9473A", ink: "#1D2B45", muted: "#5D6782" },
+  europe: { bg: "#E7EEDD", sun: "#C8922F", ink: "#1D2B45", muted: "#5E6B5F" },
+  career: { bg: "#F8EED6", sun: "#D9482B", ink: "#1D2B45", muted: "#6E6A5A" },
+  default: { bg: "#F9E4E6", sun: "#D9482B", ink: "#1D2B45", muted: "#6E7387" },
 };
 
 function paletteFor(category: string) {

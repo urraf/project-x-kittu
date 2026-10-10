@@ -12,7 +12,7 @@ import path from "node:path";
 import { connectDB } from "../src/lib/db/connect";
 import {
   AdminAccount, AutomationRun, Booking, CaptchaNonce, Comment, EmailLog, Media, MentorSession, Message, Milestone, Post, PostLike, PostView, RateLimit, Review,
-  Session, Settings, Student, StudentOtp, TaskLock, Video,
+  Session, Settings, Student, StudentOtp, TaskLock, Video, Product, Order, Opportunity, University,
 } from "../src/lib/models";
 import { classifySeries } from "../src/lib/services/youtube";
 import { createPost } from "../src/lib/services/posts";
@@ -248,7 +248,7 @@ async function main() {
 
   // Ensure all indexes exist (including the blog text-search index).
   const models = [Post, Media, Video, Milestone, Settings, Message, Session, RateLimit, CaptchaNonce, AutomationRun, Comment, PostLike, PostView, AdminAccount];
-  const mentorshipModels = [MentorSession, Student, Booking, Review, StudentOtp, EmailLog, TaskLock];
+  const mentorshipModels = [MentorSession, Student, Booking, Review, StudentOtp, EmailLog, TaskLock, Product, Order, Opportunity, University];
   await Promise.all([...models, ...mentorshipModels].map((m) => m.createIndexes()));
   console.log("✓ Indexes ensured");
 

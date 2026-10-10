@@ -2,7 +2,7 @@
  * Branded loading state: the KittuKun sun, with a play button cut into it,
  * rising over the horizon above a YouTube-style progress bar. Pure CSS.
  */
-export function BrandLoader({ label = "Loading the next chapter", tone = "dark", compact = false }: { label?: string; tone?: "dark" | "light"; compact?: boolean }) {
+export function BrandLoader({ label = "Loading the next chapter", tone = "light", compact = false }: { label?: string; tone?: "dark" | "light"; compact?: boolean }) {
   const dark = tone === "dark";
   return (
     <div

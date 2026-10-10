@@ -53,6 +53,8 @@ export function ArticleView({
 }) {
   const { html, toc } = withHeadingIds(post.content);
   const url = absoluteUrl(`/blog/${post.slug}`);
+  // A post whose cover is its own video's YouTube thumbnail shows the video itself at the top.
+  const videoOnTop = Boolean(post.videoId && (!post.coverImage || post.coverImage.credit?.url?.includes(post.videoId)));
   const author = { name: post.author.name || settings.profile.name, avatar: post.author.avatar || settings.profile.avatarUrl, bio: post.author.bio || settings.profile.shortBio };
   const updated = post.publishedAt && new Date(post.updatedAt).getTime() - new Date(post.publishedAt).getTime() > 86400_000;
 
@@ -88,7 +90,7 @@ export function ArticleView({
             <div className="flex items-center gap-3">
               {author.avatar && (
                 <span className="relative size-10 overflow-hidden rounded-full bg-paper-3">
-                  <Image src={author.avatar} alt="" fill sizes="40px" className="object-cover" />
+                  <Image referrerPolicy="no-referrer" src={author.avatar} alt="" fill sizes="40px" className="object-cover" />
                 </span>
               )}
               <div className="text-sm">
@@ -110,23 +112,30 @@ export function ArticleView({
             <ShareButton url={url} title={post.title} label="Copy link" className="!py-2 text-ink" />
           </div>
 
-          <figure className="mt-7">
-            <CoverImage image={post.coverImage} title={post.title} sizes="(min-width: 1024px) 44rem, 100vw" priority fallbackSize="lg" className="aspect-[16/9] rounded-2xl" />
-            {post.coverImage?.credit?.name && (
-              <figcaption className="mt-2 text-right text-xs text-muted">
-                Image:{" "}
-                {post.coverImage.credit.url ? (
-                  <a href={post.coverImage.credit.url} target="_blank" rel="noopener noreferrer" className="underline-offset-2 hover:underline">{post.coverImage.credit.name}</a>
-                ) : (
-                  post.coverImage.credit.name
-                )}
-              </figcaption>
-            )}
-          </figure>
+          {videoOnTop ? (
+            // Companion post for a video: the playable video replaces its own thumbnail.
+            <div className="mt-7 overflow-hidden rounded-2xl">
+              <LiteYouTube id={post.videoId!} title={`Video: ${post.title}`} sizes="(min-width: 1024px) 44rem, 100vw" priority />
+            </div>
+          ) : (
+            <figure className="mt-7">
+              <CoverImage image={post.coverImage} title={post.title} sizes="(min-width: 1024px) 44rem, 100vw" priority fallbackSize="lg" className="aspect-[16/9] rounded-2xl" />
+              {post.coverImage?.credit?.name && (
+                <figcaption className="mt-2 text-right text-xs text-muted">
+                  Image:{" "}
+                  {post.coverImage.credit.url ? (
+                    <a href={post.coverImage.credit.url} target="_blank" rel="noopener noreferrer" className="underline-offset-2 hover:underline">{post.coverImage.credit.name}</a>
+                  ) : (
+                    post.coverImage.credit.name
+                  )}
+                </figcaption>
+              )}
+            </figure>
+          )}
 
           <div className="prose-kk mt-10" data-dropcap="true" dangerouslySetInnerHTML={{ __html: html }} />
 
-          {post.videoId && (
+          {post.videoId && !videoOnTop && (
             <div className="mt-12 rounded-2xl border border-line bg-paper-2 p-3">
               <p className="flex items-center gap-2 px-2 pb-3 pt-1 text-sm font-medium text-ink">
                 <YouTubeIcon className="size-4 text-accent" /> Prefer watching? Here&apos;s the companion video.
@@ -154,18 +163,18 @@ export function ArticleView({
             </ul>
           )}
 
-          <div className="mt-10 flex flex-col gap-5 rounded-2xl bg-night p-6 text-cream sm:flex-row sm:items-center">
+          <div className="mt-10 flex flex-col gap-5 rounded-2xl border border-line bg-indigo-soft p-6 text-ink sm:flex-row sm:items-center">
             {author.avatar && (
               <span className="relative size-16 shrink-0 overflow-hidden rounded-full ring-4 ring-accent">
-                <Image src={author.avatar} alt={author.name} fill sizes="64px" className="object-cover" />
+                <Image referrerPolicy="no-referrer" src={author.avatar} alt={author.name} fill sizes="64px" className="object-cover" />
               </span>
             )}
             <div>
-              <p className="kicker text-cream-muted">Written by</p>
+              <p className="kicker text-muted">Written by</p>
               <p className="display mt-1 text-2xl">{author.name}</p>
-              <p className="mt-1.5 text-[0.92rem] leading-relaxed text-cream/70">{author.bio}</p>
+              <p className="mt-1.5 text-[0.92rem] leading-relaxed text-ink-2">{author.bio}</p>
               <div className="mt-3 flex flex-wrap gap-3 text-sm">
-                <Link href="/journey" className="link-underline">My journey</Link>
+                <Link href="/about" className="link-underline">About me</Link>
                 {settings.social.youtube && <a href={settings.social.youtube} target="_blank" rel="noopener noreferrer" className="link-underline">YouTube</a>}
                 {settings.social.instagram && <a href={settings.social.instagram} target="_blank" rel="noopener noreferrer" className="link-underline">Instagram</a>}
               </div>
@@ -194,12 +203,12 @@ export function ArticleView({
             )}
 
             {settings.social.youtube && (
-              <section className="grain relative overflow-hidden rounded-2xl bg-night p-5 text-cream">
+              <section className="relative overflow-hidden rounded-2xl border border-line bg-sakura p-5 text-ink">
                 <span aria-hidden className="absolute -right-10 -top-10 size-28 rounded-full bg-accent/90" />
                 <div className="relative z-[2]">
                   <SunMark className="size-7" />
                   <p className="display mt-3 text-2xl leading-tight">Prefer watching?</p>
-                  <p className="mt-1.5 text-sm text-cream/70">Step-by-step video guides on {settings.profile.channelName}.</p>
+                  <p className="mt-1.5 text-sm text-ink-2">Step-by-step video guides on {settings.profile.channelName}.</p>
                   <a href={`${settings.social.youtube}?sub_confirmation=1`} target="_blank" rel="noopener noreferrer" className="btn btn-accent mt-4 !px-4 !py-2.5 text-sm">
                     <YouTubeIcon className="size-4" /> Subscribe
                   </a>

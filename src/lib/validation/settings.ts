@@ -50,6 +50,8 @@ export const settingsSchema = z.object({
     minHoursBetweenRuns: z.number().min(0).max(24 * 30),
     maxPerDay: z.number().int().min(1).max(10),
     coverStrategy: z.enum(["auto", "generated", "video", "unsplash"]),
+    /** Write a companion blog post for every new YouTube video. */
+    videoPosts: z.boolean(),
   }),
   comments: z.object({
     enabled: z.boolean(),
@@ -183,6 +185,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     minHoursBetweenRuns: 20,
     maxPerDay: 1,
     coverStrategy: "auto",
+    videoPosts: true,
   },
   comments: {
     enabled: true,

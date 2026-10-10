@@ -105,6 +105,21 @@ curl -X POST "https://YOUR-DOMAIN/api/automation/generate-post" \
 
 Every run, including skips and failures, is visible in **Studio → AI writer → Run history**.
 
+### Blog posts for YouTube videos
+
+Every public, full-length video gets one companion article, written from the video's captions (fetched from YouTube when available, otherwise its title and description) with the video embedded at the top and its thumbnail as the cover. Switch it on or off in **Studio → Settings → Automation → "Write a blog post for every new video"**.
+
+- **Sync from YouTube** (Studio → Videos) writes posts for newly found uploads in the background (up to 3 per sync).
+- **Studio → Videos** shows which videos have a post, with **Write blog** per video and **Write blogs for all** for older videos.
+- For hands-off posting, schedule this endpoint every 1–3 hours (request timeout ≥ 300 s). It syncs the channel, then writes up to `max` posts (default 1), newest videos first:
+
+```bash
+curl -X POST "https://YOUR-DOMAIN/api/automation/video-posts" \
+  -H "Authorization: Bearer $CRON_SECRET" -H "Content-Type: application/json" -d '{"max":1}'
+```
+
+Video posts don't count towards the daily limit above. A video that already has a post is never written again; delete the post to have it rewritten. Failed attempts are retried after 6 hours.
+
 ---
 
 ## Sessions (live group mentorship)

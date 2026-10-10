@@ -88,9 +88,9 @@ export default async function VideoPage({ params }: Props) {
           ...(video.views ? { interactionStatistic: { "@type": "InteractionCounter", interactionType: { "@type": "WatchAction" }, userInteractionCount: video.views } } : {}),
         }}
       />
-      <section className="grain relative overflow-hidden bg-night text-cream">
+      <section className="seigaiha relative overflow-hidden border-b border-line bg-paper-2 text-ink">
         <div className="container-x relative z-[2] pb-20 pt-28 md:pt-32">
-          <Link href="/videos" className="group mb-8 inline-flex items-center gap-2 text-sm text-cream-muted hover:text-cream">
+          <Link href="/videos" className="group mb-8 inline-flex items-center gap-2 text-sm text-muted hover:text-ink">
             <ArrowLeft className="size-4 transition-transform group-hover:-translate-x-1" /> All videos
           </Link>
           <div className="grid gap-12 lg:grid-cols-12">
@@ -98,7 +98,7 @@ export default async function VideoPage({ params }: Props) {
               <LiteYouTube id={video.youtubeId} title={title} priority />
               <p className="kicker mt-8 text-accent">{seriesLabel(video.series)}</p>
               <h1 className="display mt-3 text-[2.4rem] leading-[1.02] md:text-[3.4rem]">{title}</h1>
-              <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-cream-muted">
+              <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-muted">
                 {video.publishedAt && <time dateTime={video.publishedAt}>{formatDate(video.publishedAt)}</time>}
                 {video.views ? <><span aria-hidden>·</span><span>{formatCompact(video.views)} views</span></> : null}
                 {video.durationSec ? <><span aria-hidden>·</span><span>{formatDuration(video.durationSec)}</span></> : null}
@@ -107,16 +107,16 @@ export default async function VideoPage({ params }: Props) {
                 <a href={youtubeWatchUrl(video.youtubeId)} target="_blank" rel="noopener noreferrer" className="btn btn-accent">
                   <YouTubeIcon className="size-4" /> Watch on YouTube
                 </a>
-                <ShareButton url={url} title={title} className="text-cream" />
+                <ShareButton url={url} title={title} className="text-ink" />
               </div>
               {description && (
-                <details className="group mt-10 rounded-2xl border border-cream/10 bg-night-2/60 p-6 open:bg-night-2">
-                  <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-medium text-cream [&::-webkit-details-marker]:hidden">
+                <details className="group mt-10 rounded-2xl border border-line bg-[#fffdf9] p-6 open:bg-[#fffdf9]">
+                  <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-medium text-ink [&::-webkit-details-marker]:hidden">
                     About this video
-                    <span className="text-cream-muted group-open:hidden">Show more</span>
-                    <span className="hidden text-cream-muted group-open:inline">Show less</span>
+                    <span className="text-muted group-open:hidden">Show more</span>
+                    <span className="hidden text-muted group-open:inline">Show less</span>
                   </summary>
-                  <p className="mt-5 whitespace-pre-line text-[0.95rem] leading-relaxed text-cream/75">
+                  <p className="mt-5 whitespace-pre-line text-[0.95rem] leading-relaxed text-ink-2">
                     <Linkified text={description} />
                   </p>
                 </details>
@@ -124,20 +124,20 @@ export default async function VideoPage({ params }: Props) {
             </div>
 
             <aside className="lg:col-span-4" aria-label="Up next">
-              <h2 className="kicker flex items-center gap-3 text-cream-muted">
+              <h2 className="kicker flex items-center gap-3 text-muted">
                 <span className="h-px w-8 bg-accent" /> Up next
               </h2>
               <ul className="mt-6 space-y-5">
                 {upNext.map((v) => (
                   <li key={v.youtubeId}>
                     <Link href={`/videos/${v.youtubeId}`} className="group flex gap-4">
-                      <span className="img-zoom relative aspect-video w-40 shrink-0 overflow-hidden rounded-lg bg-night-3">
+                      <span className="img-zoom relative aspect-video w-40 shrink-0 overflow-hidden rounded-lg bg-paper-3">
                         <YouTubeThumb id={v.youtubeId} alt="" sizes="160px" />
-                        {v.durationSec ? <span className="absolute bottom-1.5 right-1.5 rounded bg-night/85 px-1 font-mono text-[0.65rem]">{formatDuration(v.durationSec)}</span> : null}
+                        {v.durationSec ? <span className="absolute bottom-1.5 right-1.5 rounded bg-night/85 px-1 font-mono text-[0.65rem] text-white">{formatDuration(v.durationSec)}</span> : null}
                       </span>
                       <span className="min-w-0">
-                        <span className="line-clamp-3 text-[0.9rem] leading-snug text-cream group-hover:text-accent">{cleanTitle(v.title)}</span>
-                        <span className="mt-1.5 block text-xs text-cream-muted">{[v.views ? `${formatCompact(v.views)} views` : null, timeAgo(v.publishedAt)].filter(Boolean).join(" · ")}</span>
+                        <span className="line-clamp-3 text-[0.9rem] leading-snug text-ink group-hover:text-accent">{cleanTitle(v.title)}</span>
+                        <span className="mt-1.5 block text-xs text-muted">{[v.views ? `${formatCompact(v.views)} views` : null, timeAgo(v.publishedAt)].filter(Boolean).join(" · ")}</span>
                       </span>
                     </Link>
                   </li>

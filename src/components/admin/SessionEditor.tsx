@@ -7,16 +7,18 @@ import { ArrowLeft, CalendarX, Copy, Download, ExternalLink, Mail, Plus, Repeat,
 import { toast } from "sonner";
 import { ApiClientError, api, errorMessage } from "@/lib/admin/api";
 import { Button, ConfirmDialog, Dialog, Field, PageHeader, Toggle } from "@/components/admin/ui";
+import { ImageField } from "@/components/admin/ImageField";
 import { Stars } from "@/components/mentorship/Stars";
 import { formatDuration, formatPrice, formatSessionDate, formatSessionTime, toIstInputs } from "@/lib/utils/session-time";
 import { cn } from "@/lib/utils/cn";
-import type { AdminMentorSessionDTO, BookingDTO } from "@/lib/types";
+import type { AdminMentorSessionDTO, BookingDTO, ImageDTO } from "@/lib/types";
 
 type FormState = {
   title: string;
   summary: string;
   description: string;
   highlights: string[];
+  coverImage: ImageDTO | null;
   date: string;
   time: string;
   durationMin: number;
@@ -37,6 +39,7 @@ function initialForm(s?: AdminMentorSessionDTO): FormState {
       summary: "",
       description: "",
       highlights: [],
+      coverImage: null,
       date: toIstInputs(next).date,
       time: "19:00",
       durationMin: 60,
@@ -53,6 +56,7 @@ function initialForm(s?: AdminMentorSessionDTO): FormState {
     summary: s.summary,
     description: s.description,
     highlights: s.highlights,
+    coverImage: s.coverImage ?? null,
     date,
     time,
     durationMin: s.durationMin,
@@ -243,7 +247,8 @@ export function SessionEditor({
             <Field label="Session title" htmlFor="s-title" error={errors.title} counter={{ value: form.title.length, max: 140 }}>
               <input id="s-title" className="field" value={form.title} onChange={(e) => set("title", e.target.value)} placeholder="e.g. How to get a fully funded Japan internship" />
             </Field>
-            <Field label="Short summary" htmlFor="s-summary" hint="One or two lines shown on the session card." error={errors.summary} counter={{ value: form.summary.length, max: 300 }}>
+            <ImageField label="Cover image (optional)" hint="16:9 works best. Shown on the session card and page." value={form.coverImage} onChange={(v) => set("coverImage", v)} />
+          <Field label="Short summary" htmlFor="s-summary" hint="One or two lines shown on the session card." error={errors.summary} counter={{ value: form.summary.length, max: 300 }}>
               <textarea id="s-summary" rows={2} className="field" value={form.summary} onChange={(e) => set("summary", e.target.value)} />
             </Field>
             <Field label="What we'll cover" htmlFor="s-desc" hint="Shown on the session page. Plain text, new lines are kept." error={errors.description}>

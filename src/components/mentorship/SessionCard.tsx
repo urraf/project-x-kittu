@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, CalendarDays, Clock, Users } from "lucide-react";
 import { Countdown } from "@/components/mentorship/Countdown";
@@ -36,6 +37,11 @@ export function SessionCard({ session, tone = "light" }: { session: MentorSessio
         dark ? "border-cream/10 bg-night-2 hover:border-accent/60" : "border-line bg-[#fffdf9] hover:border-ink/25 hover:shadow-[0_24px_50px_-35px_rgba(22,18,15,0.5)]",
       )}
     >
+      {session.coverImage && (
+        <div className="img-zoom relative -mx-6 -mt-6 mb-5 aspect-[16/9] overflow-hidden rounded-t-3xl bg-paper-3">
+          <Image src={session.coverImage.url} alt={session.coverImage.alt || ""} fill sizes="(min-width: 1024px) 26rem, (min-width: 640px) 45vw, 100vw" placeholder={session.coverImage.blurDataURL ? "blur" : "empty"} blurDataURL={session.coverImage.blurDataURL} className="object-cover" />
+        </div>
+      )}
       <div className="flex items-start justify-between gap-4">
         <span className={cn("text-xs font-medium uppercase tracking-wider", dark ? "text-cream-muted" : "text-muted")}>{formatSessionDate(session.startsAt)}</span>
         <span className={cn("display text-2xl leading-none", dark ? "text-cream" : "text-ink")}>{session.price ? formatPrice(session.price) : "Free"}</span>
@@ -66,11 +72,11 @@ export function SessionCard({ session, tone = "light" }: { session: MentorSessio
 export function FeaturedSession({ session }: { session: MentorSessionDTO }) {
   const full = session.seatsLeft === 0;
   return (
-    <Link href={`/sessions/${session.slug}`} className="grain group relative block overflow-hidden rounded-[2rem] bg-night p-6 text-cream md:p-10">
+    <Link href={`/sessions/${session.slug}`} className="seigaiha group relative block overflow-hidden rounded-[2rem] border border-line bg-indigo-soft p-6 text-ink md:p-10">
       <span aria-hidden className="absolute -right-24 -top-24 size-72 rounded-full bg-accent/85 transition-transform duration-700 group-hover:scale-110" />
       <div className="relative z-[2] grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
         <div className="min-w-0">
-          <span className="inline-flex items-center gap-2 rounded-full bg-cream/10 px-3 py-1 text-xs font-medium uppercase tracking-wider">
+          <span className="inline-flex items-center gap-2 rounded-full bg-[#fffdf9] px-3 py-1 text-xs font-medium uppercase tracking-wider ring-1 ring-line">
             <span className="relative flex size-2">
               {!full && <span className="absolute inline-flex size-full animate-ping rounded-full bg-accent opacity-75" />}
               <span className="relative inline-flex size-2 rounded-full bg-accent" />
@@ -78,18 +84,23 @@ export function FeaturedSession({ session }: { session: MentorSessionDTO }) {
             Next live session
           </span>
           <h3 className="display mt-5 max-w-3xl text-[2.3rem] leading-[1] md:text-6xl">{session.title}</h3>
-          {session.summary && <p className="mt-4 max-w-2xl text-[1.05rem] leading-relaxed text-cream/75">{session.summary}</p>}
-          <p className="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-[0.95rem] text-cream/85">
+          {session.summary && <p className="mt-4 max-w-2xl text-[1.05rem] leading-relaxed text-ink-2">{session.summary}</p>}
+          <p className="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-[0.95rem] text-ink-2">
             <span className="inline-flex items-center gap-2"><CalendarDays className="size-4 text-accent" /> {formatSessionDate(session.startsAt)}</span>
             <span className="inline-flex items-center gap-2"><Clock className="size-4 text-accent" /> {formatSessionTime(session.startsAt)} IST · {formatDuration(session.durationMin)}</span>
           </p>
-          <div className="mt-6 max-w-md"><SeatsMeter session={session} dark /></div>
+          <div className="mt-6 max-w-md"><SeatsMeter session={session} /></div>
         </div>
         <div className="flex flex-col gap-5 lg:items-end">
-          {!full && <Countdown to={session.startsAt} tone="dark" />}
+          {session.coverImage && (
+            <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl bg-paper-3 ring-4 ring-[#fffdf9] lg:w-80">
+              <Image src={session.coverImage.url} alt={session.coverImage.alt || ""} fill sizes="(min-width: 1024px) 20rem, 100vw" placeholder={session.coverImage.blurDataURL ? "blur" : "empty"} blurDataURL={session.coverImage.blurDataURL} className="object-cover" />
+            </div>
+          )}
+          {!full && <Countdown to={session.startsAt} />}
           <div className="flex items-center gap-4">
             <span className="display text-5xl leading-none">{session.price ? formatPrice(session.price) : "Free"}</span>
-            <span className={cn("btn !px-6 !py-3.5", full ? "bg-cream/10 text-cream" : "btn-accent")}>
+            <span className={cn("btn !px-6 !py-3.5", full ? "bg-paper-2 text-ink" : "btn-accent")}>
               {full ? "View details" : "Book now"} <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
             </span>
           </div>

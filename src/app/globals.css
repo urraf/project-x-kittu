@@ -1,29 +1,35 @@
 @import "tailwindcss";
 
 /* ------------------------------------------------------------------ */
-/* Design tokens: "paper & ink" editorial palette with a vermilion       */
-/* (shu-iro) accent, a nod to Japanese torii and to the YouTube play     */
-/* button, plus deep "night" tones for cinematic sections.               */
+/* Design tokens: a light Japanese learning palette. Washi-paper         */
+/* backgrounds, ai-iro (indigo) ink instead of black, a vermilion        */
+/* (shu-iro) accent like a torii gate, with sakura and matcha tints.     */
+/* "night" is a deep indigo, used sparingly (video frames, code).        */
 /* ------------------------------------------------------------------ */
 
 @theme {
-  --color-paper: #f6f1e9;
-  --color-paper-2: #efe8dc;
-  --color-paper-3: #e7ddcd;
-  --color-ink: #16120f;
-  --color-ink-2: #3b342d;
-  --color-muted: #776c60;
-  --color-line: #ded3c3;
+  --color-paper: #fbf7f0;
+  --color-paper-2: #f4eee3;
+  --color-paper-3: #ebe2d3;
+  --color-ink: #1d2b45;
+  --color-ink-2: #3d4862;
+  --color-muted: #6e7387;
+  --color-line: #e4dccd;
   --color-accent: #d9482b;
   --color-accent-deep: #b03a20;
-  --color-accent-soft: #f6dcd2;
-  --color-night: #100e0c;
-  --color-night-2: #1b1815;
-  --color-night-3: #26221e;
-  --color-cream: #f4ede2;
-  --color-cream-muted: #b8ab9a;
-  --color-moss: #3f5a46;
-  --color-indigo: #24365a;
+  --color-accent-soft: #fbe3da;
+  --color-night: #1d2b45;
+  --color-night-2: #263757;
+  --color-night-3: #314468;
+  --color-cream: #fbf7f0;
+  --color-cream-muted: #c3cadb;
+  --color-moss: #4b6b4f;
+  --color-matcha-soft: #e7eedd;
+  --color-indigo: #2b4a7a;
+  --color-indigo-soft: #e6ecf6;
+  --color-sakura: #f9e4e6;
+  --color-sakura-deep: #e9b6bd;
+  --color-gold: #b8862f;
 
   --font-display: var(--font-instrument), "Iowan Old Style", "Times New Roman", serif;
   --font-sans: var(--font-geist), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -152,6 +158,14 @@
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
   }
 
+  /* Seigaiha (青海波) wave pattern: a quiet Japanese texture for light sections. */
+  .seigaiha {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='56' height='28' viewBox='0 0 56 28'><g fill='none' stroke='%232b4a7a' stroke-opacity='0.09' stroke-width='1'><circle cx='28' cy='28' r='26'/><circle cx='28' cy='28' r='19'/><circle cx='28' cy='28' r='12'/><circle cx='0' cy='14' r='26'/><circle cx='0' cy='14' r='19'/><circle cx='0' cy='14' r='12'/><circle cx='56' cy='14' r='26'/><circle cx='56' cy='14' r='19'/><circle cx='56' cy='14' r='12'/></g></svg>");
+    background-size: 56px 28px;
+  }
+  /* Small Japanese label used next to section kickers (e.g. 機会 = opportunity). */
+  .jp { font-family: var(--font-jp); letter-spacing: 0.08em; }
+
   .no-scrollbar { scrollbar-width: none; }
   .no-scrollbar::-webkit-scrollbar { display: none; }
 
@@ -169,6 +183,13 @@
   @media (prefers-reduced-motion: reduce) {
     .js [data-reveal] { opacity: 1; transform: none; transition: none; }
     .animate-marquee { animation: none !important; }
+  }
+
+  /* Gentle bob for decorative 3D objects */
+  @keyframes kk-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+  .float-slow { animation: kk-float 6s ease-in-out infinite; }
+  @media (prefers-reduced-motion: reduce) {
+    .float-slow { animation: none; }
   }
 
   .img-zoom img { transition: transform 1s var(--ease-out-expo); }

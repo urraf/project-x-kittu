@@ -1,0 +1,29 @@
+import { requireAdmin } from "@/lib/auth/session";
+import { notFound, ok, readJson, route } from "@/lib/http";
+import { revalidateSite } from "@/lib/revalidate";
+import { deleteProduct, getAdminProduct, updateProduct } from "@/lib/services/store";
+
+export const dynamic = "force-dynamic";
+
+type Ctx = { params: Promise<{ id: string }> };
+
+export const GET = route<Ctx>(async (req, { params }) => {
+  await requireAdmin(req);
+  const p = await getAdminProduct((await params).id);
+  if (!p) throw notFound("Product not found");
+  return ok(p);
+});
+
+export const PUT = route<Ctx>(async (req, { params }) => {
+  await requireAdmin(req);
+  const p = await updateProduct((await params).id, await readJson(req));
+  revalidateSite();
+  return ok(p);
+});
+
+export const DELETE = route<Ctx>(async (req, { params }) => {
+  await requireAdmin(req);
+  await deleteProduct((await params).id);
+  revalidateSite();
+  return ok({ deleted: true });
+});

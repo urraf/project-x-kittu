@@ -1,9 +1,9 @@
-import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
-import { hitLimit, peekLimit } from "@/lib/auth/rate-limit";
-import { ConfigError, env } from "@/lib/env";
-import { ApiError, clientIp, errorResponse, readJson, tooMany, unauthorized } from "@/lib/http";
+import { assertCronSecret } from "@/lib/auth/cron";
+import { ConfigError } from "@/lib/env";
+import { ApiError, clientIp, errorResponse, readJson } from "@/lib/http";
 import { logger } from "@/lib/logger";
 import { automationErrorToApi, runAutomation } from "@/lib/services/automation";
 
@@ -35,17 +35,6 @@ const bodySchema = z.object({
   force: z.boolean().optional(),
 });
 
-function digest(v: string) {
-  return createHash("sha256").update(v).digest();
-}
-
-function secretMatches(req: NextRequest, secret: string) {
-  const auth = req.headers.get("authorization");
-  const provided = auth?.toLowerCase().startsWith("bearer ") ? auth.slice(7).trim() : req.headers.get("x-cron-secret")?.trim();
-  if (!provided) return false;
-  return timingSafeEqual(digest(provided), digest(secret));
-}
-
 export async function POST(req: NextRequest) {
   const requestId = randomUUID();
   const ip = clientIp(req);
@@ -57,18 +46,7 @@ export async function POST(req: NextRequest) {
   };
 
   try {
-    const secret = env.cronSecret;
-    if (!secret || secret.length < 24) throw new ConfigError("CRON_SECRET is not configured (min 24 characters).");
-
-    const badKey = `cron-auth:${ip}`;
-    const state = await peekLimit(badKey, 10);
-    if (!state.allowed) throw tooMany("Too many unauthorized attempts.", state.retryAfterSec);
-
-    if (!secretMatches(req, secret)) {
-      await hitLimit(badKey, 10, 60 * 60 * 1000);
-      logger.warn("automation.unauthorized", { ip, requestId });
-      throw unauthorized("Invalid or missing cron secret.");
-    }
+    await assertCronSecret(req, ip, requestId);
 
     const body = bodySchema.parse(await readJson(req));
     logger.info("automation.request", { requestId, ip, dryRun: body.dryRun ?? false, force: body.force ?? false });

@@ -10,6 +10,7 @@ const query = z.object({
   q: z.string().max(100).optional(),
   status: z.enum(["all", "paid", "refunded", "kept"]).default("all"),
   provider: z.enum(["all", "razorpay", "demo"]).default("all"),
+  kind: z.enum(["all", "session", "store"]).default("all"),
   page: z.coerce.number().int().min(1).max(1000).default(1),
 });
 

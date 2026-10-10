@@ -1,5 +1,17 @@
 import { Schema, model, models, type InferSchemaType, type Model, type Types } from "mongoose";
 
+const SessionImageSchema = new Schema(
+  {
+    url: { type: String, trim: true, maxlength: 2048 },
+    alt: { type: String, trim: true, maxlength: 300, default: "" },
+    mediaId: { type: Schema.Types.ObjectId, ref: "Media" },
+    width: Number,
+    height: Number,
+    blurDataURL: { type: String, maxlength: 4000 },
+  },
+  { _id: false },
+);
+
 /* ------------------------------------------------------------------ */
 /* MentorSession: one scheduled group session (fixed date & time)     */
 /* ------------------------------------------------------------------ */
@@ -11,6 +23,7 @@ const MentorSessionSchema = new Schema(
     summary: { type: String, trim: true, maxlength: 300, default: "" },
     description: { type: String, trim: true, maxlength: 5000, default: "" },
     highlights: { type: [{ type: String, trim: true, maxlength: 160 }], default: [] },
+    coverImage: { type: SessionImageSchema, default: undefined },
     startsAt: { type: Date, required: true },
     durationMin: { type: Number, required: true, min: 10, max: 600 },
     /** Price in INR (whole rupees). 0 = free. */

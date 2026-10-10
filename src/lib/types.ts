@@ -146,6 +146,7 @@ export type MentorSessionDTO = {
   summary: string;
   description: string;
   highlights: string[];
+  coverImage?: ImageDTO;
   startsAt: string;
   durationMin: number;
   price: number;

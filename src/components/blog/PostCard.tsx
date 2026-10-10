@@ -38,7 +38,7 @@ export function PostCard({
     return (
       <article className="group grid items-center gap-8 md:grid-cols-12 md:gap-12">
         <Link href={href} className="md:col-span-7" tabIndex={-1} aria-hidden>
-          <CoverImage image={post.coverImage} title={post.title} sizes="(min-width: 768px) 58vw, 100vw" priority={priority} fallbackSize="lg" className="aspect-[16/10] rounded-2xl" />
+          <CoverImage image={post.coverImage} title={post.title} sizes="(min-width: 768px) 58vw, 100vw" priority={priority} fallbackSize="lg" className="aspect-video rounded-2xl" />
         </Link>
         <div className="md:col-span-5">
           <p className="kicker text-accent-deep">{post.category}</p>
@@ -77,7 +77,7 @@ export function PostCard({
   return (
     <article className="group flex flex-col">
       <Link href={href} tabIndex={-1} aria-hidden>
-        <CoverImage image={post.thumbnail ?? post.coverImage} title={post.title} sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 100vw" priority={priority} variant="thumb" className="aspect-[3/2] rounded-xl" />
+        <CoverImage image={post.thumbnail ?? post.coverImage} title={post.title} sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 100vw" priority={priority} variant="thumb" className="aspect-video rounded-xl" />
       </Link>
       <p className="kicker mt-5 text-accent-deep">{post.category}</p>
       <h3 className={cn("display mt-3 leading-[1.05]", size === "lg" ? "text-4xl md:text-[3.2rem] md:leading-[1]" : "text-[1.8rem]")}>

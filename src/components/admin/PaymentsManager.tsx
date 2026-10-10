@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils/cn";
 
 type Payment = {
   id: string;
+  kind: "session" | "store";
   name: string;
   email: string;
   phone: string;
@@ -22,10 +23,10 @@ type Payment = {
   paidAt: string;
   refundedAt?: string;
   status: "paid" | "refunded" | "kept";
-  session?: { id: string; title: string; startsAt: string };
+  item?: { id: string; title: string; href: string; date?: string };
 };
 type Totals = { collected: number; payments: number; refunded: number; refunds: number; net: number; thisMonth: number; kept: number; keptCount: number };
-type Data = { items: Payment[]; total: number; page: number; pages: number; summary: { real: Totals; demo: Totals } };
+type Data = { items: Payment[]; total: number; page: number; pages: number; summary: { real: Totals; demo: Totals; storeReal: number; sessionsReal: number } };
 
 const STATUS: Record<Payment["status"], { label: string; cls: string }> = {
   paid: { label: "Paid", cls: "bg-[#dde8de] text-moss" },
@@ -44,6 +45,7 @@ function csvCell(v: string | number) {
 export function PaymentsManager() {
   const [status, setStatus] = useState<"all" | Payment["status"]>("all");
   const [provider, setProvider] = useState<"all" | "razorpay" | "demo">("all");
+  const [kind, setKind] = useState<"all" | "session" | "store">("all");
   const [search, setSearch] = useState("");
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
@@ -59,7 +61,7 @@ export function PaymentsManager() {
     return () => clearTimeout(t);
   }, [search]);
 
-  const url = `/api/admin/payments?${new URLSearchParams({ status, provider, page: String(page), ...(q ? { q } : {}) })}`;
+  const url = `/api/admin/payments?${new URLSearchParams({ status, provider, kind, page: String(page), ...(q ? { q } : {}) })}`;
   const { data, loading, reload } = useApi<Data>(url);
   const real = data?.summary.real;
   const demo = data?.summary.demo;
@@ -69,11 +71,12 @@ export function PaymentsManager() {
     setBusy(true);
     try {
       if (action.kind === "cancel") {
-        const res = await api<{ refunded: boolean }>(`/api/admin/bookings/${action.p.id}/cancel`, { body: { refund: true } });
-        if (res.refunded) toast.success("Booking cancelled and refunded. The seat is free again.");
+        const base = action.p.kind === "store" ? "orders" : "bookings";
+        const res = await api<{ refunded: boolean }>(`/api/admin/${base}/${action.p.id}/cancel`, { body: { refund: true } });
+        if (res.refunded) toast.success(action.p.kind === "store" ? "Order cancelled and refunded. The buyer no longer has access." : "Booking cancelled and refunded. The seat is free again.");
         else toast.error("Booking cancelled, but the refund couldn't be started. Use “Retry refund”, or refund it from your Razorpay dashboard.", { duration: 12000 });
       } else {
-        const res = await api<{ refunded: boolean }>(`/api/admin/bookings/${action.p.id}/refund`, { method: "POST" });
+        const res = await api<{ refunded: boolean }>(`/api/admin/${action.p.kind === "store" ? "orders" : "bookings"}/${action.p.id}/refund`, { method: "POST" });
         if (res.refunded) toast.success("Refund started. It reaches the student in 5–7 working days.");
         else toast.error("The refund couldn't be started. Please refund it from your Razorpay dashboard.", { duration: 12000 });
       }
@@ -88,9 +91,9 @@ export function PaymentsManager() {
 
   function exportCsv() {
     if (!data?.items.length) return;
-    const rows = [["Paid on", "Student", "Email", "Phone", "Session", "Session date", "Amount (INR)", "Method", "Payment ID", "Order ID", "Status", "Refunded on"]];
+    const rows = [["Paid on", "Type", "Student", "Email", "Phone", "Item", "Session date", "Amount (INR)", "Method", "Payment ID", "Order ID", "Status", "Refunded on"]];
     for (const p of data.items) {
-      rows.push([when(p.paidAt), p.name, p.email, p.phone, p.session?.title ?? "", p.session ? formatSessionDate(p.session.startsAt) : "", String(p.amount), p.provider === "demo" ? "Demo" : "Razorpay", p.paymentId ?? "", p.orderId ?? "", STATUS[p.status].label, p.refundedAt ? when(p.refundedAt) : ""]);
+      rows.push([when(p.paidAt), p.kind === "store" ? "Store" : "Session", p.name, p.email, p.phone, p.item?.title ?? "", p.item?.date ? formatSessionDate(p.item.date) : "", String(p.amount), p.provider === "demo" ? "Demo" : "Razorpay", p.paymentId ?? "", p.orderId ?? "", STATUS[p.status].label, p.refundedAt ? when(p.refundedAt) : ""]);
     }
     const blob = new Blob(["﻿" + rows.map((r) => r.map(csvCell).join(",")).join("\n")], { type: "text/csv;charset=utf-8" });
     const a = document.createElement("a");
@@ -102,7 +105,7 @@ export function PaymentsManager() {
 
   const tiles = real
     ? [
-        { label: "Collected (after refunds)", value: rupees(real.net), sub: `${real.payments} payment${real.payments === 1 ? "" : "s"}` },
+        { label: "Collected (after refunds)", value: rupees(real.net), sub: `Sessions ${rupees(data!.summary.sessionsReal)} · Store ${rupees(data!.summary.storeReal)}` },
         { label: "This month", value: rupees(real.thisMonth), sub: "India time, after refunds" },
         { label: "Refunded", value: rupees(real.refunded), sub: `${real.refunds} refund${real.refunds === 1 ? "" : "s"}` },
         { label: "Cancelled, not refunded", value: rupees(real.kept), sub: real.keptCount ? `${real.keptCount} to check` : "All clear", warn: real.keptCount > 0 },
@@ -113,7 +116,7 @@ export function PaymentsManager() {
     <>
       <PageHeader
         title="Payments"
-        description="Every payment for your sessions: who paid, for which session, and its status. Refund from here when needed."
+        description="Every payment for sessions and the store: who paid, for what, and its status. Refund from here when needed."
         actions={
           <Button onClick={exportCsv} disabled={!data?.items.length}>
             <Download className="size-4" /> Download CSV
@@ -158,6 +161,11 @@ export function PaymentsManager() {
               </button>
             ))}
           </div>
+          <select value={kind} onChange={(e) => (setKind(e.target.value as typeof kind), setPage(1))} className="field !h-10 !w-auto !rounded-full !py-0 text-sm" aria-label="Type">
+            <option value="all">Sessions &amp; store</option>
+            <option value="session">Sessions only</option>
+            <option value="store">Store only</option>
+          </select>
           <select value={provider} onChange={(e) => (setProvider(e.target.value as typeof provider), setPage(1))} className="field !h-10 !w-auto !rounded-full !py-0 text-sm" aria-label="Payment method">
             <option value="all">All methods</option>
             <option value="razorpay">Razorpay (real)</option>
@@ -184,6 +192,7 @@ export function PaymentsManager() {
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-medium text-ink">{p.name}</p>
                       <span className={cn("rounded-full px-2 py-0.5 text-[0.7rem] font-medium", st.cls)}>{st.label}</span>
+                      <span className={cn("rounded-full px-2 py-0.5 text-[0.7rem] font-medium", p.kind === "store" ? "bg-sakura text-accent-deep" : "bg-indigo-soft text-indigo")}>{p.kind === "store" ? "Store" : "Session"}</span>
                       {p.provider === "demo" && <span className="rounded-full bg-[#fff4d6] px-2 py-0.5 text-[0.7rem] font-medium text-[#7a5410]">Demo</span>}
                     </div>
                     <p className="mt-0.5 truncate text-sm text-ink-2">
@@ -191,14 +200,14 @@ export function PaymentsManager() {
                       {p.phone ? ` · ${p.phone}` : ""}
                     </p>
                     <p className="mt-1 truncate text-sm">
-                      {p.session ? (
-                        <Link href={`/admin/sessions/${p.session.id}?tab=students`} className="text-ink hover:text-accent-deep hover:underline">
-                          {p.session.title}
+                      {p.item ? (
+                        <Link href={p.item.href} className="text-ink hover:text-accent-deep hover:underline">
+                          {p.item.title}
                         </Link>
                       ) : (
-                        <span className="text-muted">Deleted session</span>
+                        <span className="text-muted">{p.kind === "store" ? "Deleted product" : "Deleted session"}</span>
                       )}
-                      {p.session && <span className="text-muted"> · {formatSessionDate(p.session.startsAt)}</span>}
+                      {p.item?.date && <span className="text-muted"> · {formatSessionDate(p.item.date)}</span>}
                     </p>
                     <p className="mt-1 text-xs text-muted">
                       Paid {when(p.paidAt)}
@@ -243,8 +252,8 @@ export function PaymentsManager() {
         title="Cancel and refund?"
         message={
           <>
-            {action?.p.name}&apos;s seat in <strong>{action?.p.session?.title}</strong> is cancelled and {action ? rupees(action.p.amount) : ""} is refunded
-            {action?.p.provider === "demo" ? " (demo: nothing real is sent back)" : " to their original payment method in 5–7 working days"}. The seat becomes free for someone else.
+            {action?.p.kind === "store" ? <>{action?.p.name}&apos;s purchase of <strong>{action?.p.item?.title}</strong> is cancelled (they lose access)</> : <>{action?.p.name}&apos;s seat in <strong>{action?.p.item?.title}</strong> is cancelled</>} and {action ? rupees(action.p.amount) : ""} is refunded
+            {action?.p.provider === "demo" ? " (demo: nothing real is sent back)" : " to their original payment method in 5–7 working days"}.{action?.p.kind === "store" ? "" : " The seat becomes free for someone else."}
           </>
         }
         confirmLabel="Cancel & refund"

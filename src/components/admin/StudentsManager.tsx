@@ -22,12 +22,15 @@ type StudentRow = {
   cancelled: number;
   spent: number;
   demoSpent: number;
+  products: number;
   reviews: number;
   lastBookingAt?: string;
 };
 type Data = { items: StudentRow[]; total: number; page: number; pages: number };
 type StudentBooking = {
   id: string;
+  kind: "session" | "store";
+  product?: { id: string; title: string };
   status: "confirmed" | "cancelled";
   amount: number;
   provider: "razorpay" | "demo" | "free";
@@ -55,18 +58,24 @@ function Bookings({ studentId }: { studentId: string }) {
       {data.map((b) => (
         <li key={b.id} className="flex flex-col gap-1 px-4 py-3 text-sm sm:flex-row sm:items-center sm:gap-4">
           <div className="min-w-0 flex-1">
-            {b.session ? (
+            {b.kind === "store" ? (
+              b.product ? (
+                <Link href={`/admin/products/${b.product.id}`} className="font-medium text-ink hover:text-accent-deep hover:underline">{b.product.title}</Link>
+              ) : (
+                <span className="text-muted">Deleted product</span>
+              )
+            ) : b.session ? (
               <Link href={`/admin/sessions/${b.session.id}?tab=students`} className="font-medium text-ink hover:text-accent-deep hover:underline">{b.session.title}</Link>
             ) : (
               <span className="text-muted">Deleted session</span>
             )}
             <p className="text-xs text-muted">
-              {b.session ? `${formatSessionDate(b.session.startsAt)} · ` : ""}booked {day(b.createdAt)}
+              {b.kind === "store" ? "Store · bought " : b.session ? `${formatSessionDate(b.session.startsAt)} · booked ` : "booked "}{day(b.createdAt)}
               {b.notes ? ` · “${b.notes.slice(0, 80)}${b.notes.length > 80 ? "…" : ""}”` : ""}
             </p>
           </div>
           <span className={cn("w-fit rounded-full px-2 py-0.5 text-[0.7rem] font-medium", b.status === "confirmed" ? "bg-[#dde8de] text-moss" : "bg-paper-3 text-ink-2")}>
-            {b.status === "confirmed" ? "Booked" : "Cancelled"}
+            {b.kind === "store" ? (b.status === "confirmed" ? "Owned" : "Cancelled") : b.status === "confirmed" ? "Booked" : "Cancelled"}
           </span>
           <span className="text-xs text-ink-2 sm:w-36 sm:text-right">
             {b.amount === 0 ? "Free" : b.refunded ? `${rupees(b.amount)} refunded` : b.paid ? `${rupees(b.amount)} paid` : "Not paid"}
@@ -161,7 +170,7 @@ export function StudentsManager() {
                     </div>
                   </div>
                   <dl className="grid grid-cols-4 gap-4 text-sm md:w-[26rem]">
-                    <div><dt className="text-xs text-muted">Booked</dt><dd className="font-medium text-ink">{s.booked}</dd></div>
+                    <div><dt className="text-xs text-muted">Booked</dt><dd className="font-medium text-ink">{s.booked}{s.products > 0 && <span className="block text-[0.65rem] font-normal text-muted">+{s.products} product{s.products === 1 ? "" : "s"}</span>}</dd></div>
                     <div><dt className="text-xs text-muted">Spent</dt><dd className="font-medium text-ink">{rupees(s.spent)}{s.demoSpent > 0 && <span className="block text-[0.65rem] font-normal text-muted">+{rupees(s.demoSpent)} demo</span>}</dd></div>
                     <div><dt className="text-xs text-muted">Joined</dt><dd className="text-ink">{day(s.joinedAt)}</dd></div>
                     <div className="flex items-start justify-between gap-2">

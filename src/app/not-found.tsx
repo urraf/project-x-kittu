@@ -7,7 +7,7 @@ import { PlayGlyph } from "@/components/ui/icons";
 export const metadata: Metadata = { title: "Page not found", robots: { index: false } };
 
 const NEXT_UP = [
-  { href: "/journey", label: "The journey", note: "From Delhi to Japan" },
+  { href: "/about", label: "About", note: "Meet your guide to Japan" },
   { href: "/videos", label: "Videos", note: "Guides & vlogs" },
   { href: "/blog", label: "Blog", note: "Field notes & guides" },
   { href: "/collaborate", label: "Collaborate", note: "Work together" },

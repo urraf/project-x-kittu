@@ -46,7 +46,8 @@ export async function generateAndSavePost(opts: {
     imageQuery: article.imageQuery,
     imageAlt: article.imageAlt,
     relatedVideoId: article.relatedVideoId,
-    strategy: settings.automation.coverStrategy,
+    // A video's companion post uses that video's thumbnail as its cover.
+    strategy: opts.generate.video ? "video" : settings.automation.coverStrategy,
   });
   const warnings = [...article.warnings, ...cover.warnings];
 
@@ -185,7 +186,9 @@ export async function runAutomation(req: AutomationRequest): Promise<AutomationR
 
   // 4. Publishing rules (cron only, unless forced).
   if (req.trigger === "cron" && !req.force) {
-    const last = await AutomationRun.findOne({ status: "succeeded" }).sort({ startedAt: -1 }).lean<AutomationRunDoc>();
+    // Video companion posts (key "video:…") run on their own schedule and don't count here.
+    const topicRuns = { status: "succeeded" as const, idempotencyKey: { $not: /^video:/ } };
+    const last = await AutomationRun.findOne(topicRuns).sort({ startedAt: -1 }).lean<AutomationRunDoc>();
     if (last?.startedAt && auto.minHoursBetweenRuns > 0) {
       const next = new Date(new Date(last.startedAt).getTime() + auto.minHoursBetweenRuns * 3600_000);
       if (next > now) {
@@ -194,7 +197,7 @@ export async function runAutomation(req: AutomationRequest): Promise<AutomationR
         return { httpStatus: 200, status: "skipped", reason, nextEligibleAt: next.toISOString() };
       }
     }
-    const today = await AutomationRun.countDocuments({ status: "succeeded", startedAt: { $gte: istStartOfDay(now) } });
+    const today = await AutomationRun.countDocuments({ ...topicRuns, startedAt: { $gte: istStartOfDay(now) } });
     if (today >= auto.maxPerDay) {
       const reason = `Daily limit of ${auto.maxPerDay} automated post(s) reached.`;
       await logSkip(req.trigger, reason, req.ip);

@@ -87,7 +87,7 @@ export default async function SessionPage({ params }: Props) {
           eventAttendanceMode: "https://schema.org/OnlineEventAttendanceMode",
           eventStatus: session.status === "cancelled" ? "https://schema.org/EventCancelled" : "https://schema.org/EventScheduled",
           location: { "@type": "VirtualLocation", url: absoluteUrl(`/sessions/${session.slug}`) },
-          organizer: { "@type": "Person", name: profile.name, url: absoluteUrl("/journey") },
+          organizer: { "@type": "Person", name: profile.name, url: absoluteUrl("/about") },
           offers: { "@type": "Offer", price: session.price, priceCurrency: "INR", availability: full || closed ? "https://schema.org/SoldOut" : "https://schema.org/InStock", url: absoluteUrl(`/sessions/${session.slug}`) },
         }}
       />
@@ -100,6 +100,12 @@ export default async function SessionPage({ params }: Props) {
             <Link href="/sessions" className="group inline-flex items-center gap-1.5 text-sm text-muted hover:text-ink">
               <ArrowLeft className="size-4 transition-transform group-hover:-translate-x-1" /> All sessions
             </Link>
+
+            {session.coverImage && (
+              <div className="relative mt-6 aspect-[16/9] overflow-hidden rounded-3xl border border-line bg-paper-3">
+                <Image src={session.coverImage.url} alt={session.coverImage.alt || session.title} fill priority sizes="(min-width: 1024px) 44rem, 100vw" placeholder={session.coverImage.blurDataURL ? "blur" : "empty"} blurDataURL={session.coverImage.blurDataURL} className="object-cover" />
+              </div>
+            )}
 
             <div className="mt-6 flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-2 rounded-full bg-ink px-3 py-1 text-xs font-medium uppercase tracking-wider text-cream">
@@ -154,12 +160,12 @@ export default async function SessionPage({ params }: Props) {
             </dl>
 
             {bookable && (
-              <div className="mt-4 flex flex-col gap-3 rounded-2xl bg-night p-5 text-cream sm:flex-row sm:items-center sm:justify-between">
+              <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-line bg-indigo-soft p-5 text-ink sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="font-medium">Starts in</p>
-                  <p className="text-xs text-cream-muted">Booking closes when the session begins.</p>
+                  <p className="text-xs text-muted">Booking closes when the session begins.</p>
                 </div>
-                <Countdown to={session.startsAt} tone="dark" />
+                <Countdown to={session.startsAt} />
               </div>
             )}
 
@@ -204,25 +210,25 @@ export default async function SessionPage({ params }: Props) {
 
             {/* Host */}
             <section className="mt-14">
-              <div className="grain relative overflow-hidden rounded-3xl bg-night p-6 text-cream md:p-8">
-                <span aria-hidden className="absolute -bottom-20 -right-20 size-56 rounded-full bg-accent/80" />
+              <div className="relative overflow-hidden rounded-3xl border border-line bg-indigo-soft p-6 text-ink md:p-8">
+                <span aria-hidden className="absolute -bottom-20 -right-20 size-56 rounded-full bg-sakura" />
                 <div className="relative z-[2] flex flex-col gap-6 sm:flex-row sm:items-start">
                   {profile.avatarUrl && (
-                    <span className="relative size-24 shrink-0 overflow-hidden rounded-full bg-night-2 ring-4 ring-accent">
-                      <Image src={profile.avatarUrl} alt="" fill sizes="96px" className="object-cover" />
+                    <span className="relative size-24 shrink-0 overflow-hidden rounded-full bg-paper-3 ring-4 ring-accent">
+                      <Image src={profile.avatarUrl} alt="" referrerPolicy="no-referrer" fill sizes="96px" className="object-cover" />
                     </span>
                   )}
                   <div className="min-w-0">
-                    <p className="kicker text-cream-muted">Your host</p>
+                    <p className="kicker text-muted">Your host</p>
                     <p className="display mt-2 text-3xl">{profile.name}</p>
-                    {profile.currentRole && <p className="mt-1 text-sm text-cream/70">{profile.currentRole}</p>}
-                    {profile.shortBio && <p className="mt-4 line-clamp-4 text-[0.95rem] leading-relaxed text-cream/80">{profile.shortBio}</p>}
+                    {profile.currentRole && <p className="mt-1 text-sm text-ink-2">{profile.currentRole}</p>}
+                    {profile.shortBio && <p className="mt-4 line-clamp-4 text-[0.95rem] leading-relaxed text-ink-2">{profile.shortBio}</p>}
                     <dl className="mt-5 flex flex-wrap gap-x-8 gap-y-3">
-                      {stats.sessions > 0 && <div><dt className="text-xs text-cream-muted">Sessions</dt><dd className="display text-2xl">{stats.sessions}</dd></div>}
-                      {stats.students > 0 && <div><dt className="text-xs text-cream-muted">Students</dt><dd className="display text-2xl">{stats.students.toLocaleString("en-IN")}+</dd></div>}
-                      {stats.reviewCount > 0 && <div><dt className="text-xs text-cream-muted">Rating</dt><dd className="display text-2xl">{stats.avgRating.toFixed(1)}★</dd></div>}
+                      {stats.sessions > 0 && <div><dt className="text-xs text-muted">Sessions</dt><dd className="display text-2xl">{stats.sessions}</dd></div>}
+                      {stats.students > 0 && <div><dt className="text-xs text-muted">Students</dt><dd className="display text-2xl">{stats.students.toLocaleString("en-IN")}+</dd></div>}
+                      {stats.reviewCount > 0 && <div><dt className="text-xs text-muted">Rating</dt><dd className="display text-2xl">{stats.avgRating.toFixed(1)}★</dd></div>}
                     </dl>
-                    <Link href="/journey" className="group mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-cream">
+                    <Link href="/about" className="group mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-ink">
                       <span className="link-underline">Read my story</span> <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
                     </Link>
                   </div>

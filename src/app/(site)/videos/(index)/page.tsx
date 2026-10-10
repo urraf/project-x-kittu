@@ -53,11 +53,11 @@ export default async function VideosPage({ searchParams }: Props) {
 
   return (
     <>
-      <section className="grain relative overflow-hidden bg-night text-cream">
+      <section className="seigaiha relative overflow-hidden border-b border-line bg-paper-2 text-ink">
         <div className="container-x relative z-[2] pb-16 pt-28 md:pb-20 md:pt-32">
           <div className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
             <div className="max-w-3xl">
-              <p className="kicker flex items-center gap-3 text-cream-muted" data-reveal>
+              <p className="kicker flex items-center gap-3 text-muted" data-reveal>
                 <span className="h-px w-8 bg-accent" /> The channel
               </p>
               <h1 className="display mt-5 text-[2.9rem] leading-[0.95] sm:text-6xl lg:text-[4.75rem]" data-reveal>
@@ -71,19 +71,19 @@ export default async function VideosPage({ searchParams }: Props) {
                   </>
                 )}
               </h1>
-              <p className="mt-5 max-w-xl text-[1.05rem] leading-relaxed text-cream/70" data-reveal>
+              <p className="mt-5 max-w-xl text-[1.05rem] leading-relaxed text-ink-2" data-reveal>
                 Step-by-step guides to fully funded internships and scholarships, and the vlogs from everything in between.
               </p>
             </div>
             <div className="flex items-center gap-4" data-reveal>
               {settings.profile.avatarUrl && (
                 <span className="relative size-14 overflow-hidden rounded-full ring-2 ring-accent">
-                  <Image src={settings.profile.avatarUrl} alt="" fill sizes="56px" className="object-cover" />
+                  <Image src={settings.profile.avatarUrl} alt="" referrerPolicy="no-referrer" fill sizes="56px" className="object-cover" />
                 </span>
               )}
               <div>
                 <p className="font-medium">{settings.profile.channelName}</p>
-                <p className="text-sm text-cream-muted">
+                <p className="text-sm text-muted">
                   {settings.profile.handle}
                   {totalVideos ? ` · ${totalVideos}+ videos here` : ""}
                 </p>
@@ -104,17 +104,17 @@ export default async function VideosPage({ searchParams }: Props) {
                 <h2 className="display mt-3 text-[2rem] leading-[1.05] md:text-[2.3rem]">
                   <Link href={`/videos/${spotlight.youtubeId}`} className="link-underline">{cleanTitle(spotlight.title)}</Link>
                 </h2>
-                <p className="mt-3 text-sm text-cream-muted">
+                <p className="mt-3 text-sm text-muted">
                   {[formatDate(spotlight.publishedAt), spotlight.views ? `${formatCompact(spotlight.views)} views` : null].filter(Boolean).join(" · ")}
                 </p>
                 {spotlight.description && (
-                  <p className="mt-4 leading-relaxed text-cream/70">
+                  <p className="mt-4 leading-relaxed text-ink-2">
                     {truncate(cleanTitle(spotlight.description.replace(/https?:\/\/\S+/g, "").replace(/\s+/g, " ")).trim(), 180)}
                   </p>
                 )}
                 <div className="mt-6 flex flex-wrap gap-3">
                   <Link href={`/videos/${spotlight.youtubeId}`} className="btn btn-accent">Watch here</Link>
-                  <a href={youtubeWatchUrl(spotlight.youtubeId)} target="_blank" rel="noopener noreferrer" className="btn btn-ghost text-cream">
+                  <a href={youtubeWatchUrl(spotlight.youtubeId)} target="_blank" rel="noopener noreferrer" className="btn btn-ghost text-ink">
                     <YouTubeIcon className="size-4" /> On YouTube
                   </a>
                 </div>
@@ -124,9 +124,9 @@ export default async function VideosPage({ searchParams }: Props) {
         </div>
 
         {showIntro && popular.length > 0 && (
-          <div className="relative z-[2] border-t border-cream/10 pb-20 pt-14">
+          <div className="relative z-[2] border-t border-line pb-20 pt-14">
             <div className="container-x">
-              <h2 className="kicker flex items-center gap-3 text-cream-muted">
+              <h2 className="kicker flex items-center gap-3 text-muted">
                 <span className="h-px w-8 bg-accent" /> Most watched
               </h2>
             </div>
@@ -136,16 +136,16 @@ export default async function VideosPage({ searchParams }: Props) {
                   <li key={v.youtubeId} className="w-[80vw] shrink-0 snap-start sm:w-[24rem]">
                     <Link href={`/videos/${v.youtubeId}`} className="group grid grid-cols-[3.75rem_1fr] gap-x-3">
                       <span
-                        className="display self-end select-none text-[6.5rem] leading-[0.72] text-transparent [-webkit-text-stroke:1.5px_var(--color-cream-muted)] transition-colors group-hover:[-webkit-text-stroke-color:var(--color-accent)]"
+                        className="display self-end select-none text-[6.5rem] leading-[0.72] text-transparent [-webkit-text-stroke:1.5px_var(--color-sakura-deep)] transition-colors group-hover:[-webkit-text-stroke-color:var(--color-accent)]"
                         aria-hidden
                       >
                         {i + 1}
                       </span>
-                      <span className="img-zoom relative block aspect-video overflow-hidden rounded-xl bg-night-3">
+                      <span className="img-zoom relative block aspect-video overflow-hidden rounded-xl bg-paper-3">
                         <YouTubeThumb id={v.youtubeId} alt="" sizes="(min-width: 640px) 19rem, 65vw" />
                       </span>
-                      <span className="col-start-2 mt-3 line-clamp-2 text-[0.92rem] leading-snug text-cream">{cleanTitle(v.title)}</span>
-                      <span className="col-start-2 mt-1 text-xs text-cream-muted">{formatCompact(v.views)} views</span>
+                      <span className="col-start-2 mt-3 line-clamp-2 text-[0.92rem] leading-snug text-ink">{cleanTitle(v.title)}</span>
+                      <span className="col-start-2 mt-1 text-xs text-muted">{formatCompact(v.views)} views</span>
                     </Link>
                   </li>
                 ))}
