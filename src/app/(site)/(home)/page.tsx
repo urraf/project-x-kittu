@@ -150,7 +150,7 @@ export default async function HomePage() {
           <div className="relative mx-auto w-full max-w-lg lg:col-span-6 lg:max-w-none" data-reveal>
             <div className="relative">
               <LiveClassLaptop hostName={firstName} topic={next ? next.title : "Live class: research proposals"} />
-              <Kittu pose="wave" motion="sway" priority sizes="(min-width: 1024px) 12rem, 7rem" className="absolute -bottom-6 -left-3 z-20 w-24 sm:-bottom-12 sm:-left-10 sm:w-36 lg:-bottom-16 lg:-left-16 lg:w-48" />
+              <Kittu pose="wave" priority sizes="(min-width: 1024px) 15rem, 8rem" className="absolute -bottom-8 -left-4 z-20 w-28 sm:-bottom-14 sm:-left-12 sm:w-40 lg:-bottom-20 lg:-left-20 lg:w-56" />
             </div>
             <div className="absolute -bottom-24 right-0 z-10 hidden w-[19rem] sm:block lg:-right-4">{liveCard}</div>
             <div className="relative z-10 mx-1 mt-8 sm:hidden">{liveCard}</div>

@@ -65,6 +65,13 @@ export const env = {
     const v = read("GROQ_REASONING_EFFORT");
     return v === "medium" || v === "high" ? v : "low";
   },
+  /** Separate key/model for the website chat assistant (falls back to the main key). */
+  get groqChatApiKey() {
+    return read("GROQ_CHAT_API_KEY") ?? read("GROQ_API_KEY");
+  },
+  get groqChatModel() {
+    return read("GROQ_CHAT_MODEL") ?? "openai/gpt-oss-120b";
+  },
   get groqBaseUrl() {
     return (read("GROQ_BASE_URL") ?? "https://api.groq.com/openai/v1").replace(/\/$/, "");
   },

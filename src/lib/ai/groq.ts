@@ -27,6 +27,10 @@ export type ChatOptions = {
   json?: boolean;
   model?: string;
   timeoutMs?: number;
+  /** Use a different Groq key (e.g. the chat assistant's). */
+  apiKey?: string;
+  /** Max attempts on rate limits/5xx; interactive callers keep this low. */
+  maxAttempts?: number;
 };
 
 export type ChatResult = { content: string; model: string; usage?: { prompt_tokens?: number; completion_tokens?: number } };
@@ -46,12 +50,12 @@ function stripThinking(text: string) {
 }
 
 export async function groqChat(opts: ChatOptions): Promise<ChatResult> {
-  const apiKey = env.groqApiKey;
+  const apiKey = opts.apiKey ?? env.groqApiKey;
   if (!apiKey) throw new ConfigError("GROQ_API_KEY is not configured. Add it to your environment variables.");
   const model = opts.model ?? env.groqModel;
   const reasoning = reasoningParams(model);
   // Rate limits (429) are common on Groq's free tier, so they get more patient retries.
-  let maxAttempts = 3;
+  let maxAttempts = opts.maxAttempts ?? 3;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const started = Date.now();
@@ -74,7 +78,7 @@ export async function groqChat(opts: ChatOptions): Promise<ChatResult> {
       if (!res.ok) {
         const body = await res.text().catch(() => "");
         const retryable = res.status === 429 || res.status >= 500;
-        if (res.status === 429) maxAttempts = 5;
+        if (res.status === 429 && !opts.maxAttempts) maxAttempts = 5;
         let message = `Groq API error ${res.status}`;
         let code: string | undefined;
         try {

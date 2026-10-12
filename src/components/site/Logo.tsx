@@ -1,13 +1,12 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils/cn";
+import { SUN_PATHS } from "@/lib/brand/sun";
 
-/** The rising-sun mark: a vermilion disc cut by two horizon lines (pure paths, no ids). */
+/** The rising-sun mark: a vermilion disc cut by two gentle waves (pure paths, no ids). */
 export function SunMark({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 32 32" aria-hidden="true" className={className} fill="var(--color-accent)">
-      <path d="M1.543 20A15 15 0 1 1 30.457 20Z" />
-      <path d="M2.085 21.6H29.915A15 15 0 0 1 28.56 24.2H3.44A15 15 0 0 1 2.085 21.6Z" />
-      <path d="M4.311 25.4H27.689A15 15 0 0 1 4.311 25.4Z" />
+      {SUN_PATHS.map((d) => <path key={d} d={d} />)}
     </svg>
   );
 }

@@ -42,6 +42,8 @@ Sign in at **http://localhost:3000/admin**. There is deliberately no link to it 
 | `CRON_SECRET` | for automation | ≥24 chars. Your cron service sends it as a Bearer token. |
 | `GROQ_API_KEY` | for AI | From console.groq.com. |
 | `GROQ_MODEL` | – | Default `openai/gpt-oss-120b`. Any chat model your Groq account lists works. |
+| `GROQ_CHAT_API_KEY` | for chat | Separate Groq key for the "Ask Kittu" website assistant (falls back to `GROQ_API_KEY`). |
+| `GROQ_CHAT_MODEL` | – | Default `openai/gpt-oss-120b`; on rate limits it falls back to `openai/gpt-oss-20b`. |
 | `GROQ_REASONING_EFFORT` | – | `low` (default) / `medium` / `high` for gpt-oss models. |
 | `YOUTUBE_API_KEY` | – | Full channel sync with durations. Without it, the public RSS feed is used. |
 | `YOUTUBE_CHANNEL_ID` | – | Defaults to the Life of KittuKun channel. |
