@@ -108,7 +108,7 @@ export function UniMatch() {
         <p className="absolute left-2 top-0 z-0 max-w-[15rem] rounded-2xl rounded-br-sm border border-line bg-[#fffdf9] px-3.5 py-2 text-sm text-ink shadow-[0_12px_30px_-20px_rgba(29,43,69,0.5)] sm:left-6">
           <span className="jp mr-1 text-accent">一緒に探そう!</span> Let&apos;s find your universities.
         </p>
-        <Kittu pose="think" alt="" sizes="8rem" className="pointer-events-none absolute right-4 top-0 z-20 w-24 sm:right-10 sm:w-28" />
+        <Kittu pose="ponder" alt="" sizes="8rem" className="pointer-events-none absolute right-4 top-0 z-20 w-24 sm:right-10 sm:w-28" />
         <form onSubmit={submit} className="relative z-10 rounded-3xl border border-line bg-[#fffdf9] p-5 shadow-[0_30px_60px_-45px_rgba(29,43,69,0.6)] md:p-7">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Select label="I want to study" name="degree" value={f.degree} onChange={set("degree")}>

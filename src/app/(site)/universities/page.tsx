@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { BadgeCheck, Globe2, Search, Sparkles } from "lucide-react";
 import { UniMatch } from "@/components/universities/UniMatch";
+import { Kittu } from "@/components/mascot/Kittu";
 import { UniversityCard } from "@/components/universities/UniversityCard";
 import { REGIONS } from "@/lib/universities/taxonomy";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -36,7 +37,8 @@ export default async function UniversitiesPage({ searchParams }: { searchParams:
     <>
       <section className="seigaiha relative overflow-hidden border-b border-line bg-paper-2">
         <div aria-hidden className="absolute -right-12 -top-10 size-40 rounded-full bg-indigo-soft md:-right-20 md:-top-24 md:size-[26rem]" />
-        <div className="container-x relative pb-10 pt-28 md:pb-14 md:pt-32">
+        <div className="container-x relative grid grid-cols-1 items-center gap-10 pb-10 pt-28 md:pb-14 md:pt-32 lg:grid-cols-12">
+          <div className="lg:col-span-7">
           <p className="kicker flex items-center gap-3 text-muted"><span className="h-px w-8 bg-accent" /> <span className="jp text-accent">大学</span> Universities in Japan</p>
           <h1 className="display mt-5 max-w-3xl text-[2.8rem] leading-[0.98] sm:text-6xl lg:text-[4.4rem]">
             Find your <em className="text-accent">university.</em>
@@ -53,6 +55,25 @@ export default async function UniversitiesPage({ searchParams }: { searchParams:
             <button type="submit" className="btn btn-ghost h-12 !rounded-xl !px-6 text-ink">Search</button>
           </form>
           <a href="#match" className="btn btn-accent mt-4 !px-6 !py-3"><Sparkles className="size-4" /> Get my university shortlist</a>
+          </div>
+
+          {/* Kittu with the directory at a glance */}
+          <div className="relative mx-auto hidden w-full max-w-md lg:col-span-5 lg:block" aria-hidden>
+            <span className="absolute left-1/2 top-1/2 size-80 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#fffdf9]/70" />
+            <Kittu pose="think" priority sizes="18rem" alt="" className="relative mx-auto w-64" />
+            <span className="absolute left-0 top-6 rounded-2xl border border-line bg-[#fffdf9] px-4 py-2.5 shadow-[0_18px_40px_-28px_rgba(29,43,69,0.6)]">
+              <span className="display block text-3xl leading-none text-ink">{stats.total || 207}</span>
+              <span className="text-xs text-muted">universities in Japan</span>
+            </span>
+            <span className="absolute -right-2 top-24 rounded-2xl border border-line bg-[#fffdf9] px-4 py-2.5 shadow-[0_18px_40px_-28px_rgba(29,43,69,0.6)]">
+              <span className="display block text-3xl leading-none text-ink">{stats.byType.national ?? 0}</span>
+              <span className="text-xs text-muted">national universities</span>
+            </span>
+            <span className="absolute bottom-6 left-2 inline-flex items-center gap-2 rounded-full border border-line bg-[#fffdf9] py-2 pl-2 pr-4 text-sm text-ink shadow-[0_18px_40px_-28px_rgba(29,43,69,0.6)]">
+              <span className="hanko size-8 -rotate-3 text-[0.6rem]"><span className="[writing-mode:vertical-rl]">相性</span></span>
+              Your shortlist in a minute
+            </span>
+          </div>
         </div>
       </section>
 
