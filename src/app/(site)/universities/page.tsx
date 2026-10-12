@@ -95,7 +95,7 @@ export default async function UniversitiesPage({ searchParams }: { searchParams:
           <p className="mt-6 text-sm text-muted">{result.total} {result.total === 1 ? "university" : "universities"}{params.q ? ` matching “${params.q}”` : ""}</p>
           <div className="mt-4">
             {result.items.length ? (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {result.items.map((u) => <UniversityCard key={u.id} u={u} />)}
               </div>
             ) : (

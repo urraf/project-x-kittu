@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { ChangePasswordForm, LogoutButton, ProfileForm } from "@/components/mentorship/AccountForms";
 import { Countdown } from "@/components/mentorship/Countdown";
-import { SessionCard } from "@/components/mentorship/SessionCard";
+import { SessionServiceCard } from "@/components/mentorship/ServiceCard";
 import { Stars } from "@/components/mentorship/Stars";
 import { getStudent } from "@/lib/auth/student";
 import { safe } from "@/lib/safe";
@@ -340,8 +340,8 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
                   <h2 className="display text-3xl">Recommended <em className="text-accent">for you</em></h2>
                   <Link href="/sessions" className="text-sm text-ink-2 underline underline-offset-4 hover:text-ink">All sessions</Link>
                 </div>
-                <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                  {recommended.map((s) => <SessionCard key={s.id} session={s} />)}
+                <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {recommended.map((s) => <SessionServiceCard key={s.id} session={s} compact />)}
                 </div>
               </div>
             )}

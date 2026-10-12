@@ -6,6 +6,7 @@ import { connectDB } from "@/lib/db/connect";
 import { Student, type StudentDoc } from "@/lib/models";
 import { env } from "@/lib/env";
 import { signPurposeToken, verifyPurposeToken } from "@/lib/auth/token";
+import { clearSessionCookie, destroySession, getAdminSession } from "@/lib/auth/session";
 
 /**
  * Student sign-in: email + password. A signed, httpOnly cookie identifies the
@@ -18,7 +19,14 @@ export const STUDENT_COOKIE = env.isProduction ? "__Host-kk_student" : "kk_stude
 export const SIGNED_IN_HINT_COOKIE = "kk_signed_in";
 const SESSION_DAYS = 30;
 
+/**
+ * Signs a student in. One account per browser: an admin session in the same
+ * browser is ended, so the site never acts as both at once.
+ */
 export async function setStudentCookie(res: NextResponse, student: { _id: Types.ObjectId | string; tokenVersion?: number | null }) {
+  const admin = await getAdminSession().catch(() => null);
+  if (admin) await destroySession(admin.sid).catch(() => {});
+  clearSessionCookie(res);
   const token = await signPurposeToken("student", { sid: String(student._id), v: student.tokenVersion ?? 0 }, SESSION_DAYS * 86400);
   const base = { secure: env.isProduction, sameSite: "lax" as const, path: "/", maxAge: SESSION_DAYS * 86400 };
   res.cookies.set(STUDENT_COOKIE, token, { ...base, httpOnly: true });

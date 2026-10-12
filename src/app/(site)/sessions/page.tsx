@@ -51,7 +51,7 @@ export default async function SessionsPage() {
       label: "Live sessions",
       jp: "講座",
       gridClassName: "grid grid-cols-1 gap-5 md:grid-cols-2",
-      items: sessions.map((s) => ({ id: `s-${s.id}`, node: <SessionServiceCard session={s} rating={stats.reviewCount >= 3 ? stats.avgRating : undefined} /> })),
+      items: sessions.map((s) => ({ id: `s-${s.id}`, node: <SessionServiceCard session={s} compact rating={stats.reviewCount >= 3 ? stats.avgRating : undefined} /> })),
     },
     {
       id: "products",

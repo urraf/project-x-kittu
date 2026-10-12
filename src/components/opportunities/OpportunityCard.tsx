@@ -34,7 +34,7 @@ const TYPE_ART: Record<string, { jp: string; tint: string; pattern: string }> = 
 
 export const fundingTone = (f: string) => (f === "fully-funded" ? "bg-[#dde8de] text-moss" : f === "self-funded" ? "bg-paper-3 text-ink-2" : "bg-sakura text-accent-deep");
 
-export function OpportunityCard({ o, compact = false }: { o: OpportunityDTO; compact?: boolean }) {
+export function OpportunityCard({ o, compact = true }: { o: OpportunityDTO; compact?: boolean }) {
   const art = TYPE_ART[o.type] ?? TYPE_ART.internship!;
   return (
     <Link
@@ -44,7 +44,7 @@ export function OpportunityCard({ o, compact = false }: { o: OpportunityDTO; com
         o.closed && "opacity-70",
       )}
     >
-      <div className={cn("img-zoom relative overflow-hidden", compact ? "aspect-[16/6]" : "aspect-[16/7]", !o.coverImage && art.tint)}>
+      <div className={cn("img-zoom relative overflow-hidden", compact ? "aspect-[16/5]" : "aspect-[16/7]", !o.coverImage && art.tint)}>
         {o.coverImage ? (
           <Image src={o.coverImage.url} alt={o.coverImage.alt || o.title} fill sizes="(min-width: 1024px) 24rem, (min-width: 640px) 45vw, 100vw" className="object-cover" />
         ) : (
@@ -62,7 +62,7 @@ export function OpportunityCard({ o, compact = false }: { o: OpportunityDTO; com
       </div>
       <div className={cn("flex flex-1 flex-col", compact ? "p-4" : "p-5")}>
         {o.organization && <p className="line-clamp-1 text-xs font-medium uppercase tracking-wider text-muted">{o.organization}</p>}
-        <h3 className={cn("display mt-1.5 leading-[1.12] text-ink", compact ? "line-clamp-2 text-[1.2rem]" : "text-[1.45rem]")}><span className="link-underline">{o.title}</span></h3>
+        <h3 className={cn("display mt-1.5 leading-[1.12] text-ink", compact ? "line-clamp-2 text-[1.12rem]" : "text-[1.45rem]")}><span className="link-underline">{o.title}</span></h3>
         {o.summary && !compact && <p className="mt-2 line-clamp-2 text-[0.93rem] leading-relaxed text-ink-2">{o.summary}</p>}
         <ul className={cn("mt-auto space-y-1.5 text-sm text-ink-2", compact ? "pt-3" : "pt-5")}>
           <li className="flex items-center gap-2"><MapPin className="size-4 shrink-0 text-accent" /> {[o.location, o.country].filter(Boolean).join(", ")}</li>

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { verifyCaptcha } from "@/lib/auth/captcha";
 import { hitLimit, peekLimit, resetLimit } from "@/lib/auth/rate-limit";
 import { createSession, setSessionCookie } from "@/lib/auth/session";
+import { clearStudentCookie } from "@/lib/auth/student";
 import { ApiError, assertSameOrigin, clientIp, ok, readJson, route, tooMany } from "@/lib/http";
 import { logger } from "@/lib/logger";
 import { verifyAdminLogin } from "@/lib/services/admin-account";
@@ -68,5 +69,7 @@ export const POST = route(async (req) => {
 
   const res = ok({ redirect: safeNext(body.next) }, { headers: { "Cache-Control": "no-store" } });
   setSessionCookie(res, token, expiresAt);
+  // One account per browser: signing in as admin signs the student out.
+  clearStudentCookie(res);
   return res;
 });

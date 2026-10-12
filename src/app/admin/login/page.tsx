@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { SunMark } from "@/components/site/Logo";
 import { LoginForm } from "@/components/admin/LoginForm";
 import { getAdminEmail } from "@/lib/services/admin-account";
+import { getStudent } from "@/lib/auth/student";
 
 export const metadata: Metadata = { title: "Sign in" };
 export const dynamic = "force-dynamic";
@@ -15,7 +16,7 @@ async function emailRequired() {
 }
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
-  const [{ next }, needsEmail] = await Promise.all([searchParams, emailRequired()]);
+  const [{ next }, needsEmail, student] = await Promise.all([searchParams, emailRequired(), getStudent().catch(() => null)]);
   return (
     <main className="grid min-h-[100svh] lg:grid-cols-2">
       <div className="seigaiha relative hidden overflow-hidden border-r border-line bg-paper-2 p-12 text-ink lg:flex lg:flex-col lg:justify-between">
@@ -35,6 +36,11 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           <SunMark className="size-10 lg:hidden" />
           <h1 className="display mt-6 text-5xl lg:mt-0">Welcome back.</h1>
           <p className="mt-3 text-ink-2">Sign in to manage sessions, the store, opportunities and content.</p>
+          {student && (
+            <p role="status" className="mt-6 rounded-xl border border-[#e8d3a6] bg-[#f8eed6] px-4 py-2.5 text-sm text-[#7a5410]">
+              You&apos;re signed in as a student ({student.email}). Signing in to the Studio will log that account out in this browser.
+            </p>
+          )}
           <div className="mt-10">
             <LoginForm next={next} emailRequired={needsEmail} />
           </div>
