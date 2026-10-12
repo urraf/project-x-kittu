@@ -10,6 +10,8 @@ import { ImageField } from "@/components/admin/ImageField";
 import { Button, ConfirmDialog, Field, PageHeader, Toggle } from "@/components/admin/ui";
 import type { ImageDTO } from "@/lib/types";
 import type { ProgramDTO, UniversityDTO } from "@/lib/services/universities";
+import { FIELDS, REGIONS, TAGS, TAG_LABELS } from "@/lib/universities/taxonomy";
+import { cn } from "@/lib/utils/cn";
 
 type Program = Omit<ProgramDTO, "id">;
 type Form = {
@@ -17,6 +19,11 @@ type Form = {
   nameJa: string;
   type: "national" | "public" | "private";
   city: string;
+  prefecture: string;
+  region: string;
+  fields: string[];
+  tags: string[];
+  tier: number;
   website: string;
   summary: string;
   strengths: string;
@@ -33,6 +40,11 @@ const fromDTO = (u?: UniversityDTO): Form => ({
   nameJa: u?.nameJa ?? "",
   type: u?.type ?? "national",
   city: u?.city ?? "",
+  prefecture: u?.prefecture ?? "",
+  region: u?.region ?? "",
+  fields: u?.fields ?? [],
+  tags: u?.tags ?? [],
+  tier: u?.tier ?? 3,
   website: u?.website ?? "",
   summary: u?.summary ?? "",
   strengths: (u?.strengths ?? []).join(", "),
@@ -115,6 +127,40 @@ export function UniversityEditor({ university, siteUrl }: { university?: Univers
           </div>
           <Field label="Official website" htmlFor="u-web" error={errors.website}><input id="u-web" className="field" value={form.website} onChange={(e) => set("website", e.target.value)} placeholder="https://…" /></Field>
           <Field label="Summary" htmlFor="u-sum" counter={{ value: form.summary.length, max: 400 }}><textarea id="u-sum" rows={3} className="field" value={form.summary} onChange={(e) => set("summary", e.target.value)} /></Field>
+          <div className="rounded-2xl border border-line bg-paper-2/50 p-4">
+            <p className="text-sm font-medium text-ink">Profile for JapanUniMatch</p>
+            <p className="mt-0.5 text-xs text-muted">Used by the directory filters and the university recommender.</p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-3">
+              <Field label="Prefecture" htmlFor="u-pref"><input id="u-pref" className="field" value={form.prefecture} onChange={(e) => set("prefecture", e.target.value)} placeholder="e.g. Miyagi" /></Field>
+              <Field label="Region" htmlFor="u-region">
+                <select id="u-region" className="field" value={form.region} onChange={(e) => set("region", e.target.value)}>
+                  <option value="">Not set</option>
+                  {REGIONS.map((r) => <option key={r.id} value={r.id}>{r.label}</option>)}
+                </select>
+              </Field>
+              <Field label="Selectivity" htmlFor="u-tier" hint="For reach/match/safe labels.">
+                <select id="u-tier" className="field" value={form.tier} onChange={(e) => set("tier", Number(e.target.value))}>
+                  <option value={1}>1 · Most competitive</option>
+                  <option value={2}>2 · Competitive</option>
+                  <option value={3}>3 · Accessible</option>
+                </select>
+              </Field>
+            </div>
+            <p className="mt-3 text-xs font-medium text-ink-2">Main fields</p>
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {FIELDS.map((x) => {
+                const on = form.fields.includes(x.id);
+                return <button key={x.id} type="button" aria-pressed={on} onClick={() => set("fields", on ? form.fields.filter((v) => v !== x.id) : [...form.fields, x.id])} className={cn("chip !py-1 text-xs", on && "!border-ink !bg-ink !text-cream")}>{x.label}</button>;
+              })}
+            </div>
+            <p className="mt-3 text-xs font-medium text-ink-2">Tags</p>
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {TAGS.map((t) => {
+                const on = form.tags.includes(t);
+                return <button key={t} type="button" aria-pressed={on} onClick={() => set("tags", on ? form.tags.filter((v) => v !== t) : [...form.tags, t])} className={cn("chip !py-1 text-xs", on && "!border-ink !bg-ink !text-cream")}>{TAG_LABELS[t]}</button>;
+              })}
+            </div>
+          </div>
           <Field label="Research strengths (comma separated)" htmlFor="u-str"><input id="u-str" className="field" value={form.strengths} onChange={(e) => set("strengths", e.target.value)} placeholder="e.g. Robotics, Materials science, AI" /></Field>
 
           <div>

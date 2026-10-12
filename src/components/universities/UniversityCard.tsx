@@ -2,6 +2,9 @@ import Link from "next/link";
 import { ArrowUpRight, BadgeCheck, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import type { UniversityDTO } from "@/lib/services/universities";
+import { TAG_LABELS, regionLabel, type UniversityTag } from "@/lib/universities/taxonomy";
+
+const SHOWN_TAGS: UniversityTag[] = ["sgu-a", "sgu-b", "g30", "english-ug", "grad-only", "women"];
 
 export const typeTone = (t: string) => (t === "national" ? "bg-indigo-soft text-indigo" : t === "public" ? "bg-matcha-soft text-moss" : "bg-sakura text-accent-deep");
 export const typeName = (t: string) => (t === "national" ? "National" : t === "public" ? "Public" : "Private");
@@ -19,7 +22,12 @@ export function UniversityCard({ u }: { u: UniversityDTO }) {
       </div>
       <h3 className="mt-4 text-[1.08rem] font-semibold leading-snug text-ink group-hover:text-accent-deep">{u.name}</h3>
       {u.nameJa && <p className="jp mt-0.5 text-sm text-muted">{u.nameJa}</p>}
-      <p className="mt-2 flex items-center gap-1.5 text-sm text-ink-2"><MapPin className="size-4 text-accent" /> {u.city}</p>
+      <p className="mt-2 flex items-center gap-1.5 text-sm text-ink-2"><MapPin className="size-4 shrink-0 text-accent" /> {u.city}{u.region ? <span className="truncate text-muted"> · {regionLabel(u.region)}</span> : null}</p>
+      {u.tags.some((t) => SHOWN_TAGS.includes(t as UniversityTag)) && (
+        <p className="mt-3 flex flex-wrap gap-1.5">
+          {SHOWN_TAGS.filter((t) => u.tags.includes(t)).slice(0, 3).map((t) => <span key={t} className="rounded-full bg-paper-2 px-2 py-0.5 text-[0.68rem] text-ink-2">{TAG_LABELS[t]}</span>)}
+        </p>
+      )}
       <div className="mt-auto flex items-center justify-between pt-4 text-sm">
         <span className="text-muted">{u.englishPrograms ? `${u.englishPrograms} English-taught program${u.englishPrograms === 1 ? "" : "s"}` : "Details"}</span>
         <ArrowUpRight className="size-4 text-ink transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />

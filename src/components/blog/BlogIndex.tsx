@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowLeft, ArrowRight, Search } from "lucide-react";
 import { PostCard } from "@/components/blog/PostCard";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Kittu } from "@/components/mascot/Kittu";
 import type { PostSummary } from "@/lib/types";
 
 type Cat = { name: string; slug: string; count: number };
@@ -53,7 +54,8 @@ export function BlogIndex({
               <h1 className="display mt-5 text-[2.9rem] leading-[0.95] sm:text-6xl lg:text-[4.75rem]" data-reveal>{title}</h1>
               {description && <p className="mt-6 max-w-2xl text-lg leading-relaxed text-ink-2" data-reveal>{description}</p>}
             </div>
-            <form action="/blog" method="get" role="search" className="md:col-span-4" data-reveal>
+            <form action="/blog" method="get" role="search" className="relative md:col-span-4" data-reveal>
+              <Kittu pose="boba" alt="" sizes="7rem" className="pointer-events-none absolute -top-[6.5rem] right-6 hidden w-24 md:block" />
               <label htmlFor="blog-search" className="sr-only">Search articles</label>
               <div className="flex items-center gap-2 rounded-full border border-line bg-[#fffdf9] py-1.5 pl-5 pr-1.5 focus-within:border-ink">
                 <Search className="size-4 shrink-0 text-muted" />

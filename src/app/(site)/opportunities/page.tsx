@@ -9,6 +9,7 @@ import { safe } from "@/lib/safe";
 import { searchOpportunities, searchSchema, type SearchParams } from "@/lib/services/opportunities";
 import { absoluteUrl } from "@/lib/site";
 import { cn } from "@/lib/utils/cn";
+import { Kittu } from "@/components/mascot/Kittu";
 
 export const dynamic = "force-dynamic";
 
@@ -43,6 +44,7 @@ export default async function OpportunitiesPage({ searchParams }: { searchParams
     <>
       <section className="seigaiha relative overflow-hidden border-b border-line bg-paper-2">
         <div aria-hidden className="absolute -right-12 -top-10 size-36 rounded-full bg-accent/90 md:-right-24 md:-top-28 md:size-[26rem]" />
+        <Kittu pose="walk" alt="" sizes="9rem" className="pointer-events-none absolute right-[24%] top-[7rem] z-[1] hidden w-28 lg:block xl:right-[27%]" />
         <div className="container-x relative pb-10 pt-28 md:pb-14 md:pt-32">
           <p className="kicker flex items-center gap-3 text-muted"><span className="h-px w-8 bg-accent" /> <span className="jp text-accent">機会</span> Opportunity finder</p>
           <h1 className="display mt-5 max-w-3xl text-[2.8rem] leading-[0.98] sm:text-6xl lg:text-[4.4rem]">

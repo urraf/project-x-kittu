@@ -61,9 +61,17 @@ export default async function OpportunityPage({ params }: Props) {
             <ArrowLeft className="size-4 transition-transform group-hover:-translate-x-1" /> All opportunities
           </Link>
           {o.coverImage && (
-            <div className="relative mt-6 aspect-[16/9] overflow-hidden rounded-3xl border border-line bg-paper-3">
-              <Image src={o.coverImage.url} alt={o.coverImage.alt || o.title} fill priority sizes="(min-width: 1024px) 50rem, 100vw" className="object-cover" />
-            </div>
+            <figure className="mt-6">
+              <div className="relative aspect-[16/9] overflow-hidden rounded-3xl border border-line bg-paper-3">
+                <Image src={o.coverImage.url} alt={o.coverImage.alt || o.title} fill priority sizes="(min-width: 1024px) 50rem, 100vw" className="object-cover" />
+              </div>
+              {o.coverImage.credit?.name && (
+                <figcaption className="mt-2 text-right text-xs text-muted">
+                  {o.coverImage.alt && <>{o.coverImage.alt} · </>}Photo:{" "}
+                  {o.coverImage.credit.url ? <a href={o.coverImage.credit.url} target="_blank" rel="noopener noreferrer" className="underline-offset-2 hover:underline">{o.coverImage.credit.name}</a> : o.coverImage.credit.name}
+                </figcaption>
+              )}
+            </figure>
           )}
           <div className="mt-6 flex flex-wrap items-center gap-2">
             <span className="rounded-full bg-indigo-soft px-3 py-1 text-xs font-medium text-indigo">{typeLabel(o.type)}</span>

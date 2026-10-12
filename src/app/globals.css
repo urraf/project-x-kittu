@@ -163,6 +163,26 @@
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='56' height='28' viewBox='0 0 56 28'><g fill='none' stroke='%232b4a7a' stroke-opacity='0.09' stroke-width='1'><circle cx='28' cy='28' r='26'/><circle cx='28' cy='28' r='19'/><circle cx='28' cy='28' r='12'/><circle cx='0' cy='14' r='26'/><circle cx='0' cy='14' r='19'/><circle cx='0' cy='14' r='12'/><circle cx='56' cy='14' r='26'/><circle cx='56' cy='14' r='19'/><circle cx='56' cy='14' r='12'/></g></svg>");
     background-size: 56px 28px;
   }
+  /* Asanoha (麻の葉, hemp leaf) and shippō (七宝, linked rings): more traditional textures for cards. */
+  .asanoha {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='69.282' viewBox='0 0 40 69.282'><g fill='none' stroke='%23b03a20' stroke-opacity='0.1' stroke-width='0.8'><path d='M0 0H40M0 34.641H40M0 69.282H40M0 0L20 34.641L40 0M0 69.282L20 34.641L40 69.282'/><path d='M0 0L20 11.547L40 0M20 34.641V11.547M0 0V23.094M20 34.641L0 23.094M40 0V23.094M20 34.641L40 23.094M0 69.282L20 57.735L40 69.282M20 34.641V57.735M0 69.282V46.188M20 34.641L0 46.188M40 69.282V46.188M20 34.641L40 46.188'/></g></svg>");
+    background-size: 40px 69.282px;
+  }
+  .shippo {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'><g fill='none' stroke='%234b6b4f' stroke-opacity='0.12' stroke-width='0.9'><circle cx='20' cy='20' r='20'/><circle cx='0' cy='0' r='20'/><circle cx='40' cy='0' r='20'/><circle cx='0' cy='40' r='20'/><circle cx='40' cy='40' r='20'/></g></svg>");
+    background-size: 40px 40px;
+  }
+  /* Hanko (判子): a vermilion name-seal frame for small kanji labels. */
+  .hanko {
+    display: grid;
+    place-items: center;
+    border: 2px solid var(--color-accent);
+    border-radius: 0.5rem;
+    color: var(--color-accent);
+    font-family: var(--font-jp);
+    line-height: 1;
+    background: color-mix(in oklab, var(--color-accent) 6%, transparent);
+  }
   /* Small Japanese label used next to section kickers (e.g. 機会 = opportunity). */
   .jp { font-family: var(--font-jp); letter-spacing: 0.08em; }
 
@@ -188,8 +208,11 @@
   /* Gentle bob for decorative 3D objects */
   @keyframes kk-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
   .float-slow { animation: kk-float 6s ease-in-out infinite; }
+  /* Mascot: a slow, friendly sway from the feet. */
+  @keyframes kk-sway { 0%, 100% { transform: rotate(-1.5deg); } 50% { transform: rotate(1.5deg); } }
+  .kittu-sway { transform-origin: 50% 100%; animation: kk-sway 5s ease-in-out infinite; }
   @media (prefers-reduced-motion: reduce) {
-    .float-slow { animation: none; }
+    .float-slow, .kittu-sway { animation: none; }
   }
 
   .img-zoom img { transition: transform 1s var(--ease-out-expo); }

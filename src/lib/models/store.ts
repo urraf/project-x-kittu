@@ -9,6 +9,8 @@ export const CoverImageSchema = new Schema(
     width: Number,
     height: Number,
     blurDataURL: { type: String, maxlength: 4000 },
+    /** Photo credit, e.g. for Wikimedia Commons images that require attribution. */
+    credit: { name: { type: String, trim: true, maxlength: 160 }, url: { type: String, trim: true, maxlength: 2048 } },
   },
   { _id: false },
 );

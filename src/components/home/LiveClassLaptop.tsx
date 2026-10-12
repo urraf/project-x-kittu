@@ -21,7 +21,7 @@ export function LiveClassLaptop({ hostName, topic }: { hostName: string; topic: 
     <div className="relative" aria-hidden>
       {/* Soft washi circles behind the laptop */}
       <span className="absolute -right-4 top-2 size-40 rounded-full bg-accent-soft sm:size-56" />
-      <span className="absolute -left-2 bottom-10 size-24 rounded-full bg-sakura sm:size-32" />
+      <span className="absolute -left-2 bottom-10 size-24 rounded-full bg-sakura sm:size-36" />
       <span className="absolute right-[18%] -top-4 size-5 rounded-full bg-accent/30" />
       <span className="absolute left-[30%] bottom-2 size-3 rounded-full bg-indigo/30" />
 
@@ -68,8 +68,6 @@ export function LiveClassLaptop({ hostName, topic }: { hostName: string; topic: 
       {/* Floating 3D study objects */}
       <Image src={art("graduation-cap")} alt="" width={120} height={120} className="float-slow absolute -left-1 top-0 w-14 drop-shadow-lg sm:w-20" />
       <Image src={art("cherry-blossom")} alt="" width={96} height={96} className="float-slow absolute right-0 top-[30%] w-10 drop-shadow-md [animation-delay:-2s] sm:w-14" />
-      <Image src={art("books")} alt="" width={140} height={140} className="absolute -bottom-3 -left-3 w-16 drop-shadow-lg sm:w-24" />
-      <Image src={art("pencil")} alt="" width={96} height={96} className="float-slow absolute -right-1 bottom-6 w-9 drop-shadow-md [animation-delay:-4s] sm:w-12" />
     </div>
   );
 }

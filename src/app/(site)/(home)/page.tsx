@@ -4,9 +4,10 @@ import { ArrowRight, Check, ShoppingBag, Users } from "lucide-react";
 import { PostCard } from "@/components/blog/PostCard";
 import { ReviewCard } from "@/components/mentorship/ReviewCard";
 import { TestimonialCard } from "@/components/mentorship/TestimonialCard";
-import { SessionCard } from "@/components/mentorship/SessionCard";
+import { SessionServiceCard } from "@/components/mentorship/ServiceCard";
 import { Stars } from "@/components/mentorship/Stars";
 import { LiveClassLaptop } from "@/components/home/LiveClassLaptop";
+import { Kittu, KittuSays } from "@/components/mascot/Kittu";
 import { OpportunityCard } from "@/components/opportunities/OpportunityCard";
 import { OpportunitySearch } from "@/components/opportunities/OpportunitySearch";
 import { ProductCard } from "@/components/store/ProductCard";
@@ -17,10 +18,11 @@ import { YouTubeIcon } from "@/components/ui/icons";
 import { VideoCard } from "@/components/video/VideoCard";
 import { safe } from "@/lib/safe";
 import { getMentorStats, listPublicReviews, listUpcomingSessions } from "@/lib/services/mentorship";
-import { closingSoon } from "@/lib/services/opportunities";
+import { closingSoon, opportunityCounts } from "@/lib/services/opportunities";
 import { listPublishedPosts } from "@/lib/services/posts";
 import { getSettings } from "@/lib/services/settings";
-import { listPublishedProducts } from "@/lib/services/store";
+import { listPublishedProducts, productCategories } from "@/lib/services/store";
+import { universityStats } from "@/lib/services/universities";
 import { listPublicVideos } from "@/lib/services/videos";
 import { listPublicTestimonials } from "@/lib/services/testimonials";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
@@ -39,27 +41,13 @@ const PATHWAYS = [
   { img: "briefcase", small: "tokyo-tower", jp: "仕事", title: "Careers in Japan", text: "Internships that lead to jobs, the skills companies look for, and life after you land.", href: "/blog", tint: "bg-sakura" },
 ];
 
-const STEPS = [
-  { img: "laptop", small: "headphone", step: "01", title: "Learn the basics, free", text: "Start with free guides and videos: which programs exist, when to apply and what makes a strong profile.", tint: "bg-indigo-soft" },
-  { img: "clipboard", small: "check", step: "02", title: "Prepare with real material", text: "Use templates and checklists from the store, and join a live session to get your questions answered.", tint: "bg-accent-soft" },
-  { img: "airplane", small: "japan-map", step: "03", title: "Apply with confidence", text: "Pick an opportunity or university, follow the deadline, and send an application you're proud of.", tint: "bg-matcha-soft" },
-];
-
-const QUICK = [
-  { href: "/sessions", label: "Live sessions", img: "video-camera" },
-  { href: "/store", label: "Study store", img: "books" },
-  { href: "/blog", label: "Blog", img: "open-book" },
-  { href: "/opportunities", label: "Opportunities", img: "globe" },
-  { href: "/universities", label: "Universities", img: "school" },
-];
-
 const WHY = [
-  { img: "handshake", title: "Learn from someone who did it", text: "Every session and guide comes from real applications, real labs and real interviews in Japan." },
-  { img: "speech", title: "Small live groups", text: "Sessions are kept small, so there's time for your questions, your profile and your doubts." },
-  { img: "inbox", title: "Material you keep", text: "Templates, checklists and guides download instantly and stay in your library forever." },
-  { img: "bell", title: "Never miss a session", text: "Join links, calendar invites and a reminder one hour before, straight to your inbox." },
-  { img: "star", title: "Honest student reviews", text: "Every attendee can rate their session. What you read here is what students actually said." },
-  { img: "open-book", title: "Free guides to start", text: "Step-by-step articles and videos, free for everyone, before you spend a rupee." },
+  { img: "handshake", jp: "実", pattern: "asanoha", title: "Learn from someone who did it", text: "Every session and guide comes from real applications, real labs and real interviews in Japan." },
+  { img: "speech", jp: "少", pattern: "seigaiha", title: "Small live groups", text: "Sessions are kept small, so there's time for your questions, your profile and your doubts." },
+  { img: "inbox", jp: "蔵", pattern: "shippo", title: "Material you keep", text: "Templates, checklists and guides download instantly and stay in your library forever." },
+  { img: "bell", jp: "鈴", pattern: "asanoha", title: "Never miss a session", text: "Join links, calendar invites and a reminder one hour before, straight to your inbox." },
+  { img: "star", jp: "声", pattern: "seigaiha", title: "Honest student reviews", text: "Every attendee can rate their session. What you read here is what students actually said." },
+  { img: "open-book", jp: "無", pattern: "shippo", title: "Free guides to start", text: "Step-by-step articles and videos, free for everyone, before you spend a rupee." },
 ];
 
 const PLATFORM_FAQS = [
@@ -70,8 +58,8 @@ const PLATFORM_FAQS = [
 
 export default async function HomePage() {
   const settings = await getSettings();
-  const [sessions, reviews, stats, posts, videos, products, opportunities, testimonials] = await Promise.all([
-    safe("home.sessions", () => listUpcomingSessions(3), []),
+  const [upcoming, reviews, stats, posts, videos, products, opportunities, testimonials, oppCounts, uniStats, categories] = await Promise.all([
+    safe("home.sessions", () => listUpcomingSessions(12), []),
     safe("home.reviews", () => listPublicReviews(10), []),
     safe("home.stats", () => getMentorStats(), { sessions: 0, students: 0, avgRating: 0, reviewCount: 0 }),
     safe("home.posts", () => listPublishedPosts({ pageSize: 3 }), { items: [], total: 0, page: 1, pages: 1 }),
@@ -79,7 +67,20 @@ export default async function HomePage() {
     safe("home.products", () => listPublishedProducts({ limit: 4 }), []),
     safe("home.opportunities", () => closingSoon(6), []),
     safe("home.testimonials", () => listPublicTestimonials(12), []),
+    safe("home.oppCounts", () => opportunityCounts(), { total: 0, byType: {} }),
+    safe("home.uniStats", () => universityStats(), { total: 0, verified: 0, byType: {} }),
+    safe("home.categories", () => productCategories(), []),
   ]);
+  const sessions = upcoming.slice(0, 3);
+  const productCount = categories.reduce((n, c) => n + c.count, 0);
+  // Quick links: a hanko seal (two kanji, read top to bottom) and a live count.
+  const QUICK = [
+    { href: "/sessions", label: "Live sessions", jp: "講座", sub: upcoming.length ? `${upcoming.length} upcoming` : "New dates soon" },
+    { href: "/store", label: "Study store", jp: "教材", sub: productCount ? `${productCount} guides & templates` : "Guides & templates" },
+    { href: "/blog", label: "Blog", jp: "記事", sub: posts.total ? `${posts.total} free articles` : "Free articles" },
+    { href: "/opportunities", label: "Opportunities", jp: "機会", sub: oppCounts.total ? `${oppCounts.total} open now` : "Internships & scholarships" },
+    { href: "/universities", label: "Universities", jp: "大学", sub: uniStats.total ? `${uniStats.total} in Japan` : "Find your match" },
+  ];
   const { profile, social, mentorship } = settings;
   const firstName = profile.name.split(" ")[0];
   const next = sessions[0];
@@ -140,16 +141,19 @@ export default async function HomePage() {
               {stats.reviewCount > 0 && (
                 <span className="flex items-center gap-2"><Stars value={stats.avgRating} /> <strong className="text-ink">{stats.avgRating.toFixed(1)}</strong> from {stats.reviewCount} reviews</span>
               )}
-              {stats.students > 0 && <span className="flex items-center gap-2"><Users className="size-4 text-accent" /> <strong className="text-ink">{stats.students.toLocaleString("en-IN")}+</strong> students guided</span>}
+              {stats.students >= 10 && <span className="flex items-center gap-2"><Users className="size-4 text-accent" /> <strong className="text-ink">{stats.students.toLocaleString("en-IN")}+</strong> students guided</span>}
               <span className="flex items-center gap-2"><Check className="size-4 text-moss" /> Free guides, no sign-up needed</span>
             </div>
           </div>
 
           {/* Live class on a laptop, with the real next session floating on top */}
           <div className="relative mx-auto w-full max-w-lg lg:col-span-6 lg:max-w-none" data-reveal>
-            <LiveClassLaptop hostName={firstName} topic={next ? next.title : "Live class: research proposals"} />
-            <div className="absolute -bottom-24 left-6 hidden w-[19rem] sm:block lg:-left-8">{liveCard}</div>
-            <div className="relative z-10 mx-1 mt-6 sm:hidden">{liveCard}</div>
+            <div className="relative">
+              <LiveClassLaptop hostName={firstName} topic={next ? next.title : "Live class: research proposals"} />
+              <Kittu pose="wave" motion="sway" priority sizes="(min-width: 1024px) 12rem, 7rem" className="absolute -bottom-6 -left-3 z-20 w-24 sm:-bottom-12 sm:-left-10 sm:w-36 lg:-bottom-16 lg:-left-16 lg:w-48" />
+            </div>
+            <div className="absolute -bottom-24 right-0 z-10 hidden w-[19rem] sm:block lg:-right-4">{liveCard}</div>
+            <div className="relative z-10 mx-1 mt-8 sm:hidden">{liveCard}</div>
             <div className="absolute -top-2 right-0 flex items-center gap-2.5 rounded-full border border-line bg-[#fffdf9] py-1.5 pl-1.5 pr-4 shadow-[0_20px_40px_-28px_rgba(29,43,69,0.6)] sm:right-6">
               {profile.avatarUrl && (
                 <span className="relative size-9 overflow-hidden rounded-full bg-paper-3 ring-2 ring-accent">
@@ -168,12 +172,17 @@ export default async function HomePage() {
       {/* ------------------------------ Quick access ------------------------------ */}
       <section className="border-b border-line bg-[#fffdf9]">
         <div className="container-x">
-          <ul className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 py-4 sm:mx-0 sm:grid sm:grid-cols-5 sm:px-0">
-            {QUICK.map(({ href, label, img }) => (
+          <ul className="no-scrollbar -mx-4 flex overflow-x-auto px-4 py-3 sm:mx-0 sm:grid sm:grid-cols-5 sm:px-0 sm:divide-x sm:divide-line">
+            {QUICK.map(({ href, label, jp, sub }) => (
               <li key={href} className="shrink-0">
-                <Link href={href} className="flex items-center gap-2.5 rounded-2xl px-4 py-3 text-[0.95rem] font-medium text-ink transition-colors hover:bg-paper-2">
-                  <span className="grid size-10 place-items-center rounded-xl bg-paper-2"><Image src={art(img)} alt="" width={64} height={64} className="size-7" /></span>
-                  {label}
+                <Link href={href} className="group flex items-center gap-3 rounded-2xl px-3 py-2.5 transition-colors hover:bg-paper-2 sm:mx-2">
+                  <span aria-hidden className="hanko size-12 shrink-0 -rotate-3 text-[0.95rem] transition-transform duration-300 group-hover:rotate-0">
+                    <span className="[writing-mode:vertical-rl]">{jp}</span>
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block whitespace-nowrap text-[0.95rem] font-medium text-ink">{label}</span>
+                    <span className="block whitespace-nowrap text-xs text-muted">{sub}</span>
+                  </span>
                 </Link>
               </li>
             ))}
@@ -230,8 +239,8 @@ export default async function HomePage() {
           <div className="container-x">
             <SectionHeader kicker="Live sessions" title={<>Popular <em className="text-accent">live sessions</em></>} description={mentorship.intro} href="/sessions" linkLabel="All sessions" />
             {sessions.length > 0 ? (
-              <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                {sessions.map((s) => <SessionCard key={s.id} session={s} />)}
+              <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {sessions.map((s) => <SessionServiceCard key={s.id} session={s} compact />)}
               </div>
             ) : (
               <p className="mt-8 text-ink-2">New dates are announced soon. <Link href="/sessions" className="underline underline-offset-4">See how sessions work</Link></p>
@@ -242,15 +251,16 @@ export default async function HomePage() {
 
       {/* ------------------------------ Opportunity finder ------------------------------ */}
       <section className="relative overflow-hidden bg-[#f8eed6]/70 py-16 md:py-20">
-        <Image src={art("globe")} alt="" width={160} height={160} loading="eager" className="float-slow pointer-events-none absolute -right-6 top-8 hidden w-28 opacity-90 md:block lg:right-10" />
-        <Image src={art("airplane")} alt="" width={120} height={120} className="pointer-events-none absolute left-[46%] top-6 hidden w-14 md:block" />
         <div className="container-x relative">
           <SectionHeader kicker="Opportunity finder" title={<>Find internships, scholarships &amp; <em className="text-accent">fellowships</em></>} description="Hand-picked programs for students heading to Japan, with official links and deadlines. Filter by type, country, funding and how soon it closes." />
-          <OpportunitySearch className="mt-8 !bg-[#fffdf9]/90" />
+          <div className="relative mt-8">
+            <Kittu pose="jump" alt="" sizes="8rem" className="pointer-events-none absolute -top-[6.6rem] right-8 z-0 hidden w-28 md:block lg:right-14" />
+            <OpportunitySearch className="relative z-10 !bg-[#fffdf9]" />
+          </div>
           {opportunities.length > 0 && (
             <>
-              <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                {opportunities.map((o) => <OpportunityCard key={o.id} o={o} />)}
+              <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {opportunities.map((o) => <OpportunityCard key={o.id} o={o} compact />)}
               </div>
               <div className="mt-8 text-center">
                 <Link href="/opportunities" className="btn btn-ghost text-ink">See all opportunities <ArrowRight className="size-4" /></Link>
@@ -264,24 +274,24 @@ export default async function HomePage() {
       <section className="py-20 md:py-24">
         <div className="container-x">
           <SectionHeader kicker="Learning pathways" title={<>Choose your <em className="text-accent">path</em></>} description="Pick your goal. Each path brings together the sessions, guides, material and opportunities for it." />
-          <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {PATHWAYS.map(({ img, small, jp, title, text, href, tint }, i) => (
+          <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {PATHWAYS.map(({ img, jp, title, text, href, tint }, i) => (
               <Link
                 key={title}
                 href={href}
                 data-reveal
                 style={{ "--reveal-delay": `${i * 70}ms` } as React.CSSProperties}
-                className="group relative flex flex-col overflow-hidden rounded-3xl border border-line bg-[#fffdf9] p-4 transition-all duration-300 hover:-translate-y-1 hover:border-ink/20 hover:shadow-[0_24px_50px_-35px_rgba(29,43,69,0.55)]"
+                className="group flex items-start gap-4 rounded-2xl border border-line bg-[#fffdf9] p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-ink/20 hover:shadow-[0_20px_40px_-32px_rgba(29,43,69,0.55)]"
               >
-                <div className={`seigaiha relative grid aspect-[12/7] place-items-center overflow-hidden rounded-2xl ${tint}`}>
-                  <span className="absolute -right-8 -top-8 size-28 rounded-full bg-[#fffdf9]/50" />
-                  <Image src={art(img)} alt="" width={160} height={160} className="relative size-28 drop-shadow-[0_14px_18px_rgba(29,43,69,0.22)] transition-transform duration-500 group-hover:-rotate-3 group-hover:scale-110" />
-                  <Image src={art(small)} alt="" width={80} height={80} className="float-slow absolute bottom-3 left-4 size-11 drop-shadow-md" />
-                </div>
-                <span className="jp mt-4 px-2 text-sm text-accent">{jp}</span>
-                <h3 className="display mt-1 px-2 text-[1.6rem] leading-tight">{title}</h3>
-                <p className="mt-2 flex-1 px-2 text-[0.95rem] leading-relaxed text-ink-2">{text}</p>
-                <span className="mt-5 inline-flex items-center gap-1.5 px-2 pb-2 text-sm font-medium text-ink">Explore <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" /></span>
+                <span className={`seigaiha relative grid size-16 shrink-0 place-items-center overflow-hidden rounded-2xl ${tint}`}>
+                  <Image src={art(img)} alt="" width={96} height={96} className="size-11 drop-shadow-[0_8px_10px_rgba(29,43,69,0.2)] transition-transform duration-500 group-hover:scale-110" />
+                </span>
+                <span className="min-w-0">
+                  <span className="jp block text-xs text-accent">{jp}</span>
+                  <span className="mt-0.5 block font-semibold leading-snug text-ink group-hover:text-accent-deep">{title}</span>
+                  <span className="mt-1 line-clamp-2 block text-sm leading-relaxed text-ink-2">{text}</span>
+                  <span className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-ink">Explore <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-1" /></span>
+                </span>
               </Link>
             ))}
           </div>
@@ -299,29 +309,6 @@ export default async function HomePage() {
           </div>
         </section>
       )}
-
-      {/* ------------------------------ How it works ------------------------------ */}
-      <section className="border-t border-line bg-paper-2 py-20 md:py-24">
-        <div className="container-x">
-          <SectionHeader kicker="How it works" title={<>Learn. Prepare. <em className="text-accent">Apply.</em></>} />
-          <ol className="mt-10 grid grid-cols-1 gap-5 md:grid-cols-3">
-            {STEPS.map(({ img, small, step, title, text, tint }, i) => (
-              <li key={step} className="rounded-3xl border border-line bg-[#fffdf9] p-4" data-reveal style={{ "--reveal-delay": `${i * 80}ms` } as React.CSSProperties}>
-                <div className={`relative grid aspect-[12/7] place-items-center overflow-hidden rounded-2xl ${tint}`}>
-                  <span className="absolute -left-6 -bottom-10 size-32 rounded-full bg-[#fffdf9]/50" />
-                  <Image src={art(img)} alt="" width={160} height={160} className="relative size-28 drop-shadow-[0_14px_18px_rgba(29,43,69,0.22)]" />
-                  <Image src={art(small)} alt="" width={80} height={80} className="float-slow absolute right-5 top-4 size-11 drop-shadow-md" />
-                </div>
-                <div className="px-2 pb-2 pt-4">
-                  <span className="font-mono text-xs text-accent">{step}</span>
-                  <h3 className="display mt-1 text-[1.6rem] leading-tight">{title}</h3>
-                  <p className="mt-2 text-[0.95rem] leading-relaxed text-ink-2">{text}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </section>
 
       {/* ------------------------------ Blog ------------------------------ */}
       {posts.items.length > 0 && (
@@ -344,13 +331,21 @@ export default async function HomePage() {
             <Link href="/about" className="group mt-6 inline-flex items-center gap-2 font-medium text-ink" data-reveal>
               <span className="link-underline">Meet {firstName}</span> <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
             </Link>
+            <KittuSays pose="cheer" className="mt-10 hidden lg:inline-flex" imgClassName="w-32">
+              <span className="jp block text-accent">がんばって!</span> Every big move to Japan starts with one small step.
+            </KittuSays>
           </div>
-          <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:col-span-8">
-            {WHY.map(({ img, title, text }, i) => (
-              <li key={title} className="rounded-3xl border border-line bg-[#fffdf9] p-6" data-reveal style={{ "--reveal-delay": `${i * 60}ms` } as React.CSSProperties}>
-                <span className="grid size-14 place-items-center rounded-2xl bg-paper-2"><Image src={art(img)} alt="" width={80} height={80} className="size-10" /></span>
-                <h3 className="mt-4 font-semibold text-ink">{title}</h3>
-                <p className="mt-1.5 text-[0.95rem] leading-relaxed text-ink-2">{text}</p>
+          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:col-span-8">
+            {WHY.map(({ img, jp, pattern, title, text }, i) => (
+              <li key={title} className="relative overflow-hidden rounded-2xl border border-[#e6d8c0] bg-[#f6ecdc] p-4" data-reveal style={{ "--reveal-delay": `${i * 60}ms` } as React.CSSProperties}>
+                <span aria-hidden className={`${pattern} absolute inset-0`} />
+                <span aria-hidden className="jp absolute -bottom-4 right-2 text-[4.5rem] leading-none text-accent/[0.08]">{jp}</span>
+                <span aria-hidden className="absolute left-0 top-4 h-8 w-1 rounded-r bg-accent/70" />
+                <div className="relative flex items-center gap-3">
+                  <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#fffdf9] ring-1 ring-[#e6d8c0]"><Image src={art(img)} alt="" width={64} height={64} className="size-7" /></span>
+                  <h3 className="font-semibold leading-snug text-ink">{title}</h3>
+                </div>
+                <p className="relative mt-2 text-sm leading-relaxed text-ink-2">{text}</p>
               </li>
             ))}
           </ul>
@@ -412,12 +407,10 @@ export default async function HomePage() {
                 <Link href="/blog" className="btn btn-ghost !px-6 !py-3.5 text-ink">Read the blog</Link>
               </div>
             </div>
-            <div className="relative grid min-h-64 place-items-center overflow-hidden bg-indigo-soft md:min-h-full" aria-hidden>
-              <span className="absolute size-64 rounded-full bg-[#fffdf9]/60 md:size-80" />
-              <Image src={art("mount-fuji")} alt="" width={320} height={320} className="relative w-44 drop-shadow-[0_20px_24px_rgba(29,43,69,0.25)] md:w-56" />
-              <Image src={art("torii")} alt="" width={160} height={160} className="absolute bottom-8 left-[18%] w-16 drop-shadow-lg md:w-20" />
-              <Image src={art("cherry-blossom")} alt="" width={120} height={120} className="float-slow absolute right-[20%] top-8 w-12 drop-shadow-md md:w-14" />
-              <Image src={art("graduation-cap")} alt="" width={140} height={140} className="float-slow absolute bottom-10 right-[16%] w-16 drop-shadow-lg [animation-delay:-3s] md:w-20" />
+            <div className="seigaiha relative grid min-h-72 place-items-end justify-items-center overflow-hidden bg-indigo-soft pt-8 md:min-h-full" aria-hidden>
+              <span className="absolute bottom-[-4rem] size-72 rounded-full bg-[#fffdf9]/70 md:size-96" />
+              <Image src={art("cherry-blossom")} alt="" width={120} height={120} className="float-slow absolute left-[14%] top-8 w-12 drop-shadow-md md:w-14" />
+              <Kittu pose="fuji" alt="" sizes="20rem" className="relative mb-4 w-64 md:w-80" />
             </div>
           </div>
         </div>

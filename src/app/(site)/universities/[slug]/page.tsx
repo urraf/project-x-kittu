@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowUpRight, BadgeCheck, Globe, MapPin, Search } from "lucide-react";
 import { typeName, typeTone } from "@/components/universities/UniversityCard";
+import { TAG_LABELS, fieldLabel, regionLabel, type UniversityTag } from "@/lib/universities/taxonomy";
 import { safe } from "@/lib/safe";
 import { DEGREES, getPublicUniversity } from "@/lib/services/universities";
 import { absoluteUrl } from "@/lib/site";
@@ -50,7 +51,18 @@ export default async function UniversityPage({ params }: Props) {
         </div>
         <h1 className="display mt-4 text-[2.4rem] leading-[1.03] md:text-[3.3rem]">{u.name}</h1>
         {u.nameJa && <p className="jp mt-2 text-xl text-muted">{u.nameJa}</p>}
-        <p className="mt-3 flex items-center gap-1.5 text-ink-2"><MapPin className="size-4 text-accent" /> {u.city}, Japan</p>
+        <p className="mt-3 flex items-center gap-1.5 text-ink-2"><MapPin className="size-4 text-accent" /> {[u.city, u.prefecture && u.prefecture !== u.city ? `${u.prefecture} Prefecture` : "", "Japan"].filter(Boolean).join(", ")}{u.region && <span className="text-muted"> · {regionLabel(u.region)}</span>}</p>
+        {u.tags.filter((t) => t in TAG_LABELS).length > 0 && (
+          <ul className="mt-4 flex flex-wrap gap-2">
+            {u.tags.filter((t) => t in TAG_LABELS).map((t) => <li key={t} className="rounded-full bg-indigo-soft px-3 py-1 text-xs font-medium text-indigo">{TAG_LABELS[t as UniversityTag]}</li>)}
+          </ul>
+        )}
+        {u.fields.length > 0 && (
+          <div className="mt-5">
+            <p className="text-xs font-medium uppercase tracking-wider text-muted">Main fields</p>
+            <ul className="mt-2 flex flex-wrap gap-2">{u.fields.map((f) => <li key={f} className="rounded-full border border-line bg-[#fffdf9] px-3 py-1 text-sm text-ink-2">{fieldLabel(f)}</li>)}</ul>
+          </div>
+        )}
         {u.summary && <p className="mt-5 text-lg leading-relaxed text-ink-2">{u.summary}</p>}
         {u.strengths.length > 0 && (
           <ul className="mt-5 flex flex-wrap gap-2">{u.strengths.map((s) => <li key={s} className="chip">{s}</li>)}</ul>

@@ -137,7 +137,8 @@ export async function ingestImage(input: Buffer, opts: IngestOptions = {}): Prom
 
 /** Downloads a remote image (with a timeout and size guard) and ingests it. */
 export async function ingestRemoteImage(url: string, opts: IngestOptions = {}): Promise<MediaDTO> {
-  const res = await fetch(url, { signal: AbortSignal.timeout(15_000), redirect: "follow" });
+  // Some hosts (e.g. Wikimedia) reject requests without a descriptive User-Agent.
+  const res = await fetch(url, { signal: AbortSignal.timeout(15_000), redirect: "follow", headers: { "User-Agent": "LifeOfKittuKun/1.0 (+https://lifeofkittukun.com)" } });
   if (!res.ok) throw new Error(`Image download failed (${res.status})`);
   const length = Number(res.headers.get("content-length") ?? 0);
   if (length && length > env.maxUploadBytes * 2) throw new Error("Remote image is too large");

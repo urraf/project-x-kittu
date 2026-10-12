@@ -9,6 +9,7 @@ import { TestimonialCard } from "@/components/mentorship/TestimonialCard";
 import { SocialLinks } from "@/components/site/Footer";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { JsonLd } from "@/components/ui/JsonLd";
+import { Kittu } from "@/components/mascot/Kittu";
 import { safe } from "@/lib/safe";
 import { getMentorStats, listPublicReviews, listUpcomingSessions } from "@/lib/services/mentorship";
 import { getSettings } from "@/lib/services/settings";
@@ -44,14 +45,26 @@ export default async function SessionsPage() {
   ]);
 
   // Storefront: live sessions first, then study material, filterable by tab.
-  const items = [
-    ...sessions.map((s) => ({ id: `s-${s.id}`, kind: "sessions", node: <SessionServiceCard session={s} rating={stats.reviewCount >= 3 ? stats.avgRating : undefined} /> })),
-    ...products.map((p) => ({ id: `p-${p.id}`, kind: "products", node: <ProductServiceCard product={p} /> })),
+  const groups = [
+    {
+      id: "sessions",
+      label: "Live sessions",
+      jp: "講座",
+      gridClassName: "grid grid-cols-1 gap-5 md:grid-cols-2",
+      items: sessions.map((s) => ({ id: `s-${s.id}`, node: <SessionServiceCard session={s} rating={stats.reviewCount >= 3 ? stats.avgRating : undefined} /> })),
+    },
+    {
+      id: "products",
+      label: "Study material",
+      jp: "教材",
+      gridClassName: "grid grid-cols-1 gap-4 xl:grid-cols-2",
+      items: products.map((p) => ({ id: `p-${p.id}`, node: <ProductServiceCard product={p} /> })),
+    },
   ];
   const facts = [
     stats.reviewCount > 0 && { value: `${stats.avgRating.toFixed(1)}/5`, label: `${stats.reviewCount} rating${stats.reviewCount === 1 ? "" : "s"}` },
-    stats.students > 0 && { value: `${stats.students.toLocaleString("en-IN")}+`, label: "students guided" },
-    stats.sessions > 0 && { value: String(stats.sessions), label: "sessions hosted" },
+    stats.students >= 10 && { value: `${stats.students.toLocaleString("en-IN")}+`, label: "students guided" },
+    stats.sessions > 0 && { value: String(stats.sessions), label: `session${stats.sessions === 1 ? "" : "s"} hosted` },
     { value: String(sessions.length), label: `upcoming session${sessions.length === 1 ? "" : "s"}` },
     testimonials.length > 0 && { value: String(testimonials.length), label: "testimonials" },
   ]
@@ -116,8 +129,10 @@ export default async function SessionsPage() {
               <Link href="/about" className="inline-flex items-center gap-2 rounded-full border border-white/40 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white/10">About {firstName} <ArrowRight className="size-4" /></Link>
             </div>
 
-            <p className="mt-auto hidden pt-10 text-xs leading-relaxed text-white/75 lg:block">All times are in IST. Small live groups; the meeting link arrives by email right after booking.</p>
+            <p className="mt-auto hidden max-w-[10.5rem] pt-10 text-xs leading-relaxed text-white/80 lg:block">All times are in IST. Small live groups; the meeting link arrives by email right after booking.</p>
           </div>
+          <span aria-hidden className="absolute -bottom-10 right-0 hidden size-48 rounded-full bg-[#fffdf9]/25 lg:block" />
+          <Kittu pose="laptop" alt="" sizes="10rem" className="pointer-events-none absolute bottom-3 right-3 hidden w-40 lg:block" />
         </aside>
 
         {/* ------------------------------ Services ------------------------------ */}
@@ -140,8 +155,7 @@ export default async function SessionsPage() {
 
             <section id="upcoming" className="mt-8 scroll-mt-24">
               <ServiceTabs
-                tabs={[{ id: "all", label: "All" }, { id: "sessions", label: "Live sessions" }, { id: "products", label: "Study material" }]}
-                items={items}
+                groups={groups}
                 empty={<EmptyState title="New dates coming soon" description="There are no open sessions right now. Follow on YouTube or Instagram to hear when the next one opens." />}
               />
             </section>

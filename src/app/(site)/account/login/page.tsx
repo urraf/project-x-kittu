@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { CalendarCheck2, KeyRound, Star, Video } from "lucide-react";
 import { StudentAuth, type AuthMode } from "@/components/mentorship/StudentAuth";
 import { getStudent } from "@/lib/auth/student";
+import { Kittu } from "@/components/mascot/Kittu";
 
 export const metadata: Metadata = { title: "Log in", robots: { index: false } };
 export const dynamic = "force-dynamic";
@@ -38,7 +39,16 @@ export default async function StudentLoginPage({ searchParams }: { searchParams:
             ))}
           </ul>
         </div>
-        <StudentAuth initialMode={initialMode} next={next} />
+        {/* Kittu peeks over the sign-in card */}
+        <div className="relative pt-24">
+          <p className="absolute left-2 top-1 z-0 rounded-2xl rounded-br-sm border border-line bg-[#fffdf9] px-3.5 py-2 text-sm text-ink shadow-[0_12px_30px_-20px_rgba(29,43,69,0.5)]">
+            <span className="jp mr-1.5 text-accent">おかえり!</span> Good to see you.
+          </p>
+          <Kittu pose="lie" alt="" priority sizes="10rem" className="pointer-events-none absolute -top-3 right-6 z-20 w-36 drop-shadow-[0_10px_12px_rgba(29,43,69,0.18)]" />
+          <div className="relative z-10">
+            <StudentAuth initialMode={initialMode} next={next} />
+          </div>
+        </div>
       </div>
     </section>
   );

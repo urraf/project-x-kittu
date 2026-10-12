@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { safe } from "@/lib/safe";
 import { listPublishedProducts, productCategories } from "@/lib/services/store";
 import { absoluteUrl } from "@/lib/site";
+import { Kittu } from "@/components/mascot/Kittu";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,7 @@ export default async function StorePage({ searchParams }: { searchParams: Promis
     <>
       <section className="seigaiha relative overflow-hidden border-b border-line bg-paper-2">
         <div aria-hidden className="absolute -right-12 -top-10 size-40 rounded-full bg-sakura md:-right-20 md:-top-24 md:size-[26rem]" />
+        <Kittu pose="study" alt="" sizes="18rem" className="pointer-events-none absolute bottom-2 right-[5%] z-[1] hidden w-64 lg:block xl:right-[9%] xl:w-72" />
         <div className="container-x relative pb-12 pt-28 md:pb-16 md:pt-32">
           <p className="kicker flex items-center gap-3 text-muted"><span className="h-px w-8 bg-accent" /> <span className="jp text-accent">教材</span> Study store</p>
           <h1 className="display mt-5 max-w-3xl text-[2.8rem] leading-[0.98] sm:text-6xl lg:text-[4.4rem]">

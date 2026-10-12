@@ -7,7 +7,7 @@ import { notFound } from "@/lib/http";
 import { sanitizePlain } from "@/lib/content/html";
 import { slugify } from "@/lib/utils/text";
 import { imageSchema } from "@/lib/validation/post";
-import { STARTER_UNIVERSITIES } from "@/lib/universities/starter-list";
+import { CATALOG, FIELDS, REGIONS, TAGS } from "@/lib/universities/catalog";
 import type { ImageDTO } from "@/lib/types";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -36,6 +36,11 @@ export type UniversityDTO = {
   nameJa: string;
   type: "national" | "public" | "private";
   city: string;
+  prefecture: string;
+  region: string;
+  fields: string[];
+  tags: string[];
+  tier: number;
   website: string;
   summary: string;
   strengths: string[];
@@ -68,6 +73,11 @@ function toDTO(u: UniversityDoc): UniversityDTO {
     nameJa: u.nameJa ?? "",
     type: u.type as UniversityDTO["type"],
     city: u.city ?? "",
+    prefecture: u.prefecture ?? "",
+    region: u.region ?? "",
+    fields: u.fields ?? [],
+    tags: u.tags ?? [],
+    tier: u.tier ?? 3,
     website: u.website ?? "",
     summary: u.summary ?? "",
     strengths: u.strengths ?? [],
@@ -91,6 +101,9 @@ export const universitySearchSchema = z.object({
   q: z.string().trim().max(100).optional().catch(undefined),
   type: z.enum(["national", "public", "private"]).optional().catch(undefined),
   degree: z.string().max(20).optional().catch(undefined),
+  region: z.string().max(30).optional().catch(undefined),
+  field: z.string().max(10).optional().catch(undefined),
+  english: z.enum(["1"]).optional().catch(undefined),
   verified: z.enum(["1"]).optional().catch(undefined),
   page: z.coerce.number().int().min(1).max(100).optional().catch(undefined),
 });
@@ -101,6 +114,9 @@ export async function searchUniversities(params: UniversitySearch) {
   const filter: Filter = { status: "published" };
   if (params.type) filter.type = params.type;
   if (params.degree) filter["programs.degree"] = params.degree;
+  if (params.region) filter.region = params.region;
+  if (params.field) filter.fields = params.field;
+  if (params.english) filter.tags = { $in: ["english-ug", "sgu-a", "sgu-b", "g30"] };
   if (params.verified) Object.assign(filter, { lastVerifiedAt: { $ne: null }, "programs.0": { $exists: true } });
   if (params.q) {
     const rx = { $regex: escapeRegex(params.q), $options: "i" };
@@ -108,7 +124,7 @@ export async function searchUniversities(params: UniversitySearch) {
   }
   const page = params.page ?? 1;
   const [docs, total] = await Promise.all([
-    University.find(filter).sort({ featured: -1, lastVerifiedAt: -1, name: 1 }).skip((page - 1) * PAGE_SIZE).limit(PAGE_SIZE).lean<UniversityDoc[]>(),
+    University.find(filter).sort({ featured: -1, lastVerifiedAt: -1, tier: 1, name: 1 }).skip((page - 1) * PAGE_SIZE).limit(PAGE_SIZE).lean<UniversityDoc[]>(),
     University.countDocuments(filter),
   ]);
   return { items: docs.map(toDTO), total, page, pages: Math.max(1, Math.ceil(total / PAGE_SIZE)) };
@@ -151,6 +167,12 @@ export const universityInputSchema = z.object({
   nameJa: z.string().trim().max(120).default(""),
   type: z.enum(["national", "public", "private"]),
   city: z.string().trim().max(80).default(""),
+  // Recommender profile: optional, so API updates that omit it keep the existing values.
+  prefecture: z.string().trim().max(40).optional(),
+  region: z.enum(["", ...REGIONS.map((r) => r.id)] as [string, ...string[]]).optional(),
+  fields: z.array(z.enum(FIELDS.map((f) => f.id) as [string, ...string[]])).max(10).optional(),
+  tags: z.array(z.enum(TAGS)).max(8).optional(),
+  tier: z.number().int().min(1).max(3).optional(),
   website: urlField,
   summary: z.string().trim().max(400).default(""),
   strengths: z.array(z.string().trim().min(1).max(60)).max(12).default([]),
@@ -189,6 +211,11 @@ function fields(input: z.infer<typeof universityInputSchema>) {
     nameJa: sanitizePlain(input.nameJa),
     type: input.type,
     city: sanitizePlain(input.city),
+    ...(input.prefecture !== undefined ? { prefecture: sanitizePlain(input.prefecture) } : {}),
+    ...(input.region !== undefined ? { region: input.region } : {}),
+    ...(input.fields !== undefined ? { fields: input.fields } : {}),
+    ...(input.tags !== undefined ? { tags: input.tags } : {}),
+    ...(input.tier !== undefined ? { tier: input.tier } : {}),
     website: input.website,
     summary: sanitizePlain(input.summary),
     strengths: input.strengths.map(sanitizePlain),
@@ -245,15 +272,26 @@ export async function deleteUniversity(id: string) {
   if (!r.deletedCount) throw notFound("University not found");
 }
 
-/** Adds the starter list, skipping names that already exist. Safe to run again. */
+/**
+ * Adds universities from the catalog that aren't in the database yet, and fills
+ * in the recommender profile (region, fields, tags, tier) for existing ones that
+ * don't have it. Admin edits are never overwritten. Safe to run again.
+ */
 export async function importStarterUniversities() {
   await connectDB();
-  const existing = new Set((await University.find().select("name").lean<{ name: string }[]>()).map((u) => u.name.toLowerCase()));
+  const existing = new Map((await University.find().select("name region").lean<{ _id: Types.ObjectId; name: string; region?: string }[]>()).map((u) => [u.name.toLowerCase(), u]));
   let added = 0;
-  for (const u of STARTER_UNIVERSITIES) {
-    if (existing.has(u.name.toLowerCase())) continue;
-    await University.create({ ...u, slug: await uniqueSlug(u.name), status: "published" });
-    added++;
+  let profiled = 0;
+  for (const c of CATALOG) {
+    const profile = { prefecture: c.prefecture, region: c.region, fields: c.fields, tags: c.tags, tier: c.tier };
+    const found = existing.get(c.name.toLowerCase());
+    if (!found) {
+      await University.create({ name: c.name, type: c.type, city: c.city, ...profile, slug: await uniqueSlug(c.name), status: "published" });
+      added++;
+    } else if (!found.region) {
+      await University.updateOne({ _id: found._id }, { $set: profile });
+      profiled++;
+    }
   }
-  return { added, total: await University.countDocuments() };
+  return { added, profiled, total: await University.countDocuments() };
 }

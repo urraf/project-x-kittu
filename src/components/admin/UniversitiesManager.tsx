@@ -38,8 +38,8 @@ export function UniversitiesManager() {
   async function importList() {
     setImporting(true);
     try {
-      const r = await api<{ added: number; total: number }>("/api/admin/universities/import", { method: "POST" });
-      toast.success(r.added ? `Added ${r.added} universities (${r.total} in total).` : "The starter list is already imported.");
+      const r = await api<{ added: number; profiled?: number; total: number }>("/api/admin/universities/import", { method: "POST" });
+      toast.success(r.added || r.profiled ? `Added ${r.added} universities and updated ${r.profiled ?? 0} profiles (${r.total} in total).` : "The catalog is already imported.");
       reload();
     } catch (e) {
       toast.error(errorMessage(e));
@@ -55,8 +55,8 @@ export function UniversitiesManager() {
         description="The universities directory. Add verified English-taught programs, official links and scholarships, then mark each one as verified."
         actions={
           <>
-            <Button onClick={importList} loading={importing} title="Adds the starter list of 119 universities (skips ones you already have)">
-              {!importing && <DownloadCloud className="size-4" />} Import starter list
+            <Button onClick={importList} loading={importing} title="Adds universities from the built-in catalog of 200+ and fills in their profiles (never overwrites your edits)">
+              {!importing && <DownloadCloud className="size-4" />} Import catalog
             </Button>
             <Link href="/admin/universities/new" className="inline-flex h-10 items-center gap-2 rounded-full bg-ink px-4 text-[0.88rem] font-medium text-cream hover:bg-ink-2"><Plus className="size-4" /> Add university</Link>
           </>
@@ -78,8 +78,8 @@ export function UniversitiesManager() {
       ) : !data?.items.length ? (
         <AdminEmpty
           title={q || type ? "Nothing matches" : "No universities yet"}
-          description={q || type ? "Try another search." : "Import the starter list of 119 universities, then add verified program details over time."}
-          action={!q && !type ? <Button variant="primary" onClick={importList} loading={importing}>Import starter list</Button> : undefined}
+          description={q || type ? "Try another search." : "Import the catalog of 200+ universities, then add verified program details over time."}
+          action={!q && !type ? <Button variant="primary" onClick={importList} loading={importing}>Import catalog</Button> : undefined}
         />
       ) : (
         <>

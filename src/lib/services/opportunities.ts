@@ -79,7 +79,7 @@ function toDTO(o: OpportunityDoc): OpportunityDTO {
     benefits: o.benefits ?? "",
     applyUrl: o.applyUrl ?? "",
     sourceUrl: o.sourceUrl ?? "",
-    coverImage: o.coverImage?.url ? { url: o.coverImage.url, alt: o.coverImage.alt ?? "", mediaId: o.coverImage.mediaId ? String(o.coverImage.mediaId) : undefined, width: o.coverImage.width ?? undefined, height: o.coverImage.height ?? undefined, blurDataURL: o.coverImage.blurDataURL ?? undefined } : undefined,
+    coverImage: o.coverImage?.url ? { url: o.coverImage.url, alt: o.coverImage.alt ?? "", mediaId: o.coverImage.mediaId ? String(o.coverImage.mediaId) : undefined, width: o.coverImage.width ?? undefined, height: o.coverImage.height ?? undefined, blurDataURL: o.coverImage.blurDataURL ?? undefined, credit: o.coverImage.credit?.name ? { name: o.coverImage.credit.name, url: o.coverImage.credit.url ?? undefined } : undefined } : undefined,
     status: o.status as OpportunityDTO["status"],
     featured: Boolean(o.featured),
     views: o.views ?? 0,

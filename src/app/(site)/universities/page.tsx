@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BadgeCheck, Search } from "lucide-react";
+import { BadgeCheck, Globe2, Search, Sparkles } from "lucide-react";
+import { UniMatch } from "@/components/universities/UniMatch";
 import { UniversityCard } from "@/components/universities/UniversityCard";
+import { REGIONS } from "@/lib/universities/taxonomy";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { safe } from "@/lib/safe";
 import { DEGREES, UNIVERSITY_TYPES, searchUniversities, universitySearchSchema, universityStats, type UniversitySearch } from "@/lib/services/universities";
@@ -48,8 +50,19 @@ export default async function UniversitiesPage({ searchParams }: { searchParams:
               <input name="q" defaultValue={params.q ?? ""} placeholder="Search a university, city or subject" aria-label="Search universities" className="h-12 w-full rounded-xl border border-line bg-[#fffdf9] pl-11 pr-4 text-[0.95rem] text-ink placeholder:text-muted focus:border-ink focus:outline-none" maxLength={100} />
             </label>
             {params.type && <input type="hidden" name="type" value={params.type} />}
-            <button type="submit" className="btn btn-accent h-12 !rounded-xl !px-6">Search</button>
+            <button type="submit" className="btn btn-ghost h-12 !rounded-xl !px-6 text-ink">Search</button>
           </form>
+          <a href="#match" className="btn btn-accent mt-4 !px-6 !py-3"><Sparkles className="size-4" /> Get my university shortlist</a>
+        </div>
+      </section>
+
+      {/* ------------------------------ JapanUniMatch ------------------------------ */}
+      <section id="match" className="scroll-mt-20 border-b border-line bg-indigo-soft/40 py-14 md:py-20">
+        <div className="container-x">
+          <p className="kicker flex items-center gap-3 text-muted"><span className="h-px w-8 bg-accent" /> <span className="jp text-accent">相性</span> JapanUniMatch</p>
+          <h2 className="display mt-4 max-w-3xl text-4xl md:text-5xl">Which universities <em className="text-accent">fit you?</em></h2>
+          <p className="mt-3 max-w-2xl text-ink-2">Tell us about your studies and goals. We rank {stats.total || "200+"} universities by field, academic profile, experience, funding and language, and explain every match.</p>
+          <div className="mt-6"><UniMatch /></div>
         </div>
       </section>
 
@@ -68,10 +81,16 @@ export default async function UniversitiesPage({ searchParams }: { searchParams:
               </Link>
             </div>
             <div className="flex flex-wrap items-center gap-2 text-sm">
+              <Link href={hrefWith(params, { english: params.english ? undefined : "1" })} className="chip" data-active={Boolean(params.english)}><Globe2 className="size-3.5" /> English-friendly</Link>
               <span className="text-muted">Degree:</span>
               <Link href={hrefWith(params, { degree: undefined })} className="chip" data-active={!params.degree}>Any</Link>
               {DEGREES.slice(0, 4).map((d) => <Link key={d.id} href={hrefWith(params, { degree: d.id })} className="chip" data-active={params.degree === d.id}>{d.label}</Link>)}
             </div>
+          </div>
+          <div className="no-scrollbar -mx-4 mt-4 flex gap-2 overflow-x-auto px-4 text-sm sm:mx-0 sm:flex-wrap sm:px-0">
+            <span className="shrink-0 self-center text-muted">Region:</span>
+            <Link href={hrefWith(params, { region: undefined })} className="chip shrink-0" data-active={!params.region}>All of Japan</Link>
+            {REGIONS.map((r) => <Link key={r.id} href={hrefWith(params, { region: r.id })} className="chip shrink-0" data-active={params.region === r.id}>{r.label}</Link>)}
           </div>
           <p className="mt-6 text-sm text-muted">{result.total} {result.total === 1 ? "university" : "universities"}{params.q ? ` matching “${params.q}”` : ""}</p>
           <div className="mt-4">
@@ -80,7 +99,7 @@ export default async function UniversitiesPage({ searchParams }: { searchParams:
                 {result.items.map((u) => <UniversityCard key={u.id} u={u} />)}
               </div>
             ) : (
-              <EmptyState title={params.q || params.type || params.degree || params.verified ? "No universities match" : "The directory is being prepared"} description={params.q || params.type || params.degree || params.verified ? "Try a broader search." : "University details are being added. Check back soon."} />
+              <EmptyState title={params.q || params.type || params.degree || params.verified || params.region || params.english ? "No universities match" : "The directory is being prepared"} description={params.q || params.type || params.degree || params.verified || params.region || params.english ? "Try a broader search." : "University details are being added. Check back soon."} />
             )}
           </div>
           {result.pages > 1 && (

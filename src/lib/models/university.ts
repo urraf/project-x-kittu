@@ -26,6 +26,12 @@ const UniversitySchema = new Schema(
     nameJa: { type: String, trim: true, maxlength: 120, default: "" },
     type: { type: String, enum: ["national", "public", "private"], required: true },
     city: { type: String, trim: true, maxlength: 80, default: "" },
+    /** Profile used by the directory filters and the JapanUniMatch recommender (see lib/universities/catalog). */
+    prefecture: { type: String, trim: true, maxlength: 40, default: "" },
+    region: { type: String, trim: true, maxlength: 30, default: "" },
+    fields: { type: [{ type: String, trim: true, maxlength: 10 }], default: [] },
+    tags: { type: [{ type: String, trim: true, maxlength: 20 }], default: [] },
+    tier: { type: Number, min: 1, max: 3, default: 3 },
     website: { type: String, trim: true, maxlength: 2048, default: "" },
     summary: { type: String, trim: true, maxlength: 400, default: "" },
     strengths: { type: [{ type: String, trim: true, maxlength: 60 }], default: [] },
@@ -40,5 +46,6 @@ const UniversitySchema = new Schema(
   { timestamps: true },
 );
 UniversitySchema.index({ status: 1, type: 1, name: 1 });
+UniversitySchema.index({ status: 1, region: 1 });
 export type UniversityDoc = InferSchemaType<typeof UniversitySchema> & { _id: Types.ObjectId; createdAt: Date; updatedAt: Date };
 export const University: Model<InferSchemaType<typeof UniversitySchema>> = models.University || model("University", UniversitySchema);
