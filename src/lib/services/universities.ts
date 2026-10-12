@@ -84,7 +84,7 @@ function toDTO(u: UniversityDoc): UniversityDTO {
     programs,
     englishPrograms: programs.filter((p) => p.language === "english").length,
     scholarships: u.scholarships ?? "",
-    coverImage: u.coverImage?.url ? { url: u.coverImage.url, alt: u.coverImage.alt ?? "", width: u.coverImage.width ?? undefined, height: u.coverImage.height ?? undefined, blurDataURL: u.coverImage.blurDataURL ?? undefined } : undefined,
+    coverImage: u.coverImage?.url ? { url: u.coverImage.url, alt: u.coverImage.alt ?? "", mediaId: u.coverImage.mediaId ? String(u.coverImage.mediaId) : undefined, width: u.coverImage.width ?? undefined, height: u.coverImage.height ?? undefined, blurDataURL: u.coverImage.blurDataURL ?? undefined, credit: u.coverImage.credit?.name ? { name: u.coverImage.credit.name, url: u.coverImage.credit.url ?? undefined } : undefined } : undefined,
     lastVerifiedAt: u.lastVerifiedAt ? new Date(u.lastVerifiedAt).toISOString() : undefined,
     verified: Boolean(u.lastVerifiedAt) && programs.length > 0,
     status: u.status as UniversityDTO["status"],

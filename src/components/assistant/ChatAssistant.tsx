@@ -48,11 +48,11 @@ function friendlyLabel(href: string) {
   return href.startsWith("/") ? "Open page" : "Official page";
 }
 
-/** Tiny, safe markdown: **bold**, [links](/path), "- " bullets and line breaks. No HTML is ever injected. */
+/** Tiny, safe markdown: **bold**, [links](/path), bullets, numbered steps and a "Next step:" callout. No HTML is ever injected. */
 function Rich({ text, onNavigate }: { text: string; onNavigate: () => void }) {
   const inline = (line: string, key: string) => {
     const parts: React.ReactNode[] = [];
-    const re = /\*\*([^*]+)\*\*|\[([^\]]+)\]\(([^)\s]+)\)/g;
+    const re = /\*\*([^*]+)\*\*|\[([^\]]+)\]\(([^)\s]+)\)|\[(\/[^\]\s]+)\](?!\()/g;
     let last = 0;
     let m: RegExpExecArray | null;
     let i = 0;
@@ -60,10 +60,12 @@ function Rich({ text, onNavigate }: { text: string; onNavigate: () => void }) {
       if (m.index > last) parts.push(line.slice(last, m.index));
       if (m[1]) parts.push(<strong key={`${key}-${i++}`} className="font-semibold text-ink">{m[1]}</strong>);
       else {
-        const href = m[3]!;
-        const label = /^(\/|https?:)/.test(m[2]!) ? friendlyLabel(href) : m[2]!;
-        if (href.startsWith("/") && !href.startsWith("//")) parts.push(<Link key={`${key}-${i++}`} href={href} onClick={onNavigate} className="font-medium text-accent-deep underline decoration-accent/40 underline-offset-2 hover:decoration-accent">{label}</Link>);
-        else if (/^https:\/\//.test(href)) parts.push(<a key={`${key}-${i++}`} href={href} target="_blank" rel="noopener noreferrer nofollow" className="font-medium text-accent-deep underline decoration-accent/40 underline-offset-2">{label}</a>);
+        // [text](href), or a bare [/path] the model sometimes writes.
+        const href = m[3] ?? m[4]!;
+        const label = !m[2] || /^(\/|https?:)/.test(m[2]) ? friendlyLabel(href) : m[2];
+        const chip = "mx-0.5 rounded-md bg-accent-soft px-1.5 py-0.5 text-[0.85rem] font-medium text-accent-deep no-underline [box-decoration-break:clone] transition-colors hover:bg-accent hover:text-white";
+        if (href.startsWith("/") && !href.startsWith("//")) parts.push(<Link key={`${key}-${i++}`} href={href} onClick={onNavigate} className={chip}>{label} <span aria-hidden>→</span></Link>);
+        else if (/^https:\/\//.test(href)) parts.push(<a key={`${key}-${i++}`} href={href} target="_blank" rel="noopener noreferrer nofollow" className={chip}>{label} <span aria-hidden>↗</span></a>);
         else parts.push(label);
       }
       last = m.index + m[0].length;
@@ -71,19 +73,46 @@ function Rich({ text, onNavigate }: { text: string; onNavigate: () => void }) {
     if (last < line.length) parts.push(line.slice(last));
     return parts;
   };
-  const lines = text.split("\n");
+
+  const lines = text.replace(/\r/g, "").split("\n");
   const blocks: React.ReactNode[] = [];
-  let list: string[] = [];
+  let list: { kind: "ul" | "ol"; items: string[] } | null = null;
   const flush = (k: number) => {
-    if (list.length) blocks.push(<ul key={`ul-${k}`} className="my-1 list-disc space-y-0.5 pl-5 marker:text-accent">{list.map((l, j) => <li key={j}>{inline(l, `li-${k}-${j}`)}</li>)}</ul>);
-    list = [];
+    if (!list) return;
+    const items = list.items.map((l, j) => <li key={j} className="pl-0.5">{inline(l, `li-${k}-${j}`)}</li>);
+    blocks.push(
+      list.kind === "ol" ? (
+        <ol key={`ol-${k}`} className="my-1.5 list-decimal space-y-1 pl-5 marker:font-semibold marker:text-accent">{items}</ol>
+      ) : (
+        <ul key={`ul-${k}`} className="my-1.5 list-disc space-y-1 pl-5 marker:text-accent">{items}</ul>
+      ),
+    );
+    list = null;
   };
   lines.forEach((raw, k) => {
     const line = raw.trimEnd();
-    const bullet = line.match(/^\s*(?:[-*•]|\d+\.)\s+(.*)$/);
-    if (bullet) return void list.push(bullet[1]!);
+    const ol = line.match(/^\s*\d+[.)]\s+(.*)$/);
+    const ul = line.match(/^\s*[-*•]\s+(.*)$/);
+    if (ol || ul) {
+      const kind = ol ? "ol" : "ul";
+      if (list && list.kind !== kind) flush(k);
+      list ??= { kind, items: [] };
+      list.items.push((ol ?? ul)![1]!);
+      return;
+    }
     flush(k);
-    if (line.trim()) blocks.push(<p key={`p-${k}`} className="my-1">{inline(line.replace(/^#+\s*/, ""), `p-${k}`)}</p>);
+    const t = line.trim().replace(/^#+\s*/, "");
+    if (!t) return;
+    const next = t.match(/^\**next step:?\**:?\s*(.*)$/i);
+    if (next) {
+      blocks.push(
+        <p key={`n-${k}`} className="mt-2 rounded-xl border-l-[3px] border-accent bg-accent-soft/50 px-3 py-2 text-[0.86rem]">
+          <span className="jp mr-1 text-accent">次</span><strong className="font-semibold text-ink">Next step:</strong> {inline(next[1]!, `n-${k}`)}
+        </p>,
+      );
+      return;
+    }
+    blocks.push(<p key={`p-${k}`} className={blocks.length === 0 ? "mb-1" : "my-1"}>{inline(t, `p-${k}`)}</p>);
   });
   flush(lines.length);
   return <>{blocks.map((b, i) => <Fragment key={i}>{b}</Fragment>)}</>;

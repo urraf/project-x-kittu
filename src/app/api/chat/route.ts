@@ -3,6 +3,7 @@ import { ApiError, assertSameOrigin, clientIp, ok, readJson, route, tooMany } fr
 import { ConfigError, env } from "@/lib/env";
 import { GroqError } from "@/lib/ai/groq";
 import { askKittu } from "@/lib/services/assistant";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -17,7 +18,12 @@ export const POST = route(async (req) => {
   try {
     return ok(await askKittu(await readJson(req)), { headers: { "Cache-Control": "no-store" } });
   } catch (err) {
-    if (err instanceof GroqError) throw new ApiError(503, "Kittu is busy right now. Please try again in a minute.", "assistant_unavailable");
+    if (err instanceof GroqError) {
+      // 401/403 = bad or revoked key (a setup problem, not load): log it loudly so it's easy to spot.
+      const keyProblem = err.status === 401 || err.status === 403;
+      logger.error(keyProblem ? "chat.groq_key_invalid" : "chat.groq_failed", { status: err.status, message: err.message });
+      throw new ApiError(503, keyProblem ? "Kittu is offline right now. Please try again later." : "Kittu is busy right now. Please try again in a minute.", "assistant_unavailable");
+    }
     throw err;
   }
 });

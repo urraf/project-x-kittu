@@ -1,54 +1,67 @@
 /**
  * The rising-sun mark: a vermilion disc (r = 15 in a 32×32 box) cut by two
- * gentle waves instead of straight horizon lines. Pure path data, so it can be
- * used in React components and in next/og images alike.
+ * thin Mount Fuji silhouettes (flat summit, gently curving slopes), so the
+ * sun rises behind layered mountains. Pure path data, usable in React
+ * components and in next/og images alike.
  */
 const CX = 16;
 const CY = 16;
 const R = 15;
-const AMP = 0.75; // wave height
-const BUMPS = 4; // half-waves across the disc
 
 const f = (n: number) => Number(n.toFixed(3));
 const halfWidth = (y: number) => Math.sqrt(R * R - (y - CY) ** 2);
+const mirror = (x: number) => 2 * CX - x;
 
-/** Smooth wave from left to right (or right to left) at height y, ending exactly on the circle. */
-function wave(y: number, dir: 1 | -1) {
-  const w = halfWidth(y);
-  const [x0, x1] = dir === 1 ? [CX - w, CX + w] : [CX + w, CX - w];
-  const step = (x1 - x0) / BUMPS;
-  // First bump goes up when drawn left→right; the reversed path must start with the last bump's direction.
-  const firstUp = dir === 1 ? true : BUMPS % 2 === 0 ? false : true;
-  let d = `Q${f(x0 + step / 2)} ${f(y + (firstUp ? -2 : 2) * AMP)} ${f(x0 + step)} ${f(y)}`;
-  for (let i = 2; i <= BUMPS; i++) d += ` T${f(x0 + step * i)} ${f(y)}`;
-  return { start: `${f(x0)} ${f(y)}`, end: `${f(x1)} ${f(y)}`, d };
+// Base mountain: feet on the circle at FOOT_Y, flat summit at SUMMIT_Y.
+const FOOT_Y = 21.4;
+const SUMMIT_Y = 14.6;
+const SUMMIT_HALF = 2.1;
+
+/** Mountain outline shifted down by `dy`, drawn left→right (dir 1) or right→left (dir -1). */
+function ridge(dy: number, dir: 1 | -1) {
+  const fy = FOOT_Y + dy;
+  const sy = SUMMIT_Y + dy;
+  const lx = CX - halfWidth(fy);
+  const ax = CX - SUMMIT_HALF;
+  const h = fy - sy;
+  // Concave Fuji slope: gentle near the foot, steep near the summit.
+  const c1 = [lx + (ax - lx) * 0.55, fy - h * 0.12];
+  const c2 = [ax - (ax - lx) * 0.16, sy + h * 0.38];
+  const pt = (p: number[]) => `${f(p[0]!)} ${f(p[1]!)}`;
+  const m = (p: number[]) => [mirror(p[0]!), p[1]!];
+  const L = pt([lx, fy]);
+  const A = pt([ax, sy]);
+  const B = pt([mirror(ax), sy]);
+  const Rt = pt([mirror(lx), fy]);
+  if (dir === 1) return { start: L, fy, d: `C${pt(c1)} ${pt(c2)} ${A} L${B} C${pt(m(c2))} ${pt(m(c1))} ${Rt}` };
+  return { start: Rt, fy, d: `C${pt(m(c1))} ${pt(m(c2))} ${B} L${A} C${pt(c2)} ${pt(c1)} ${L}` };
 }
 
-function arc(toY: number, toLeft: boolean, sweep: 0 | 1, large: 0 | 1) {
-  const x = toLeft ? CX - halfWidth(toY) : CX + halfWidth(toY);
-  return `A${R} ${R} 0 ${large} ${sweep} ${f(x)} ${f(toY)}`;
+function arcTo(y: number, toLeft: boolean, sweep: 0 | 1, large: 0 | 1) {
+  const x = toLeft ? CX - halfWidth(y) : CX + halfWidth(y);
+  return `A${R} ${R} 0 ${large} ${sweep} ${f(x)} ${f(y)}`;
 }
 
-// Cut lines (top/bottom edge of each white wave), matching the original proportions.
-const Y1 = 20;
-const Y2 = 21.6;
-const Y3 = 24.2;
-const Y4 = 25.4;
+// Offsets of the four outlines: top piece, white gap, band, white gap, bottom piece.
+const D1 = 0;
+const D2 = D1 + 1.5;
+const D3 = D2 + 2.3;
+const D4 = D3 + 1.2;
 
 const top = (() => {
-  const w = wave(Y1, 1);
-  return `M${w.start} ${w.d} ${arc(Y1, true, 0, 1)}Z`;
+  const r = ridge(D1, 1);
+  return `M${r.start} ${r.d} ${arcTo(r.fy, true, 0, 1)}Z`;
 })();
 
 const band = (() => {
-  const a = wave(Y2, 1);
-  const b = wave(Y3, -1);
-  return `M${a.start} ${a.d} ${arc(Y3, false, 1, 0)} ${b.d} ${arc(Y2, true, 1, 0)}Z`;
+  const a = ridge(D2, 1);
+  const b = ridge(D3, -1);
+  return `M${a.start} ${a.d} ${arcTo(b.fy, false, 1, 0)} ${b.d} ${arcTo(a.fy, true, 1, 0)}Z`;
 })();
 
 const bottom = (() => {
-  const w = wave(Y4, 1);
-  return `M${w.start} ${w.d} ${arc(Y4, true, 1, 0)}Z`;
+  const r = ridge(D4, 1);
+  return `M${r.start} ${r.d} ${arcTo(r.fy, true, 1, 0)}Z`;
 })();
 
 export const SUN_PATHS = [top, band, bottom] as const;

@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight, CalendarClock, GraduationCap, MapPin } from "lucide-react";
+import { ArrowUpRight, Building2, CalendarClock, GraduationCap, MapPin } from "lucide-react";
 import { degreeLabel, fundingLabel, typeLabel } from "@/lib/opportunities/constants";
 import { cn } from "@/lib/utils/cn";
 import type { OpportunityDTO } from "@/lib/services/opportunities";
@@ -60,16 +60,23 @@ export function OpportunityCard({ o, compact = true }: { o: OpportunityDTO; comp
           <span className={cn("rounded-full px-2.5 py-1 text-xs font-medium", fundingTone(o.funding))}>{fundingLabel(o.funding)}</span>
         </div>
       </div>
-      <div className={cn("flex flex-1 flex-col", compact ? "p-4" : "p-5")}>
-        {o.organization && <p className="line-clamp-1 text-xs font-medium uppercase tracking-wider text-muted">{o.organization}</p>}
-        <h3 className={cn("display mt-1.5 leading-[1.12] text-ink", compact ? "line-clamp-2 text-[1.12rem]" : "text-[1.45rem]")}><span className="link-underline">{o.title}</span></h3>
-        {o.summary && !compact && <p className="mt-2 line-clamp-2 text-[0.93rem] leading-relaxed text-ink-2">{o.summary}</p>}
-        <ul className={cn("mt-auto space-y-1.5 text-sm text-ink-2", compact ? "pt-3" : "pt-5")}>
-          <li className="flex items-center gap-2"><MapPin className="size-4 shrink-0 text-accent" /> {[o.location, o.country].filter(Boolean).join(", ")}</li>
-          {o.deadline && <li className="flex items-center gap-2"><CalendarClock className="size-4 shrink-0 text-accent" /> Deadline {fmt(o.deadline)}</li>}
-          {o.degreeLevels.length > 0 && !compact && <li className="flex items-center gap-2"><GraduationCap className="size-4 shrink-0 text-accent" /> {o.degreeLevels.map(degreeLabel).join(" · ")}</li>}
-        </ul>
-        <span className={cn("inline-flex items-center gap-1.5 text-sm font-medium text-ink", compact ? "mt-3" : "mt-4")}>
+      <div className="flex flex-1 flex-col p-4">
+        {o.organization && (
+          <p className="flex items-center gap-1.5 text-xs text-muted">
+            <Building2 className="size-3.5 shrink-0 text-accent/80" /> <span className="truncate">{o.organization}</span>
+          </p>
+        )}
+        {/* Two-line title area keeps the details aligned across cards. */}
+        <h3 className="mt-1.5 line-clamp-2 min-h-[2.6rem] text-[0.98rem] font-semibold leading-[1.3rem] text-ink group-hover:text-accent-deep">{o.title}</h3>
+        {o.summary && !compact && <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-ink-2">{o.summary}</p>}
+        <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1.5 border-t border-dashed border-line pt-3 text-[0.8rem] text-ink-2">
+          <div className="flex min-w-0 items-center gap-1.5"><dt className="sr-only">Location</dt><MapPin className="size-3.5 shrink-0 text-accent" /><dd className="truncate">{o.location || o.country}</dd></div>
+          <div className="flex min-w-0 items-center gap-1.5"><dt className="sr-only">Deadline</dt><CalendarClock className="size-3.5 shrink-0 text-accent" /><dd className="truncate">{o.deadline ? fmt(o.deadline) : o.rolling ? "Rolling" : "To be announced"}</dd></div>
+          {o.degreeLevels.length > 0 && !compact && (
+            <div className="col-span-2 flex min-w-0 items-center gap-1.5"><dt className="sr-only">Level</dt><GraduationCap className="size-3.5 shrink-0 text-accent" /><dd className="truncate">{o.degreeLevels.map(degreeLabel).join(" · ")}</dd></div>
+          )}
+        </dl>
+        <span className="mt-auto inline-flex items-center gap-1.5 pt-3 text-sm font-medium text-accent-deep">
           View details <ArrowUpRight className="size-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
         </span>
       </div>

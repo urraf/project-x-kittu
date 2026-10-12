@@ -73,7 +73,7 @@ function academicLevel(input: MatchInput) {
 }
 
 /** Typical academic bar per selectivity tier, as a CGPA percentage. A guide, not a cut-off. */
-const TIER_TARGET = { 1: 88, 2: 78, 3: 66 } as const;
+const TIER_TARGET = { 1: 86, 2: 74, 3: 60 } as const;
 
 /** Rough English-test bands most English-taught programs ask for. */
 function englishOk(input: MatchInput): "ok" | "low" | "none" {
@@ -109,7 +109,7 @@ function scoreOne(u: Doc, input: MatchInput, effective: number): MatchResult | n
   let field = 0;
   if (fields.includes(input.field)) {
     field = 30;
-    reasons.push(`${fields.length >= 7 ? "Comprehensive university with" : "Specialises in areas including"} ${fieldLabel(input.field)}.`);
+    reasons.push(`${fields.length >= 7 ? "Large university that includes" : "Focused university with strengths in"} ${fieldLabel(input.field)}.`);
   } else if ((RELATED[input.field] ?? []).some((f) => fields.includes(f))) {
     field = 16;
     reasons.push(`Strong in related areas: ${(RELATED[input.field] ?? []).filter((f) => fields.includes(f)).map((f) => fieldLabel(f)).join(", ")}.`);
@@ -118,7 +118,7 @@ function scoreOne(u: Doc, input: MatchInput, effective: number): MatchResult | n
 
   // 2. Academic profile (25): distance from the tier's usual bar. Falling short costs more than exceeding it.
   const d = effective - TIER_TARGET[tier];
-  const academic = d >= 0 ? 25 - Math.min(8, d * 0.35) : Math.max(2, 25 + d * 1.1);
+  const academic = d >= 0 ? 25 - Math.min(8, d * 0.35) : Math.max(2, 25 + d * 1.5);
   const band: MatchResult["band"] = d >= 10 ? "safe" : d >= -4 ? "match" : "reach";
 
   // 3. Experience (20)
@@ -137,7 +137,8 @@ function scoreOne(u: Doc, input: MatchInput, effective: number): MatchResult | n
     else if (u.type === "private" && !global) checks.push("Private university: full scholarships are limited, so check fee waivers and JASSO support first.");
   } else if (input.funding === "partial") funding = u.type === "private" ? (global ? 13 : 10) : 15;
   else funding = u.type === "private" ? 12 : 15;
-  if (u.type !== "private" && input.funding !== "full") reasons.push("National/public tuition is lower and standardised (around ¥535,800 a year at national universities; check the current fee).");
+  if (u.type === "national" && input.funding !== "full") reasons.push("National university: lower, standard tuition (around ¥535,800 a year; check the current fee).");
+  if (u.type === "public" && input.funding !== "full") reasons.push("Public university: tuition is usually similar to national universities (check the current fee).");
 
   // 5. Language (10)
   let language: number;
@@ -182,8 +183,10 @@ function scoreOne(u: Doc, input: MatchInput, effective: number): MatchResult | n
 
   const exact = Math.max(0, Math.min(100, score));
   score = Math.round(exact);
-  const label: MatchResult["label"] = score >= 80 ? "Strong match" : score >= 65 ? "Good match" : score >= 50 ? "Worth exploring" : "Long shot";
-  if (band === "reach") checks.unshift("Competitive for your current profile: apply alongside a few match and safer choices.");
+  // The label must agree with the academic band: a reach school is never called a "strong match".
+  const label: MatchResult["label"] =
+    band === "reach" ? (d >= -12 ? "Worth exploring" : "Long shot") : score >= 80 ? "Strong match" : score >= 65 ? "Good match" : "Worth exploring";
+  if (band === "reach") checks.unshift("Ambitious for your current grades: keep it on your list, but apply to some match and safer choices too.");
   if (!verified.length) checks.push("Program details aren't verified on this site yet: confirm the exact degree, language and deadlines on the official admissions page.");
 
   return {
@@ -213,7 +216,9 @@ export async function matchUniversities(raw: unknown) {
   const docs = await University.find({ status: "published", region: { $ne: "" } }).lean<Doc[]>();
   const { pct, effective } = academicLevel(input);
   const scored = docs.map((u) => scoreOne(u, input, effective)).filter((r): r is MatchResult => r !== null);
-  scored.sort((a, b) => b.exact - a.exact || a.name.localeCompare(b.name));
+  // Realistic options first: reach schools rank below comparable match/safe ones.
+  const rank = (r: MatchResult) => r.exact - (r.band === "reach" ? 10 : 0);
+  scored.sort((a, b) => rank(b) - rank(a) || a.name.localeCompare(b.name));
   // A balanced shortlist, like a counsellor would suggest: mostly good matches,
   // plus a few ambitious "reach" picks and a few safer options when they fit well.
   const pick = (band: MatchResult["band"], n: number) => scored.filter((r) => r.band === band && r.exact >= 50).slice(0, n);
@@ -222,7 +227,7 @@ export async function matchUniversities(raw: unknown) {
     if (chosen.size >= 13) break;
     chosen.add(r);
   }
-  const results = [...chosen].sort((a, b) => b.exact - a.exact || a.name.localeCompare(b.name));
+  const results = [...chosen].sort((a, b) => rank(b) - rank(a) || a.name.localeCompare(b.name));
   const level = effective >= 85 ? "Excellent" : effective >= 75 ? "Good" : effective >= 65 ? "Fair" : "Developing";
   return {
     profile: { cgpaPercent: pct, level },
