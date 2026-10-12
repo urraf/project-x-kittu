@@ -48,6 +48,7 @@ export type MatchResult = {
   checks: string[];
   verifiedPrograms: { name: string; degree: string; language: string; url: string }[];
   website: string;
+  image?: { url: string; alt: string };
 };
 
 const RELATED: Partial<Record<FieldId, FieldId[]>> = {
@@ -206,6 +207,7 @@ function scoreOne(u: Doc, input: MatchInput, effective: number): MatchResult | n
     checks: [...new Set(checks)].slice(0, 4),
     verifiedPrograms: verified.slice(0, 4).map((p) => ({ name: p.name, degree: p.degree ?? "", language: p.language ?? "", url: p.url ?? "" })),
     website: u.website ?? "",
+    image: u.coverImage?.url ? { url: u.coverImage.url, alt: u.coverImage.alt ?? u.name } : undefined,
   };
 }
 

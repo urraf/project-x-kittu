@@ -1,43 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useRef, useState } from "react";
-import { AlertCircle, ArrowUpRight, BadgeCheck, Check, ChevronDown, Loader2, Sparkles } from "lucide-react";
+import { AlertCircle, ChevronDown, Loader2, Sparkles } from "lucide-react";
 import { Kittu } from "@/components/mascot/Kittu";
-import { FIELDS, REGIONS, TAG_LABELS, regionLabel, type UniversityTag } from "@/lib/universities/taxonomy";
-import { cn } from "@/lib/utils/cn";
-
-type Result = {
-  id: string;
-  slug: string;
-  name: string;
-  type: string;
-  city: string;
-  region: string;
-  tags: string[];
-  score: number;
-  label: string;
-  band: "reach" | "match" | "safe";
-  breakdown: { field: number; academic: number; experience: number; funding: number; language: number };
-  reasons: string[];
-  checks: string[];
-  verifiedPrograms: { name: string; degree: string; language: string; url: string }[];
-  website: string;
-};
-type Response = { profile: { cgpaPercent: number; level: string }; considered: number; results: Result[] };
-
-const BANDS = {
-  reach: { label: "Reach", tone: "bg-accent-soft text-accent-deep" },
-  match: { label: "Match", tone: "bg-indigo-soft text-indigo" },
-  safe: { label: "Safer choice", tone: "bg-matcha-soft text-moss" },
-} as const;
-const PARTS: { key: keyof Result["breakdown"]; label: string; max: number }[] = [
-  { key: "field", label: "Field fit", max: 30 },
-  { key: "academic", label: "Academic profile", max: 25 },
-  { key: "experience", label: "Experience", max: 20 },
-  { key: "funding", label: "Funding fit", max: 15 },
-  { key: "language", label: "Language", max: 10 },
-];
+import { MatchResults, type MatchResponse } from "@/components/universities/MatchResults";
+import { FIELDS, REGIONS } from "@/lib/universities/taxonomy";
 
 function Select({ label, name, value, onChange, children, hint }: { label: string; name: string; value: string; onChange: (v: string) => void; children: React.ReactNode; hint?: string }) {
   return (
@@ -72,7 +39,7 @@ const INITIAL = {
 
 export function UniMatch() {
   const [f, setF] = useState(INITIAL);
-  const [data, setData] = useState<Response | null>(null);
+  const [data, setData] = useState<MatchResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const resultsRef = useRef<HTMLDivElement>(null);
@@ -91,7 +58,7 @@ export function UniMatch() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...f, cgpa, cgpaScale: Number(f.cgpaScale), englishScore: f.englishScore ? Number(f.englishScore) : undefined }),
       });
-      const json = (await res.json()) as { ok: boolean; data?: Response; error?: { message?: string } };
+      const json = (await res.json()) as { ok: boolean; data?: MatchResponse; error?: { message?: string } };
       if (!res.ok || !json.data) throw new Error(json.error?.message ?? "Couldn't build your shortlist. Please try again.");
       setData(json.data);
       requestAnimationFrame(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
@@ -200,95 +167,7 @@ export function UniMatch() {
       </div>
 
       <div ref={resultsRef} aria-live="polite" className="scroll-mt-24">
-        {data && (
-          <div className="mt-10">
-            <div className="flex flex-wrap items-end justify-between gap-3">
-              <div>
-                <h3 className="display text-3xl md:text-4xl">Your <em className="text-accent">shortlist</em></h3>
-                <p className="mt-1 text-sm text-ink-2">
-                  Academic profile: <strong className="text-ink">{data.profile.level}</strong> ({data.profile.cgpaPercent}%) · {data.results.length} universities ranked from {data.considered}
-                </p>
-              </div>
-              <p className="flex flex-wrap gap-2 text-xs">
-                {(Object.keys(BANDS) as (keyof typeof BANDS)[]).map((b) => <span key={b} className={cn("rounded-full px-2.5 py-1 font-medium", BANDS[b].tone)}>{BANDS[b].label}</span>)}
-              </p>
-            </div>
-
-            {data.results.length === 0 ? (
-              <p className="mt-6 rounded-2xl border border-dashed border-line p-8 text-center text-ink-2">No universities matched. Try &ldquo;Anywhere in Japan&rdquo; or a broader field.</p>
-            ) : (
-              <ol className="mt-6 space-y-4">
-                {data.results.map((r, i) => (
-                  <li key={r.id} className="rounded-3xl border border-line bg-[#fffdf9] p-5 md:p-6">
-                    <div className="flex flex-col gap-4 md:flex-row md:items-start">
-                      <div className="flex items-center gap-4 md:w-60 md:shrink-0 md:flex-col md:items-start">
-                        <span className="relative grid size-20 shrink-0 place-items-center rounded-full" style={{ background: `conic-gradient(var(--color-accent) ${r.score * 3.6}deg, var(--color-paper-3) 0)` }}>
-                          <span className="grid size-16 place-items-center rounded-full bg-[#fffdf9]">
-                            <span className="display text-2xl leading-none">{r.score}</span>
-                          </span>
-                        </span>
-                        <div>
-                          <p className="font-medium text-ink">{r.label}</p>
-                          <span className={cn("mt-1 inline-block rounded-full px-2.5 py-0.5 text-xs font-medium", BANDS[r.band].tone)}>{BANDS[r.band].label}</span>
-                        </div>
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs text-muted">#{i + 1} · {r.type === "national" ? "National" : r.type === "public" ? "Public" : "Private"} · {r.city}{r.region ? ` · ${regionLabel(r.region)}` : ""}</p>
-                        <h4 className="mt-1 text-[1.2rem] font-semibold leading-snug text-ink">
-                          <Link href={`/universities/${r.slug}`} className="hover:text-accent-deep">{r.name}</Link>
-                        </h4>
-                        {r.tags.length > 0 && (
-                          <p className="mt-2 flex flex-wrap gap-1.5">
-                            {r.tags.filter((t) => t !== "women").map((t) => <span key={t} className="rounded-full bg-paper-2 px-2 py-0.5 text-[0.7rem] text-ink-2">{TAG_LABELS[t as UniversityTag] ?? t}</span>)}
-                          </p>
-                        )}
-                        <div className="mt-3 grid gap-4 lg:grid-cols-2">
-                          <ul className="space-y-1.5 text-sm text-ink-2">
-                            {r.reasons.map((x) => <li key={x} className="flex gap-2"><Check className="mt-0.5 size-4 shrink-0 text-moss" /> {x}</li>)}
-                          </ul>
-                          <ul className="space-y-1.5 text-sm text-ink-2">
-                            {r.checks.map((x) => <li key={x} className="flex gap-2"><AlertCircle className="mt-0.5 size-4 shrink-0 text-[#c08a1e]" /> {x}</li>)}
-                          </ul>
-                        </div>
-                        {r.verifiedPrograms.length > 0 && (
-                          <ul className="mt-3 space-y-1 text-sm">
-                            {r.verifiedPrograms.map((p) => (
-                              <li key={p.name} className="flex items-center gap-2 text-ink">
-                                <BadgeCheck className="size-4 text-moss" />
-                                {p.url ? <a href={p.url} target="_blank" rel="noopener noreferrer" className="underline-offset-2 hover:underline">{p.name}</a> : p.name}
-                                <span className="text-xs text-muted">· {p.language === "english" ? "English" : p.language === "mixed" ? "English & Japanese" : "Japanese"}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                        <details className="group mt-3">
-                          <summary className="cursor-pointer list-none text-xs font-medium text-muted hover:text-ink [&::-webkit-details-marker]:hidden">Score breakdown <ChevronDown className="inline size-3.5 transition-transform group-open:rotate-180" /></summary>
-                          <div className="mt-2 grid gap-1.5 sm:grid-cols-2">
-                            {PARTS.map((p) => (
-                              <div key={p.key} className="flex items-center gap-2 text-xs text-ink-2">
-                                <span className="w-28 shrink-0">{p.label}</span>
-                                <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-paper-3"><span className="block h-full rounded-full bg-accent" style={{ width: `${(r.breakdown[p.key] / p.max) * 100}%` }} /></span>
-                                <span className="w-10 text-right font-mono">{r.breakdown[p.key]}/{p.max}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </details>
-                        <div className="mt-4 flex flex-wrap gap-2">
-                          <Link href={`/universities/${r.slug}`} className="inline-flex items-center gap-1.5 rounded-full border border-line px-3.5 py-1.5 text-sm font-medium text-ink hover:border-ink/40">View university <ArrowUpRight className="size-3.5" /></Link>
-                          {r.website && <a href={r.website} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-full border border-line px-3.5 py-1.5 text-sm text-ink-2 hover:border-ink/40">Official site <ArrowUpRight className="size-3.5" /></a>}
-                        </div>
-                      </div>
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            )}
-            <p className="mt-6 text-xs text-muted">
-              How it works: field fit 30 · academic profile 25 · experience 20 · funding 15 · language 10, adjusted for your region and city preferences.
-              Tags come from official lists (MEXT Top Global University and Global 30). Requirements change every year, so always confirm on the official admissions page.
-            </p>
-          </div>
-        )}
+        {data && <MatchResults data={data} />}
       </div>
     </div>
   );

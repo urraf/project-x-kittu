@@ -51,7 +51,7 @@ export default async function OpportunitiesPage({ searchParams }: { searchParams
             Find your next <em className="text-accent">opportunity.</em>
           </h1>
           <p className="mt-4 max-w-2xl text-lg leading-relaxed text-ink-2">Internships, scholarships, fellowships and research programs, checked and kept up to date. Filter by what matters to you.</p>
-          <OpportunitySearch className="mt-8" withKeyword initial={{ type: params.type ?? "", country: params.country ?? "", funding: params.funding ?? "", deadline: params.deadline ?? "", q: params.q ?? "" }} />
+          <OpportunitySearch className="mt-8" initial={{ type: params.type ?? "", country: params.country ?? "", funding: params.funding ?? "", deadline: params.deadline ?? "", q: params.q ?? "" }} />
         </div>
       </section>
 

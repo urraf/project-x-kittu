@@ -32,7 +32,6 @@ export default async function UniversityPage({ params }: Props) {
   const { slug } = await params;
   const u = await safe("university.detail", () => getPublicUniversity(slug), null);
   if (!u) notFound();
-  const google = (q: string) => `https://www.google.com/search?${new URLSearchParams({ q })}`;
 
   return (
     <div className="container-x grid grid-cols-1 gap-12 pb-20 pt-28 md:pt-32 lg:grid-cols-12 lg:gap-14">
@@ -41,9 +40,17 @@ export default async function UniversityPage({ params }: Props) {
           <ArrowLeft className="size-4 transition-transform group-hover:-translate-x-1" /> All universities
         </Link>
         {u.coverImage && (
-          <div className="relative mt-6 aspect-[16/9] overflow-hidden rounded-3xl border border-line bg-paper-3">
-            <Image src={u.coverImage.url} alt={u.coverImage.alt || u.name} fill priority sizes="(min-width: 1024px) 50rem, 100vw" className="object-cover" />
-          </div>
+          <figure className="mt-6">
+            <div className="relative aspect-[16/9] overflow-hidden rounded-3xl border border-line bg-paper-3">
+              <Image src={u.coverImage.url} alt={u.coverImage.alt || u.name} fill priority sizes="(min-width: 1024px) 50rem, 100vw" className="object-cover" />
+            </div>
+            {u.coverImage.credit?.name && (
+              <figcaption className="mt-2 text-right text-xs text-muted">
+                Photo:{" "}
+                {u.coverImage.credit.url ? <a href={u.coverImage.credit.url} target="_blank" rel="noopener noreferrer" className="underline-offset-2 hover:underline">{u.coverImage.credit.name}</a> : u.coverImage.credit.name}
+              </figcaption>
+            )}
+          </figure>
         )}
         <div className="mt-6 flex flex-wrap items-center gap-2">
           <span className={cn("rounded-full px-3 py-1 text-xs font-medium", typeTone(u.type))}>{typeName(u.type)} university</span>
@@ -93,8 +100,8 @@ export default async function UniversityPage({ params }: Props) {
               <p className="font-medium text-ink">Program details are being verified.</p>
               <p className="mt-1 text-sm text-ink-2">Until then, check English-taught programs directly on official sources:</p>
               <div className="mt-4 flex flex-wrap gap-2">
-                <a href={google(`${u.name} English-taught programs international students`)} target="_blank" rel="noopener noreferrer" className="btn btn-ghost !py-2.5 text-ink"><Search className="size-4" /> Search English programs</a>
-                <a href="https://www.studyinjapan.go.jp/en/" target="_blank" rel="noopener noreferrer" className="btn btn-ghost !py-2.5 text-ink"><Globe className="size-4" /> Study in Japan (official)</a>
+                {u.website && <a href={u.website} target="_blank" rel="noopener noreferrer nofollow" className="btn btn-ghost !py-2.5 text-ink"><Globe className="size-4" /> {u.name.replace(/\s*\(.*\)$/, "")} website</a>}
+                <a href="https://www.studyinjapan.go.jp/en/" target="_blank" rel="noopener noreferrer" className="btn btn-ghost !py-2.5 text-ink"><Search className="size-4" /> Study in Japan program search</a>
               </div>
             </div>
           )}
@@ -121,7 +128,7 @@ export default async function UniversityPage({ params }: Props) {
               {u.website ? (
                 <a href={u.website} target="_blank" rel="noopener noreferrer nofollow" className="btn btn-accent w-full"><Globe className="size-4" /> Official website</a>
               ) : (
-                <a href={google(`${u.name} official website`)} target="_blank" rel="noopener noreferrer" className="btn btn-accent w-full"><Search className="size-4" /> Find official website</a>
+                <a href="https://www.studyinjapan.go.jp/en/" target="_blank" rel="noopener noreferrer" className="btn btn-accent w-full"><Search className="size-4" /> Study in Japan (official)</a>
               )}
               <Link href={`/opportunities?q=${encodeURIComponent(u.name.replace(/\s*\(.*\)$/, ""))}#results`} className="btn btn-ghost w-full text-ink">Related opportunities</Link>
             </div>

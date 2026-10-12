@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BadgeCheck, Globe2, Search, Sparkles } from "lucide-react";
+import { Search, Sparkles } from "lucide-react";
+import { Suspense } from "react";
 import { UniMatch } from "@/components/universities/UniMatch";
+import { UniversityFilters } from "@/components/universities/UniversityFilters";
 import { Kittu } from "@/components/mascot/Kittu";
 import { UniversityCard } from "@/components/universities/UniversityCard";
-import { REGIONS } from "@/lib/universities/taxonomy";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { safe } from "@/lib/safe";
-import { DEGREES, UNIVERSITY_TYPES, searchUniversities, universitySearchSchema, universityStats, type UniversitySearch } from "@/lib/services/universities";
+import { searchUniversities, universitySearchSchema, universityStats, type UniversitySearch } from "@/lib/services/universities";
 import { absoluteUrl } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
@@ -89,31 +90,10 @@ export default async function UniversitiesPage({ searchParams }: { searchParams:
 
       <section id="results" className="scroll-mt-20 py-12 md:py-16">
         <div className="container-x">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex flex-wrap items-center gap-2">
-              <Link href={hrefWith(params, { type: undefined })} className="chip" data-active={!params.type}>All <span className="font-mono text-[0.68rem] opacity-60">{stats.total}</span></Link>
-              {UNIVERSITY_TYPES.map((t) => (
-                <Link key={t.id} href={hrefWith(params, { type: t.id })} className="chip" data-active={params.type === t.id}>
-                  {t.label} <span className="font-mono text-[0.68rem] opacity-60">{stats.byType[t.id] ?? 0}</span>
-                </Link>
-              ))}
-              <Link href={hrefWith(params, { verified: params.verified ? undefined : "1" })} className="chip" data-active={Boolean(params.verified)}>
-                <BadgeCheck className="size-3.5" /> Verified programs only <span className="font-mono text-[0.68rem] opacity-60">{stats.verified}</span>
-              </Link>
-            </div>
-            <div className="flex flex-wrap items-center gap-2 text-sm">
-              <Link href={hrefWith(params, { english: params.english ? undefined : "1" })} className="chip" data-active={Boolean(params.english)}><Globe2 className="size-3.5" /> English-friendly</Link>
-              <span className="text-muted">Degree:</span>
-              <Link href={hrefWith(params, { degree: undefined })} className="chip" data-active={!params.degree}>Any</Link>
-              {DEGREES.slice(0, 4).map((d) => <Link key={d.id} href={hrefWith(params, { degree: d.id })} className="chip" data-active={params.degree === d.id}>{d.label}</Link>)}
-            </div>
-          </div>
-          <div className="no-scrollbar -mx-4 mt-4 flex gap-2 overflow-x-auto px-4 text-sm sm:mx-0 sm:flex-wrap sm:px-0">
-            <span className="shrink-0 self-center text-muted">Region:</span>
-            <Link href={hrefWith(params, { region: undefined })} className="chip shrink-0" data-active={!params.region}>All of Japan</Link>
-            {REGIONS.map((r) => <Link key={r.id} href={hrefWith(params, { region: r.id })} className="chip shrink-0" data-active={params.region === r.id}>{r.label}</Link>)}
-          </div>
-          <p className="mt-6 text-sm text-muted">{result.total} {result.total === 1 ? "university" : "universities"}{params.q ? ` matching “${params.q}”` : ""}</p>
+          <Suspense fallback={<div className="h-16 rounded-2xl border border-line bg-paper-2/60" />}>
+            <UniversityFilters total={stats.total} counts={stats.byType} />
+          </Suspense>
+          <p className="mt-5 text-sm text-muted">{result.total} {result.total === 1 ? "university" : "universities"}{params.q ? ` matching “${params.q}”` : ""}</p>
           <div className="mt-4">
             {result.items.length ? (
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

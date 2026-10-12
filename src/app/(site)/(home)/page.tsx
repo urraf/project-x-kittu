@@ -255,7 +255,7 @@ export default async function HomePage() {
           <SectionHeader kicker="Opportunity finder" title={<>Find internships, scholarships &amp; <em className="text-accent">fellowships</em></>} description="Hand-picked programs for students heading to Japan, with official links and deadlines. Filter by type, country, funding and how soon it closes." />
           <div className="relative mt-8">
             <Kittu pose="jump" alt="" sizes="8rem" className="pointer-events-none absolute -top-[6.6rem] right-8 z-0 hidden w-28 md:block lg:right-14" />
-            <OpportunitySearch className="relative z-10 !bg-[#fffdf9]" />
+            <OpportunitySearch className="relative z-10 !bg-[#fffdf9]" withKeyword={false} />
           </div>
           {opportunities.length > 0 && (
             <>
