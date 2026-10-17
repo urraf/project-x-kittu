@@ -46,7 +46,8 @@ const COLUMNS = [
       { href: "/blog", label: "Blog" },
       { href: "/videos", label: "Videos" },
       { href: "/about", label: "About" },
-      { href: "/collaborate", label: "Contact" },
+      { href: "/contact", label: "Contact" },
+      { href: "/collaborate", label: "Collaborate" },
     ],
   },
   {

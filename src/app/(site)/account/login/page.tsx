@@ -5,6 +5,7 @@ import { StudentAuth, type AuthMode } from "@/components/mentorship/StudentAuth"
 import { getStudent } from "@/lib/auth/student";
 import { getAdminSession } from "@/lib/auth/session";
 import { Kittu } from "@/components/mascot/Kittu";
+import { isGoogleSignInConfigured } from "@/lib/auth/google";
 
 export const metadata: Metadata = { title: "Log in", robots: { index: false } };
 export const dynamic = "force-dynamic";
@@ -16,8 +17,17 @@ const PERKS = [
   { Icon: KeyRound, title: "Already booked?", text: "Your account was created with your first booking. The password is in that email." },
 ];
 
-export default async function StudentLoginPage({ searchParams }: { searchParams: Promise<{ mode?: string; next?: string }> }) {
-  const { mode, next } = await searchParams;
+const GOOGLE_ERRORS: Record<string, string> = {
+  google_cancelled: "Google sign-in was cancelled. You can try again or use your email.",
+  google_state: "That sign-in link expired. Please try \"Continue with Google\" again.",
+  google_unverified: "Your Google email isn't verified yet. Please use email sign-in instead.",
+  google_failed: "Google sign-in didn't work this time. Please try again or use your email.",
+  google_limit: "Too many attempts. Please wait a few minutes and try again.",
+  google_off: "Google sign-in isn't available right now. Please use your email.",
+};
+
+export default async function StudentLoginPage({ searchParams }: { searchParams: Promise<{ mode?: string; next?: string; error?: string }> }) {
+  const { mode, next, error } = await searchParams;
   if (await getStudent()) redirect(next?.startsWith("/") && !next.startsWith("//") ? next : "/account");
   const adminSignedIn = Boolean(await getAdminSession().catch(() => null));
   const initialMode: AuthMode = mode === "signup" ? "signup" : mode === "forgot" ? "forgot" : "login";
@@ -53,7 +63,7 @@ export default async function StudentLoginPage({ searchParams }: { searchParams:
                 You&apos;re signed in to the Studio (admin). Logging in as a student will sign you out of the Studio in this browser.
               </p>
             )}
-            <StudentAuth initialMode={initialMode} next={next} />
+            <StudentAuth initialMode={initialMode} next={next} google={isGoogleSignInConfigured()} notice={error ? GOOGLE_ERRORS[error] : undefined} />
           </div>
         </div>
       </div>

@@ -5,7 +5,38 @@ import { ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
 
 type Errors = Partial<Record<"name" | "email" | "message" | "form", string>>;
 
-export function ContactForm() {
+const COLLAB_TOPICS = [
+  { id: "collaboration", label: "Brand / university collaboration" },
+  { id: "speaking", label: "Talk, webinar or workshop" },
+  { id: "question", label: "A question about applying" },
+  { id: "other", label: "Something else" },
+];
+
+export const STUDENT_TOPICS = [
+  { id: "question", label: "A question about applying" },
+  { id: "session", label: "Sessions & bookings" },
+  { id: "payment", label: "Payments & downloads" },
+  { id: "account", label: "My account / login" },
+  { id: "feedback", label: "Feedback" },
+  { id: "collaboration", label: "Collaboration" },
+  { id: "other", label: "Something else" },
+];
+
+export function ContactForm({
+  topics = COLLAB_TOPICS,
+  defaultTopic,
+  defaultName = "",
+  defaultEmail = "",
+  showOrganisation = true,
+  sentText = "Thank you for reaching out. I read every message personally and usually reply within a few days.",
+}: {
+  topics?: { id: string; label: string }[];
+  defaultTopic?: string;
+  defaultName?: string;
+  defaultEmail?: string;
+  showOrganisation?: boolean;
+  sentText?: string;
+}) {
   const [state, setState] = useState<"idle" | "sending" | "sent">("idle");
   const [errors, setErrors] = useState<Errors>({});
 
@@ -44,7 +75,7 @@ export function ContactForm() {
       <div className="flex flex-col items-start rounded-2xl border border-line bg-paper-2 p-8" role="status">
         <CheckCircle2 className="size-8 text-accent" />
         <h3 className="display mt-5 text-4xl">Message received.</h3>
-        <p className="mt-3 max-w-md text-ink-2">Thank you for reaching out. I read every message personally and usually reply within a few days.</p>
+        <p className="mt-3 max-w-md text-ink-2">{sentText}</p>
       </div>
     );
   }
@@ -55,27 +86,26 @@ export function ContactForm() {
       <div className="grid gap-8 sm:grid-cols-2">
         <div>
           <label htmlFor="c-name" className="kicker text-muted">Your name</label>
-          <input id="c-name" name="name" autoComplete="name" className={field} aria-invalid={!!errors.name} aria-describedby={errors.name ? "c-name-err" : undefined} />
+          <input id="c-name" name="name" autoComplete="name" defaultValue={defaultName} className={field} aria-invalid={!!errors.name} aria-describedby={errors.name ? "c-name-err" : undefined} />
           {errors.name && <p id="c-name-err" className="mt-2 text-sm text-accent-deep">{errors.name}</p>}
         </div>
         <div>
           <label htmlFor="c-email" className="kicker text-muted">Email</label>
-          <input id="c-email" name="email" type="email" autoComplete="email" className={field} aria-invalid={!!errors.email} aria-describedby={errors.email ? "c-email-err" : undefined} />
+          <input id="c-email" name="email" type="email" autoComplete="email" defaultValue={defaultEmail} className={field} aria-invalid={!!errors.email} aria-describedby={errors.email ? "c-email-err" : undefined} />
           {errors.email && <p id="c-email-err" className="mt-2 text-sm text-accent-deep">{errors.email}</p>}
         </div>
       </div>
       <div className="grid gap-8 sm:grid-cols-2">
-        <div>
-          <label htmlFor="c-org" className="kicker text-muted">Organisation (optional)</label>
-          <input id="c-org" name="organisation" autoComplete="organization" className={field} />
-        </div>
+        {showOrganisation && (
+          <div>
+            <label htmlFor="c-org" className="kicker text-muted">Organisation (optional)</label>
+            <input id="c-org" name="organisation" autoComplete="organization" className={field} />
+          </div>
+        )}
         <div>
           <label htmlFor="c-topic" className="kicker text-muted">What&apos;s this about?</label>
-          <select id="c-topic" name="topic" defaultValue="collaboration" className={`${field} cursor-pointer`}>
-            <option value="collaboration">Brand / university collaboration</option>
-            <option value="speaking">Talk, webinar or workshop</option>
-            <option value="question">A question about applying</option>
-            <option value="other">Something else</option>
+          <select id="c-topic" name="topic" defaultValue={defaultTopic && topics.some((t) => t.id === defaultTopic) ? defaultTopic : topics[0]!.id} className={`${field} cursor-pointer`}>
+            {topics.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
           </select>
         </div>
       </div>

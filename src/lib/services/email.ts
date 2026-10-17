@@ -5,17 +5,38 @@ import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
 
 /**
- * Transactional email over HTTPS (Brevo or Resend). HTTPS APIs work on hosts
- * that block SMTP ports (e.g. Render's free plan). Every attempt is logged in
- * the EmailLog collection so delivery problems are visible in the admin panel.
+ * Transactional email over HTTPS (Brevo or Resend), or SMTP (e.g. Gmail with an
+ * App Password). HTTPS APIs also work on hosts that block SMTP ports (e.g.
+ * Render's free plan). Every attempt is logged in the EmailLog collection.
  */
 
 export type EmailMessage = { to: string; toName?: string; subject: string; html: string; text: string; replyTo?: string; kind: string };
 
-export function emailProvider(): "brevo" | "resend" | null {
+export function emailProvider(): "brevo" | "resend" | "smtp" | null {
   if (env.brevoApiKey) return "brevo";
   if (env.resendApiKey) return "resend";
+  if (env.smtpHost && env.smtpUser && env.smtpPass) return "smtp";
   return null;
+}
+
+async function sendViaSmtp(msg: EmailMessage) {
+  const nodemailer = (await import("nodemailer")).default;
+  const transport = nodemailer.createTransport({
+    host: env.smtpHost,
+    port: env.smtpPort,
+    secure: env.smtpPort === 465,
+    auth: { user: env.smtpUser, pass: env.smtpPass },
+    connectionTimeout: 15_000,
+    greetingTimeout: 15_000,
+  });
+  await transport.sendMail({
+    from: env.emailFrom,
+    to: msg.toName ? { name: msg.toName, address: msg.to } : msg.to,
+    subject: msg.subject,
+    html: msg.html,
+    text: msg.text,
+    ...(msg.replyTo ? { replyTo: msg.replyTo } : {}),
+  });
 }
 
 export function isEmailConfigured() {
@@ -74,7 +95,7 @@ export async function sendEmail(msg: EmailMessage): Promise<boolean> {
     return false;
   }
   try {
-    await (provider === "brevo" ? sendViaBrevo(msg) : sendViaResend(msg));
+    await (provider === "brevo" ? sendViaBrevo(msg) : provider === "resend" ? sendViaResend(msg) : sendViaSmtp(msg));
     await EmailLog.create({ to: msg.to, subject: msg.subject, kind: msg.kind, status: "sent", provider }).catch(() => {});
     logger.info("email.sent", { kind: msg.kind, provider });
     return true;

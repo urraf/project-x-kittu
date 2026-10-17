@@ -23,7 +23,7 @@ const newsreader = Newsreader({
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: { default: `${SITE_NAME} · Chitranshu Rajput`, template: `%s · ${SITE_NAME}` },
+  title: { default: `${SITE_NAME} · Study, intern and work in Japan`, template: `%s · ${SITE_NAME}` },
   description: SITE_DESCRIPTION,
   applicationName: SITE_NAME,
   authors: [{ name: "Chitranshu Rajput", url: SITE_URL }],
@@ -31,13 +31,16 @@ export const metadata: Metadata = {
   keywords: [
     "Life of KittuKun",
     "Chitranshu Rajput",
-    "Japan internship",
+    "study in Japan",
+    "Japan internship for Indian students",
     "MEXT scholarship",
-    "METI internship",
-    "OIST internship",
+    "MEXT university recommendation",
+    "OIST research internship",
+    "universities in Japan for international students",
+    "English-taught programs Japan",
     "fully funded scholarships",
-    "study abroad India",
-    "international internships",
+    "research proposal template",
+    "JLPT",
   ],
   openGraph: {
     type: "website",
@@ -49,6 +52,8 @@ export const metadata: Metadata = {
   },
   twitter: { card: "summary_large_image", title: SITE_NAME, description: SITE_DESCRIPTION },
   alternates: { types: { "application/rss+xml": `${SITE_URL}/feed.xml` } },
+  category: "education",
+  formatDetection: { telephone: false },
   robots: { index: true, follow: true, googleBot: { index: true, follow: true, "max-image-preview": "large" } },
 };
 

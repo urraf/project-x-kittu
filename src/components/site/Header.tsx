@@ -16,6 +16,7 @@ const NAV = [
   { href: "/store", label: "Store" },
   { href: "/blog", label: "Blog" },
   { href: "/about", label: "About" },
+  { href: "/contact", label: "Contact" },
 ];
 
 /** Set (non-secret) by the server on student login, so the header can say "My account". */

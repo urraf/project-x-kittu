@@ -11,7 +11,7 @@ import { timeAgo } from "@/lib/utils/text";
 import { cn } from "@/lib/utils/cn";
 import type { MessageDTO } from "@/lib/types";
 
-const TOPICS: Record<string, string> = { collaboration: "Collaboration", speaking: "Talk / workshop", question: "Question", other: "Other" };
+const TOPICS: Record<string, string> = { question: "Question", session: "Sessions & bookings", payment: "Payments & downloads", account: "Account", feedback: "Feedback", collaboration: "Collaboration", speaking: "Talk / workshop", other: "Other" };
 
 export function MessagesInbox() {
   const router = useRouter();

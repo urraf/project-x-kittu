@@ -14,6 +14,8 @@ import { countNewMessages } from "@/lib/services/messages";
 import { getPostStats, listAdminPosts } from "@/lib/services/posts";
 import { getSettings } from "@/lib/services/settings";
 import { videoPostStats } from "@/lib/services/video-posts";
+import { isEmailConfigured } from "@/lib/services/email";
+import { paymentMode } from "@/lib/services/razorpay";
 import { formatCompact, formatDate, timeAgo } from "@/lib/utils/text";
 import { cn } from "@/lib/utils/cn";
 import { formatPrice, formatSessionDate, formatSessionTime } from "@/lib/utils/session-time";
@@ -209,6 +211,20 @@ export default async function Dashboard() {
           <Card>
             <h2 className="font-medium">Website status</h2>
             <ul className="mt-4 space-y-3 text-sm">
+              <li className="flex items-start gap-2.5">
+                {isEmailConfigured() ? <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-moss" /> : <CircleAlert className="mt-0.5 size-4 shrink-0 text-accent" />}
+                <span>
+                  <span className="text-ink">{isEmailConfigured() ? "Emails are being sent" : "Emails are not set up"}</span>
+                  {!isEmailConfigured() && <span className="block text-xs text-muted">Booking confirmations, login codes and feedback emails can&apos;t be sent until the email settings are added on the server.</span>}
+                </span>
+              </li>
+              <li className="flex items-start gap-2.5">
+                {paymentMode() === "razorpay" ? <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-moss" /> : <CircleAlert className="mt-0.5 size-4 shrink-0 text-[#c08a1e]" />}
+                <span>
+                  <span className="text-ink">{paymentMode() === "razorpay" ? "Online payments are on (Razorpay)" : paymentMode() === "demo" ? "Payments are in demo mode" : "Online payments are off"}</span>
+                  {paymentMode() !== "razorpay" && <span className="block text-xs text-muted">Add the Razorpay keys on the server to accept real payments.</span>}
+                </span>
+              </li>
               <li className="flex items-start gap-2.5">
                 {aiReady ? <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-moss" /> : <CircleAlert className="mt-0.5 size-4 shrink-0 text-[#c08a1e]" />}
                 <span>

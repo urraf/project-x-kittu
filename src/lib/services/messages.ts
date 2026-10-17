@@ -6,11 +6,16 @@ import { Message, type MessageDoc } from "@/lib/models";
 import { notFound } from "@/lib/http";
 import { sanitizePlain } from "@/lib/content/html";
 import type { MessageDTO } from "@/lib/types";
+import { logger } from "@/lib/logger";
+import { sendEmail } from "@/lib/services/email";
+import { adminNewMessageEmail } from "@/lib/email/templates";
+import { adminNotifyEmail } from "@/lib/services/mentorship";
+import { absoluteUrl } from "@/lib/site";
 
 export const contactSchema = z.object({
   name: z.string().trim().min(2, "Please tell me your name").max(100),
   email: z.email("Please enter a valid email").max(200),
-  topic: z.enum(["collaboration", "question", "speaking", "other"]).default("other"),
+  topic: z.enum(["question", "session", "payment", "account", "feedback", "collaboration", "speaking", "other"]).default("other"),
   organisation: z.string().trim().max(120).default(""),
   message: z.string().trim().min(20, "A little more detail helps (20+ characters)").max(5000),
   /** Honeypot. Real users never see or fill this field. */
@@ -40,6 +45,14 @@ export async function createMessage(input: z.infer<typeof contactSchema>, ip: st
     message: sanitizePlain(input.message),
     ip,
   });
+  // Let the admin know straight away (never blocks or fails the submission).
+  adminNotifyEmail()
+    .then((to) => {
+      if (!to) return;
+      const mail = adminNewMessageEmail({ name: input.name, email: input.email, topic: input.topic, message: input.message, adminUrl: absoluteUrl("/admin/messages") });
+      return sendEmail({ to, ...mail, replyTo: input.email, kind: "admin_new_message" });
+    })
+    .catch((error) => logger.warn("contact.notify_failed", { error }));
 }
 
 export async function listMessages(status?: string) {

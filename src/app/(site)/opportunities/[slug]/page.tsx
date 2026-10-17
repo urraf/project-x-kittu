@@ -10,6 +10,7 @@ import { safe } from "@/lib/safe";
 import { getPublicOpportunity, relatedOpportunities } from "@/lib/services/opportunities";
 import { absoluteUrl } from "@/lib/site";
 import { cn } from "@/lib/utils/cn";
+import { JsonLd } from "@/components/ui/JsonLd";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +34,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: o.title,
     description: o.summary || `${typeLabel(o.type)} in ${o.country}.`,
     alternates: { canonical: `/opportunities/${o.slug}` },
-    openGraph: { title: o.title, description: o.summary, url: absoluteUrl(`/opportunities/${o.slug}`) },
+    openGraph: { title: o.title, description: o.summary, url: absoluteUrl(`/opportunities/${o.slug}`), ...(o.coverImage ? { images: [{ url: absoluteUrl(o.coverImage.url), alt: o.coverImage.alt || o.title }] } : {}) },
     robots: o.closed ? { index: false } : undefined,
   };
 }
@@ -55,6 +56,16 @@ export default async function OpportunityPage({ params }: Props) {
 
   return (
     <>
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          itemListElement: [
+            { "@type": "ListItem", position: 1, name: "Opportunities", item: absoluteUrl("/opportunities") },
+            { "@type": "ListItem", position: 2, name: o.title, item: absoluteUrl(`/opportunities/${o.slug}`) },
+          ],
+        }}
+      />
       <div className="container-x grid grid-cols-1 gap-12 pb-20 pt-28 md:pt-32 lg:grid-cols-12 lg:gap-14">
         <article className="min-w-0 lg:col-span-8">
           <Link href="/opportunities" className="group inline-flex items-center gap-1.5 text-sm text-muted hover:text-ink">

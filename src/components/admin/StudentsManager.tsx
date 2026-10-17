@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ChevronDown, Copy, Download, Mail, Phone, Search } from "lucide-react";
+import { ChevronDown, Copy, Download, Mail, MessageSquareHeart, Phone, Search } from "lucide-react";
 import { toast } from "sonner";
 import { useApi } from "@/lib/admin/hooks";
+import { api, errorMessage } from "@/lib/admin/api";
 import { AdminEmpty, Button, LoadingBlock, PageHeader } from "@/components/admin/ui";
 import { formatPrice, formatSessionDate } from "@/lib/utils/session-time";
 import { cn } from "@/lib/utils/cn";
@@ -47,6 +48,33 @@ const rupees = (n: number) => formatPrice(n).replace("Free", "₹0");
 function csvCell(v: string | number) {
   const s = String(v);
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+/** Emails the student a personal "share your feedback" link. */
+function AskFeedback({ studentId, name }: { studentId: string; name: string }) {
+  const [busy, setBusy] = useState(false);
+  return (
+    <div className="mx-5 mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-[#fffdf9] px-4 py-2.5 text-sm">
+      <span className="text-ink-2">Ask {name.split(" ")[0]} how their experience was, by email.</span>
+      <Button
+        size="sm"
+        loading={busy}
+        onClick={async () => {
+          setBusy(true);
+          try {
+            await api(`/api/admin/students/${studentId}/feedback`, { body: {} });
+            toast.success("Feedback request sent", { description: `${name} will get an email with a link to share feedback.` });
+          } catch (e) {
+            toast.error(errorMessage(e));
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        {!busy && <MessageSquareHeart className="size-4" />} Ask for feedback
+      </Button>
+    </div>
+  );
 }
 
 function Bookings({ studentId }: { studentId: string }) {
@@ -161,7 +189,7 @@ export function StudentsManager() {
                     <div className="min-w-0">
                       <p className="flex flex-wrap items-center gap-2 font-medium text-ink">
                         {s.name}
-                        {!s.hasPassword && <span className="rounded-full bg-paper-3 px-2 py-0.5 text-[0.65rem] font-normal text-ink-2">No login yet</span>}
+                        {!s.hasPassword && !s.lastLoginAt && <span className="rounded-full bg-paper-3 px-2 py-0.5 text-[0.65rem] font-normal text-ink-2">No login yet</span>}
                       </p>
                       <p className="mt-0.5 flex flex-wrap gap-x-3 text-sm text-ink-2">
                         <span className="inline-flex items-center gap-1"><Mail className="size-3.5" /> {s.email}</span>
@@ -179,7 +207,12 @@ export function StudentsManager() {
                     </div>
                   </dl>
                 </button>
-                {open === s.id && <Bookings studentId={s.id} />}
+                {open === s.id && (
+                  <>
+                    <AskFeedback studentId={s.id} name={s.name} />
+                    <Bookings studentId={s.id} />
+                  </>
+                )}
               </li>
             ))}
           </ul>

@@ -20,12 +20,12 @@ function layout(opts: { preheader: string; heading: string; body: string; cta?: 
   <span style="display:none!important;opacity:0;color:transparent;height:0;width:0;overflow:hidden">${esc(opts.preheader)}</span>
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f6f1e9;padding:32px 12px"><tr><td align="center">
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background:#fffdf9;border:1px solid #ded3c3;border-radius:18px;overflow:hidden">
-      <tr><td style="background:#100e0c;padding:22px 28px">
+      <tr><td style="background:#1d2b45;padding:22px 28px">
         <span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:#d9482b;vertical-align:middle"></span>
-        <span style="font:italic 400 20px/1 Georgia,'Times New Roman',serif;color:#f4ede2;vertical-align:middle;margin-left:8px">${SITE_NAME}</span>
+        <span style="font:italic 400 20px/1 Georgia,'Times New Roman',serif;color:#fbf7f0;vertical-align:middle;margin-left:8px">${SITE_NAME}</span>
       </td></tr>
       <tr><td style="padding:30px 28px 26px;font:400 15px/1.65 Helvetica,Arial,sans-serif;color:#3b342d">
-        <h1 style="margin:0 0 14px;font:400 28px/1.15 Georgia,'Times New Roman',serif;color:#16120f">${opts.heading}</h1>
+        <h1 style="margin:0 0 14px;font:400 28px/1.15 Georgia,'Times New Roman',serif;color:#1d2b45">${opts.heading}</h1>
         ${opts.body}
         ${button}
       </td></tr>
@@ -211,5 +211,48 @@ export function adminNewOrderEmail(p: { name: string; email: string; phone: stri
       cta: { label: "Open payments", url: p.adminUrl },
     }),
     text: `${p.name} (${p.email}${p.phone ? `, ${p.phone}` : ""}) ${p.amount ? `bought ${p.product} for ${formatPrice(p.amount)}` : `got ${p.product} (free)`}.\n${p.adminUrl}`,
+  };
+}
+
+export const MESSAGE_TOPICS: Record<string, string> = {
+  question: "Question about applying",
+  session: "Sessions & bookings",
+  payment: "Payments & downloads",
+  account: "My account",
+  feedback: "Feedback",
+  collaboration: "Collaboration",
+  speaking: "Talk / workshop",
+  other: "Something else",
+};
+
+export function adminNewMessageEmail(p: { name: string; email: string; topic: string; message: string; adminUrl: string }) {
+  const topic = MESSAGE_TOPICS[p.topic] ?? p.topic;
+  return {
+    subject: `New message: ${topic} from ${p.name}`,
+    html: layout({
+      preheader: p.message.slice(0, 90),
+      heading: "New message from the website",
+      body: `<p style="margin:0 0 6px"><strong>${esc(p.name)}</strong> &lt;${esc(p.email)}&gt;</p>
+        <p style="margin:0 0 14px;color:#776c60">${esc(topic)}</p>
+        <div style="background:#f6f1e9;border-radius:12px;padding:14px 16px;white-space:pre-wrap">${esc(p.message)}</div>
+        <p style="margin:14px 0 0;color:#776c60">Reply to this email to answer ${esc(p.name.split(" ")[0] ?? p.name)} directly.</p>`,
+      cta: { label: "Open messages", url: p.adminUrl },
+    }),
+    text: `New message (${topic}) from ${p.name} <${p.email}>:\n\n${p.message}\n\nOpen: ${p.adminUrl}`,
+  };
+}
+
+/** Admin-initiated request for general feedback about the platform. */
+export function feedbackInviteEmail(p: { name: string; feedbackUrl: string; note?: string }) {
+  const first = esc(p.name.split(" ")[0] ?? p.name);
+  return {
+    subject: `${p.name.split(" ")[0] ?? p.name}, how is your experience with ${SITE_NAME}?`,
+    html: layout({
+      preheader: "Two minutes of your feedback helps us improve for every student",
+      heading: "We'd love your feedback",
+      body: `<p style="margin:0">Hi ${first}, thank you for learning with us.${p.note ? ` ${esc(p.note)}` : ""} Could you tell us what's working and what we could do better? Every message is read personally.</p>`,
+      cta: { label: "Share feedback", url: p.feedbackUrl },
+    }),
+    text: `Hi ${p.name}, we'd love your feedback on ${SITE_NAME}.${p.note ? ` ${p.note}` : ""} Share it here: ${p.feedbackUrl}`,
   };
 }

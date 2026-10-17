@@ -88,7 +88,7 @@ function CodeInput({ value, onChange, invalid }: { value: string; onChange: (v: 
  * One card for everything account-related: log in, sign up (with a code sent
  * to the email) and forgot password. Switching modes keeps the email typed.
  */
-export function StudentAuth({ initialMode = "login", next }: { initialMode?: AuthMode; next?: string }) {
+export function StudentAuth({ initialMode = "login", next, google = false, notice }: { initialMode?: AuthMode; next?: string; google?: boolean; notice?: string }) {
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [step, setStep] = useState<"details" | "code">("details");
   const [email, setEmail] = useState("");
@@ -188,6 +188,24 @@ export function StudentAuth({ initialMode = "login", next }: { initialMode?: Aut
   return (
     <div className="rounded-3xl border border-line bg-[#fffdf9] p-6 shadow-[0_24px_60px_-40px_rgba(22,18,15,0.45)] md:p-8">
       {mode !== "forgot" && step === "details" && <div className="mb-7">{tabs}</div>}
+      {notice && <p role="alert" className="mb-5 rounded-xl bg-accent-soft px-4 py-3 text-sm text-accent-deep">{notice}</p>}
+      {google && mode !== "forgot" && step === "details" && (
+        <>
+          <a
+            href={`/api/account/google${next ? `?next=${encodeURIComponent(next)}` : ""}`}
+            className="flex h-12 w-full items-center justify-center gap-3 rounded-full border border-line bg-[#fffdf9] text-[0.95rem] font-medium text-ink transition-colors hover:border-ink/40 hover:bg-paper-2"
+          >
+            <svg viewBox="0 0 48 48" aria-hidden className="size-5">
+              <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z" />
+              <path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" />
+              <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z" />
+              <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z" />
+            </svg>
+            Continue with Google
+          </a>
+          <div className="my-5 flex items-center gap-3 text-xs text-muted"><span className="h-px flex-1 bg-line" /> or with email <span className="h-px flex-1 bg-line" /></div>
+        </>
+      )}
 
       {/* ---------------- Log in ---------------- */}
       {mode === "login" && (

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Check, ShoppingBag, Users } from "lucide-react";
@@ -17,6 +18,7 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { YouTubeIcon } from "@/components/ui/icons";
 import { VideoCard } from "@/components/video/VideoCard";
 import { safe } from "@/lib/safe";
+import { cn } from "@/lib/utils/cn";
 import { getMentorStats, listPublicReviews, listUpcomingSessions } from "@/lib/services/mentorship";
 import { closingSoon, opportunityCounts } from "@/lib/services/opportunities";
 import { listPublishedPosts } from "@/lib/services/posts";
@@ -29,6 +31,11 @@ import { SITE_NAME, SITE_URL } from "@/lib/site";
 import { formatPrice, formatSessionDate, formatSessionTime } from "@/lib/utils/session-time";
 
 export const revalidate = 300;
+
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+  openGraph: { url: SITE_URL },
+};
 
 /** 3D art: Microsoft Fluent Emoji (MIT licence), in /public/images/3d. */
 const art = (name: string) => `/images/3d/${name}.webp`;
@@ -172,16 +179,16 @@ export default async function HomePage() {
       {/* ------------------------------ Quick access ------------------------------ */}
       <section className="border-b border-line bg-[#fffdf9]">
         <div className="container-x">
-          <ul className="no-scrollbar -mx-4 flex overflow-x-auto px-4 py-3 sm:mx-0 sm:grid sm:grid-cols-5 sm:px-0 sm:divide-x sm:divide-line">
-            {QUICK.map(({ href, label, jp, sub }) => (
-              <li key={href} className="shrink-0">
-                <Link href={href} className="group flex items-center gap-3 rounded-2xl px-3 py-2.5 transition-colors hover:bg-paper-2 sm:mx-2">
-                  <span aria-hidden className="hanko size-12 shrink-0 -rotate-3 text-[0.95rem] transition-transform duration-300 group-hover:rotate-0">
+          <ul className="grid grid-cols-2 gap-1 py-3 sm:grid-cols-3 lg:grid-cols-5 lg:divide-x lg:divide-line">
+            {QUICK.map(({ href, label, jp, sub }, i) => (
+              <li key={href} className={cn("min-w-0", i === QUICK.length - 1 && "max-sm:col-span-2")}>
+                <Link href={href} className="group flex min-w-0 items-center gap-2.5 rounded-2xl px-2 py-2 transition-colors hover:bg-paper-2 sm:gap-3 sm:px-3 sm:py-2.5 lg:mx-1.5">
+                  <span aria-hidden className="hanko size-10 shrink-0 -rotate-3 text-[0.8rem] transition-transform duration-300 group-hover:rotate-0 sm:size-12 sm:text-[0.95rem]">
                     <span className="[writing-mode:vertical-rl]">{jp}</span>
                   </span>
                   <span className="min-w-0">
-                    <span className="block whitespace-nowrap text-[0.95rem] font-medium text-ink">{label}</span>
-                    <span className="block whitespace-nowrap text-xs text-muted">{sub}</span>
+                    <span className="block truncate text-[0.9rem] font-medium text-ink sm:text-[0.95rem]">{label}</span>
+                    <span className="block truncate text-xs text-muted">{sub}</span>
                   </span>
                 </Link>
               </li>

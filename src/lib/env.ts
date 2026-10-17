@@ -103,8 +103,29 @@ export const env = {
     return read("RESEND_API_KEY");
   },
   /** e.g. "Life of KittuKun <hello@yourdomain.com>" */
+  /** Sender. Defaults to the Gmail account when Gmail SMTP is used. */
   get emailFrom() {
-    return read("EMAIL_FROM");
+    return read("EMAIL_FROM") ?? (read("SMTP_USER") ? `Life of KittuKun <${read("SMTP_USER")}>` : undefined);
+  },
+  /** SMTP (e.g. Gmail with an App Password). Note: Render's free plan blocks SMTP ports; use Brevo there. */
+  get smtpHost() {
+    return read("SMTP_HOST") ?? (read("SMTP_USER")?.endsWith("@gmail.com") ? "smtp.gmail.com" : undefined);
+  },
+  get smtpPort() {
+    return Number(read("SMTP_PORT") ?? 465);
+  },
+  get smtpUser() {
+    return read("SMTP_USER");
+  },
+  get smtpPass() {
+    return read("SMTP_PASS")?.replace(/\s+/g, "");
+  },
+  /** "Sign in with Google" for students: a Google OAuth *Web application* client. */
+  get googleSignInClientId() {
+    return read("GOOGLE_SIGNIN_CLIENT_ID");
+  },
+  get googleSignInClientSecret() {
+    return read("GOOGLE_SIGNIN_CLIENT_SECRET");
   },
   /* Google Meet (optional): OAuth client + refresh token of the host's Google account */
   get googleClientId() {

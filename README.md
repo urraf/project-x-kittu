@@ -1,10 +1,11 @@
 # Life of KittuKun
 
-The personal brand and storytelling website for **Chitranshu Rajput** and his YouTube channel [Life of KittuKun](https://www.youtube.com/@lifeofkittukun). It covers international internships, scholarships, Japan, Korea, Europe and the journey in between.
+The learning platform for **Chitranshu Rajput** and his YouTube channel [Life of KittuKun](https://www.youtube.com/@lifeofkittukun), helping Indian students study, intern and work in Japan.
 
-- **Public site:** cinematic homepage, Journey timeline, video library with watch pages, an editorial blog and a Collaborate page.
-- **Studio (`/admin`):** a private dashboard for blog posts, images, videos, journey chapters, messages, site copy and the AI writer.
-- **AI:** Groq-powered drafts in the creator's voice, plus a secured endpoint an external cron service calls to generate and publish posts automatically.
+- **Public site:** live sessions with booking and payment, a study store (PDF guides), an opportunity finder (internships and scholarships), a directory of 207 Japanese universities with the JapanUniMatch shortlist tool, the blog and video library, a Contact page, and "Ask Kittu", the chat assistant.
+- **Student accounts (`/account`):** email + password or "Continue with Google". Bookings, join links, receipts, downloads and feedback in one place.
+- **Studio (`/admin`):** a private dashboard for sessions, store, payments, students (including "Ask for feedback" emails), opportunities, universities, blog posts, videos, messages, reviews and site settings.
+- **AI:** Groq-powered blog drafts in the creator's voice (plus automatic posts for new YouTube videos) and the chat assistant.
 
 Built with Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, MongoDB (Mongoose), TipTap and sharp.
 
@@ -52,23 +53,33 @@ Sign in at **http://localhost:3000/admin**. There is deliberately no link to it 
 | `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` | for paid sessions | Razorpay API keys. Without them, only free sessions can be booked. |
 | `PAYMENTS_DEMO` | – | `true` = practice checkout for paid sessions while there are no Razorpay keys (no real money, marked "demo" in the Studio). Ignored once keys are set. |
 | `RAZORPAY_WEBHOOK_SECRET` | recommended | Confirms bookings even if the student closes the tab right after paying. |
-| `BREVO_API_KEY` or `RESEND_API_KEY` | for emails | Booking confirmations, reminders, feedback links, sign-in links. HTTPS APIs (work where SMTP is blocked). |
-| `EMAIL_FROM` | for emails | Verified sender, e.g. `Life of KittuKun <hello@your-domain.com>`. |
+| `BREVO_API_KEY` or `RESEND_API_KEY` | for emails | Sign-up codes, password resets, booking confirmations, reminders, feedback requests and new-message alerts. HTTPS APIs (work where SMTP is blocked). |
+| `SMTP_USER` / `SMTP_PASS` | for emails (alternative) | Gmail address + App Password. `SMTP_HOST` / `SMTP_PORT` default to Gmail (465). Not usable on Render's free plan (SMTP ports blocked). |
+| `EMAIL_FROM` | for emails | Verified sender, e.g. `Life of KittuKun <lifeofkittukunweb@gmail.com>`. |
+| `GOOGLE_SIGNIN_CLIENT_ID` / `GOOGLE_SIGNIN_CLIENT_SECRET` | for Google sign-in | Shows "Continue with Google" on the login page. A **Web application** OAuth client (separate from the Calendar one below). |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_REFRESH_TOKEN` | – | Real Google Meet links + calendar invites. Otherwise Jitsi links are generated. |
 | `GOOGLE_CALENDAR_ID` | – | Default `primary`. |
 
-All secrets are read server-side only (`src/lib/env.ts` is `server-only`). Only `NEXT_PUBLIC_SITE_URL` reaches the browser.
+All secrets are read server-side only (`src/lib/env.ts` is `server-only`). Only `NEXT_PUBLIC_SITE_URL` reaches the browser. It is baked in **at build time**, so set it before the first build and redeploy after changing it.
 
 ---
 
-## Deploying (Vercel + MongoDB Atlas)
+## Deploying (Render + MongoDB Atlas)
 
-1. Create a MongoDB Atlas cluster and a database user. Allow network access from your host (Vercel: `0.0.0.0/0`, or use Atlas's Vercel integration).
-2. Import the repo into Vercel and add the environment variables above (Production + Preview).
-3. Deploy, then run the seed once from your machine against the production database if you want the starter content: `MONGODB_URI=… npm run seed`.
-4. Open `/admin` and go to **Videos → Sync from YouTube** to pull the latest uploads.
+1. **Atlas:** in **Network Access**, allow `0.0.0.0/0` (Render has no fixed IP on the free plan). The connection string must name the database: `mongodb+srv://USER:PASS@cluster0.xxxxx.mongodb.net/lifeofkittukun?retryWrites=true&w=majority`.
+2. **Render:** New → Web Service → connect the repo. Build command `npm install && npm run build`, start command `npm start`, Node ≥ 20.9.
+3. Add the environment variables from the table above (at least `MONGODB_URI`, `NEXT_PUBLIC_SITE_URL`, `AUTH_SECRET`, `ADMIN_PASSWORD_HASH`, `CRON_SECRET`, the Groq keys, Razorpay keys and an email provider), then deploy. If you add or change a variable later, use **Manual Deploy → Clear build cache & deploy**.
+4. **Custom domain:** add it in Render → Settings → Custom Domains, set `NEXT_PUBLIC_SITE_URL` to it and redeploy. Update the Google sign-in redirect URI and the Razorpay webhook URL to the new domain too.
+5. **Cron jobs** (cron-job.org works, free): `GET https://YOUR-DOMAIN/api/health` every 10 minutes (keeps the free instance awake and sends reminders/feedback emails), and optionally the video-posts endpoint below every 2–3 hours.
+6. Open `/admin`, sign in with the starting password and change it in **Settings → Login & password**. The dashboard's **Website status** card shows which services (emails, payments, AI) are connected.
 
-Images are stored in MongoDB GridFS, so no extra storage service is needed and the app runs on any Node host (Vercel, Render, Railway, a VPS with `npm run build && npm start`). Node ≥ 20.9.
+**Google sign-in setup:** Google Cloud Console → APIs & Services → OAuth consent screen (External, publish to "In production") → Credentials → Create OAuth client ID → **Web application**. Authorised JavaScript origin: `https://YOUR-DOMAIN`. Authorised redirect URI: `https://YOUR-DOMAIN/api/account/google/callback`. Put the ID and secret in `GOOGLE_SIGNIN_CLIENT_ID` / `GOOGLE_SIGNIN_CLIENT_SECRET`.
+
+**Emails from lifeofkittukunweb@gmail.com:** on Render's free plan use Brevo: sign up, add `lifeofkittukunweb@gmail.com` as a sender (Senders & IP → Senders, click the verification email), create an API key, then set `BREVO_API_KEY` and `EMAIL_FROM="Life of KittuKun <lifeofkittukunweb@gmail.com>"`. On a paid plan, a Gmail App Password (`SMTP_USER` / `SMTP_PASS`) also works.
+
+**Going live with Razorpay:** once the account is verified, swap `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` for the live keys (they start with `rzp_live_`), add the webhook (see Sessions → Setup) and redeploy.
+
+Images are stored in MongoDB GridFS, so no extra storage service is needed and the app runs on any Node host (Render, Vercel, Railway, a VPS with `npm run build && npm start`).
 
 Health check: `GET /api/health` returns `200` when the database is reachable.
 

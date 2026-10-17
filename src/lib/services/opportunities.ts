@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { Types, type PipelineStage } from "mongoose";
 import { z } from "zod";
 import { connectDB } from "@/lib/db/connect";
@@ -154,11 +155,12 @@ export async function opportunityCounts() {
   return { total: rows.reduce((t, r) => t + r.n, 0), byType: Object.fromEntries(rows.map((r) => [r._id, r.n])) as Record<string, number> };
 }
 
-export async function getPublicOpportunity(slug: string) {
+/** Counts a view; wrapped in React's per-request cache so metadata + page count once. */
+export const getPublicOpportunity = cache(async (slug: string) => {
   await connectDB();
   const doc = await Opportunity.findOneAndUpdate({ slug, status: "published" }, { $inc: { views: 1 } }, { returnDocument: "after" }).lean<OpportunityDoc>();
   return doc ? toDTO(doc) : null;
-}
+});
 
 export async function relatedOpportunities(o: OpportunityDTO, limit = 3) {
   await connectDB();

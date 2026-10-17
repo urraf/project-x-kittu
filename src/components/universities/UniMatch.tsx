@@ -53,13 +53,18 @@ export function UniMatch() {
     if (cgpa > Number(f.cgpaScale)) return setError(`Your CGPA can't be higher than ${f.cgpaScale}.`);
     setLoading(true);
     try {
-      const res = await fetch("/api/universities/match", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...f, cgpa, cgpaScale: Number(f.cgpaScale), englishScore: f.englishScore ? Number(f.englishScore) : undefined }),
-      });
-      const json = (await res.json()) as { ok: boolean; data?: MatchResponse; error?: { message?: string } };
-      if (!res.ok || !json.data) throw new Error(json.error?.message ?? "Couldn't build your shortlist. Please try again.");
+      const body = JSON.stringify({ ...f, cgpa, cgpaScale: Number(f.cgpaScale), englishScore: f.englishScore ? Number(f.englishScore) : undefined });
+      // The server may be waking up (free hosting) and briefly answer with an HTML error page: retry once.
+      let json: { ok: boolean; data?: MatchResponse; error?: { message?: string } } | null = null;
+      let res: Response | null = null;
+      for (let attempt = 0; attempt < 2 && !json; attempt++) {
+        if (attempt) await new Promise((r) => setTimeout(r, 2500));
+        res = await fetch("/api/universities/match", { method: "POST", headers: { "Content-Type": "application/json" }, body });
+        json = await res.json().catch(() => null);
+        if (!json && res.status < 500) break;
+      }
+      if (!json) throw new Error("The server is waking up. Please try again in a few seconds.");
+      if (!res?.ok || !json.data) throw new Error(json.error?.message ?? "Couldn't build your shortlist. Please try again.");
       setData(json.data);
       requestAnimationFrame(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
     } catch (err) {

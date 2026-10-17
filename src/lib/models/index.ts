@@ -109,7 +109,7 @@ const MessageSchema = new Schema(
   {
     name: { type: String, required: true, trim: true, maxlength: 100 },
     email: { type: String, required: true, trim: true, lowercase: true, maxlength: 200 },
-    topic: { type: String, enum: ["collaboration", "question", "speaking", "other"], default: "other" },
+    topic: { type: String, enum: ["question", "session", "payment", "account", "feedback", "collaboration", "speaking", "other"], default: "other" },
     organisation: { type: String, trim: true, maxlength: 120, default: "" },
     message: { type: String, required: true, trim: true, maxlength: 5000 },
     status: { type: String, enum: ["new", "read", "archived"], default: "new" },

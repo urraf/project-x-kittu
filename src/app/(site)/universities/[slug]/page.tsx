@@ -9,6 +9,7 @@ import { safe } from "@/lib/safe";
 import { DEGREES, getPublicUniversity } from "@/lib/services/universities";
 import { absoluteUrl } from "@/lib/site";
 import { cn } from "@/lib/utils/cn";
+import { JsonLd } from "@/components/ui/JsonLd";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +25,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: u.name,
     description: u.summary || `${u.name} (${typeName(u.type)} university in ${u.city}): programs for international students, official links and scholarships.`,
     alternates: { canonical: `/universities/${u.slug}` },
-    openGraph: { title: u.name, url: absoluteUrl(`/universities/${u.slug}`) },
+    openGraph: { title: u.name, url: absoluteUrl(`/universities/${u.slug}`), ...(u.coverImage ? { images: [{ url: absoluteUrl(u.coverImage.url), alt: u.coverImage.alt || u.name }] } : {}) },
   };
 }
 
@@ -35,6 +36,27 @@ export default async function UniversityPage({ params }: Props) {
 
   return (
     <div className="container-x grid grid-cols-1 gap-12 pb-20 pt-28 md:pt-32 lg:grid-cols-12 lg:gap-14">
+      <JsonLd
+        data={[
+          {
+            "@context": "https://schema.org",
+            "@type": "CollegeOrUniversity",
+            name: u.name,
+            ...(u.nameJa ? { alternateName: u.nameJa } : {}),
+            url: u.website || absoluteUrl(`/universities/${u.slug}`),
+            ...(u.coverImage ? { image: absoluteUrl(u.coverImage.url) } : {}),
+            address: { "@type": "PostalAddress", addressLocality: u.city, ...(u.prefecture ? { addressRegion: u.prefecture } : {}), addressCountry: "JP" },
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              { "@type": "ListItem", position: 1, name: "Universities", item: absoluteUrl("/universities") },
+              { "@type": "ListItem", position: 2, name: u.name, item: absoluteUrl(`/universities/${u.slug}`) },
+            ],
+          },
+        ]}
+      />
       <article className="min-w-0 lg:col-span-8">
         <Link href="/universities" className="group inline-flex items-center gap-1.5 text-sm text-muted hover:text-ink">
           <ArrowLeft className="size-4 transition-transform group-hover:-translate-x-1" /> All universities
