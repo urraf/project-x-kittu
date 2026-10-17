@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { ArrowLeft, BadgeCheck, ExternalLink, Plus, Trash2, X } from "lucide-react";
+import { ArrowLeft, ExternalLink, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { ApiClientError, api, errorMessage } from "@/lib/admin/api";
 import { ImageField } from "@/components/admin/ImageField";
@@ -58,23 +58,21 @@ const fromDTO = (u?: UniversityDTO): Form => ({
 export function UniversityEditor({ university, siteUrl }: { university?: UniversityDTO; siteUrl: string }) {
   const router = useRouter();
   const [form, setForm] = useState<Form>(() => fromDTO(university));
-  const [verifiedAt, setVerifiedAt] = useState(university?.lastVerifiedAt);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setForm((f) => ({ ...f, [k]: v }));
   const setProgram = (i: number, patch: Partial<Program>) => set("programs", form.programs.map((p, j) => (j === i ? { ...p, ...patch } : p)));
 
-  async function save(markVerified: boolean) {
+  async function save() {
     setSaving(true);
     setErrors({});
-    const body = { ...form, strengths: form.strengths.split(",").map((s) => s.trim()).filter(Boolean).slice(0, 12), markVerified };
+    const body = { ...form, strengths: form.strengths.split(",").map((s) => s.trim()).filter(Boolean).slice(0, 12) };
     try {
       if (university) {
         const u = await api<UniversityDTO>(`/api/admin/universities/${university.id}`, { method: "PUT", body });
         setForm(fromDTO(u));
-        setVerifiedAt(u.lastVerifiedAt);
-        toast.success(markVerified ? "Saved and marked as verified today." : "Saved.");
+        toast.success("Saved.");
         router.refresh();
       } else {
         const u = await api<UniversityDTO>("/api/admin/universities", { body });
@@ -106,7 +104,7 @@ export function UniversityEditor({ university, siteUrl }: { university?: Univers
       <Link href="/admin/universities" className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted hover:text-ink"><ArrowLeft className="size-4" /> All universities</Link>
       <PageHeader
         title={university ? university.name : "Add university"}
-        description={verifiedAt ? `Last verified ${new Date(verifiedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}` : "Not verified yet. Add programs from official pages, then click “Save & mark verified”."}
+        description="Programs, official links and scholarships shown on the university's page."
         actions={
           university && university.status === "published" ? (
             <a href={`${siteUrl}/universities/${university.slug}`} target="_blank" rel="noopener noreferrer" className="inline-flex h-10 items-center gap-2 rounded-full border border-line bg-[#fffdf9] px-4 text-[0.88rem] font-medium hover:border-ink/40"><ExternalLink className="size-4" /> View</a>
@@ -197,14 +195,8 @@ export function UniversityEditor({ university, siteUrl }: { university?: Univers
           <Field label="Scholarships & funding (optional)" htmlFor="u-sch" hint="e.g. MEXT university recommendation, tuition waivers. Plain text.">
             <textarea id="u-sch" rows={4} className="field text-sm" value={form.scholarships} onChange={(e) => set("scholarships", e.target.value)} />
           </Field>
-          <div className="flex flex-col gap-3 border-t border-line pt-5 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-muted">Mark verified only after checking the details on official pages.</p>
-            <div className="flex flex-wrap gap-2">
-              <Button onClick={() => save(false)} loading={saving}>Save</Button>
-              <Button variant="primary" onClick={() => save(true)} loading={saving} disabled={!form.programs.length} title={form.programs.length ? undefined : "Add at least one program first"}>
-                <BadgeCheck className="size-4" /> Save &amp; mark verified
-              </Button>
-            </div>
+          <div className="flex justify-end border-t border-line pt-5">
+            <Button variant="primary" onClick={save} loading={saving}>Save</Button>
           </div>
         </div>
         <aside className="space-y-4">

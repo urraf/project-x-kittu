@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { BadgeCheck, DownloadCloud, Plus, Search } from "lucide-react";
+import { DownloadCloud, Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 import { api, errorMessage } from "@/lib/admin/api";
 import { useApi } from "@/lib/admin/hooks";
@@ -16,8 +16,6 @@ const FILTERS = [
   { id: "national", label: "National" },
   { id: "public", label: "Public" },
   { id: "private", label: "Private" },
-  { id: "verified", label: "Verified" },
-  { id: "unverified", label: "To verify" },
 ] as const;
 
 export function UniversitiesManager() {
@@ -52,7 +50,7 @@ export function UniversitiesManager() {
     <>
       <PageHeader
         title="Universities"
-        description="The universities directory. Add verified English-taught programs, official links and scholarships, then mark each one as verified."
+        description="The universities directory: English-taught programs, official links and scholarships for each university."
         actions={
           <>
             <Button onClick={importList} loading={importing} title="Adds universities from the built-in catalog of 200+ and fills in their profiles (never overwrites your edits)">
@@ -78,7 +76,7 @@ export function UniversitiesManager() {
       ) : !data?.items.length ? (
         <AdminEmpty
           title={q || type ? "Nothing matches" : "No universities yet"}
-          description={q || type ? "Try another search." : "Import the catalog of 200+ universities, then add verified program details over time."}
+          description={q || type ? "Try another search." : "Import the catalog of 200+ universities, then add or edit program details any time."}
           action={!q && !type ? <Button variant="primary" onClick={importList} loading={importing}>Import catalog</Button> : undefined}
         />
       ) : (
@@ -91,11 +89,7 @@ export function UniversitiesManager() {
                     <p className="truncate font-medium text-ink">{u.name}</p>
                     <p className="text-xs text-muted">{u.type} · {u.city} · {u.programs.length} program{u.programs.length === 1 ? "" : "s"}</p>
                   </div>
-                  {u.verified ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-[#dde8de] px-2.5 py-1 text-xs font-medium text-moss"><BadgeCheck className="size-3.5" /> Verified</span>
-                  ) : (
-                    <span className="rounded-full bg-[#f3e6c8] px-2.5 py-1 text-xs font-medium text-[#7a5410]">To verify</span>
-                  )}
+                  {u.status !== "published" && <span className="rounded-full bg-paper-3 px-2.5 py-1 text-xs font-medium text-ink-2">Hidden</span>}
                 </Link>
               </li>
             ))}

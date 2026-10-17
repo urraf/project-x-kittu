@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ArrowUpRight, BadgeCheck, Globe, MapPin, Search } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, Globe, MapPin, Search } from "lucide-react";
 import { typeName, typeTone } from "@/components/universities/UniversityCard";
 import { TAG_LABELS, fieldLabel, regionLabel, type UniversityTag } from "@/lib/universities/taxonomy";
 import { safe } from "@/lib/safe";
@@ -76,7 +76,6 @@ export default async function UniversityPage({ params }: Props) {
         )}
         <div className="mt-6 flex flex-wrap items-center gap-2">
           <span className={cn("rounded-full px-3 py-1 text-xs font-medium", typeTone(u.type))}>{typeName(u.type)} university</span>
-          {u.verified && <span className="inline-flex items-center gap-1 rounded-full bg-[#dde8de] px-3 py-1 text-xs font-medium text-moss"><BadgeCheck className="size-3.5" /> Programs verified</span>}
         </div>
         <h1 className="display mt-4 text-[2.4rem] leading-[1.03] md:text-[3.3rem]">{u.name}</h1>
         {u.nameJa && <p className="jp mt-2 text-xl text-muted">{u.nameJa}</p>}
@@ -119,8 +118,8 @@ export default async function UniversityPage({ params }: Props) {
             </div>
           ) : (
             <div className="mt-5 rounded-2xl border border-dashed border-line p-6">
-              <p className="font-medium text-ink">Program details are being verified.</p>
-              <p className="mt-1 text-sm text-ink-2">Until then, check English-taught programs directly on official sources:</p>
+              <p className="font-medium text-ink">Find the current programs</p>
+              <p className="mt-1 text-sm text-ink-2">See this year&apos;s English-taught programs on the official sources:</p>
               <div className="mt-4 flex flex-wrap gap-2">
                 {u.website && <a href={u.website} target="_blank" rel="noopener noreferrer nofollow" className="btn btn-ghost !py-2.5 text-ink"><Globe className="size-4" /> {u.name.replace(/\s*\(.*\)$/, "")} website</a>}
                 <a href="https://www.studyinjapan.go.jp/en/" target="_blank" rel="noopener noreferrer" className="btn btn-ghost !py-2.5 text-ink"><Search className="size-4" /> Study in Japan program search</a>
@@ -138,7 +137,7 @@ export default async function UniversityPage({ params }: Props) {
           </section>
         )}
         <p className="mt-10 text-sm text-muted">
-          {u.lastVerifiedAt ? `Program details last verified on ${new Date(u.lastVerifiedAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}.` : "Program details not yet verified."} Requirements change every year, so always confirm on the official site.
+          Requirements change every year, so always confirm on the official site before applying.
         </p>
       </article>
 

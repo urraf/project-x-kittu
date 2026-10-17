@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight, BadgeCheck, MapPin } from "lucide-react";
+import { ArrowUpRight, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import type { UniversityDTO } from "@/lib/services/universities";
 import { TAG_LABELS, regionLabel, type UniversityTag } from "@/lib/universities/taxonomy";
@@ -37,7 +37,6 @@ export function UniversityCard({ u }: { u: UniversityDTO }) {
           </>
         )}
         <span className={cn("absolute left-2.5 top-2.5 rounded-full px-2 py-0.5 text-[0.68rem] font-medium shadow-sm", typeTone(u.type))}>{typeName(u.type)}</span>
-        {u.verified && <span className="absolute right-2.5 top-2.5 inline-flex items-center gap-1 rounded-full bg-[#fffdf9]/95 px-2 py-0.5 text-[0.68rem] font-medium text-moss shadow-sm"><BadgeCheck className="size-3.5" /> Verified</span>}
       </div>
       <div className="flex flex-1 flex-col p-3.5">
         <h3 className="line-clamp-2 text-[0.95rem] font-semibold leading-snug text-ink group-hover:text-accent-deep">{u.name}</h3>

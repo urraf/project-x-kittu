@@ -111,7 +111,7 @@ export default async function UniversitiesPage({ searchParams }: { searchParams:
             </nav>
           )}
           <p className="mx-auto mt-14 max-w-2xl text-center text-sm text-muted">
-            Programs and requirements change every year. Universities marked <strong className="text-ink">Verified</strong> have program details checked against official pages; always confirm on the university&apos;s site before applying.
+            Programs and requirements change every year, so always confirm on the university&apos;s official site before applying.
           </p>
         </div>
       </section>
