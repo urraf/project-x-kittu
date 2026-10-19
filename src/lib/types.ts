@@ -193,6 +193,8 @@ export type ReviewDTO = {
   text: string;
   createdAt: string;
   sessionTitle?: string;
+  /** Set for study-store reviews (sessionTitle is set for session reviews). */
+  productTitle?: string;
   status: "visible" | "hidden";
   featured: boolean;
 };

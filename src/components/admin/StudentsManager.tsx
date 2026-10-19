@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ChevronDown, Copy, Download, Mail, MessageSquareHeart, Phone, Search } from "lucide-react";
+import { ChevronDown, Copy, Download, Mail, MessageSquareHeart, Phone, Search, Star } from "lucide-react";
 import { toast } from "sonner";
 import { useApi } from "@/lib/admin/hooks";
 import { api, errorMessage } from "@/lib/admin/api";
@@ -39,6 +39,7 @@ type StudentBooking = {
   refunded: boolean;
   notes: string;
   createdAt: string;
+  feedback: { rating?: number; sentAt?: string };
   session?: { id: string; title: string; startsAt: string };
 };
 
@@ -50,35 +51,47 @@ function csvCell(v: string | number) {
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
-/** Emails the student a personal "share your feedback" link. */
-function AskFeedback({ studentId, name }: { studentId: string; name: string }) {
+/**
+ * Feedback status for one session or purchase: the rating once given, otherwise a
+ * button that emails the student their one-time feedback link.
+ */
+function FeedbackCell({ studentId, row, onSent }: { studentId: string; row: StudentBooking; onSent: () => void }) {
   const [busy, setBusy] = useState(false);
+  if (row.feedback.rating) {
+    return (
+      <span className="inline-flex w-fit items-center gap-1 rounded-full bg-[#fdf3dc] px-2 py-0.5 text-[0.7rem] font-medium text-[#7a5410]" title="Feedback received">
+        <Star className="size-3 fill-[#e0a43a] text-[#e0a43a]" /> {row.feedback.rating}/5 received
+      </span>
+    );
+  }
+  const notYet = row.kind === "session" && row.session && new Date(row.session.startsAt) > new Date();
+  if (row.status !== "confirmed" || notYet || (row.kind === "session" ? !row.session : !row.product)) return null;
   return (
-    <div className="mx-5 mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-[#fffdf9] px-4 py-2.5 text-sm">
-      <span className="text-ink-2">Ask {name.split(" ")[0]} how their experience was, by email.</span>
-      <Button
-        size="sm"
-        loading={busy}
-        onClick={async () => {
-          setBusy(true);
-          try {
-            await api(`/api/admin/students/${studentId}/feedback`, { body: {} });
-            toast.success("Feedback request sent", { description: `${name} will get an email with a link to share feedback.` });
-          } catch (e) {
-            toast.error(errorMessage(e));
-          } finally {
-            setBusy(false);
-          }
-        }}
-      >
-        {!busy && <MessageSquareHeart className="size-4" />} Ask for feedback
-      </Button>
-    </div>
+    <Button
+      size="sm"
+      variant="ghost"
+      loading={busy}
+      title={row.feedback.sentAt ? `Link sent ${day(row.feedback.sentAt)}. Click to send it again.` : "Email the student their one-time feedback link"}
+      onClick={async () => {
+        setBusy(true);
+        try {
+          await api(`/api/admin/students/${studentId}/feedback`, { body: { kind: row.kind, id: row.id } });
+          toast.success("Feedback link sent", { description: "The student can use it once to rate this." });
+          onSent();
+        } catch (e) {
+          toast.error(errorMessage(e));
+        } finally {
+          setBusy(false);
+        }
+      }}
+    >
+      {!busy && <MessageSquareHeart className="size-3.5" />} {row.feedback.sentAt ? "Resend feedback link" : "Ask for feedback"}
+    </Button>
   );
 }
 
 function Bookings({ studentId }: { studentId: string }) {
-  const { data, loading } = useApi<StudentBooking[]>(`/api/admin/students/${studentId}`);
+  const { data, loading, reload } = useApi<StudentBooking[]>(`/api/admin/students/${studentId}`);
   if (loading && !data) return <p className="px-5 pb-5 text-sm text-muted">Loading bookings…</p>;
   if (!data?.length) return <p className="px-5 pb-5 text-sm text-muted">No bookings yet. This student signed up but hasn&apos;t booked a session.</p>;
   return (
@@ -109,6 +122,9 @@ function Bookings({ studentId }: { studentId: string }) {
             {b.amount === 0 ? "Free" : b.refunded ? `${rupees(b.amount)} refunded` : b.paid ? `${rupees(b.amount)} paid` : "Not paid"}
             {b.provider === "demo" && " (demo)"}
           </span>
+          <div className="sm:flex sm:w-52 sm:justify-end">
+            <FeedbackCell studentId={studentId} row={b} onSent={reload} />
+          </div>
         </li>
       ))}
     </ul>
@@ -209,7 +225,6 @@ export function StudentsManager() {
                 </button>
                 {open === s.id && (
                   <>
-                    <AskFeedback studentId={s.id} name={s.name} />
                     <Bookings studentId={s.id} />
                   </>
                 )}

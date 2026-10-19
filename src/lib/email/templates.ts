@@ -173,7 +173,8 @@ export function feedbackRequestEmail(p: { name: string; session: Session; feedba
       preheader: "Takes 30 seconds, and helps other students decide",
       heading: `Thanks for ${em("joining!")}`,
       seal: ["感想", "Your feedback"],
-      body: `<p style="margin:0">Hi ${esc(p.name.split(" ")[0] ?? p.name)}, I hope the session helped. Could you rate it and share a line or two? It takes 30 seconds and helps other students.</p>`,
+      body: `<p style="margin:0">Hi ${esc(p.name.split(" ")[0] ?? p.name)}, I hope the session helped. Could you rate it and share a line or two? It takes 30 seconds and helps other students.</p>
+        <p style="margin:12px 0 0;color:#6e7387;font-size:13px">This link is just for you and works once.</p>`,
       cta: { label: "Rate the session", url: p.feedbackUrl },
     }),
     text: `Hi ${p.name}, thanks for joining "${p.session.title}". Please rate it here: ${p.feedbackUrl}`,
@@ -290,18 +291,19 @@ export function adminNewMessageEmail(p: { name: string; email: string; topic: st
   };
 }
 
-/** Admin-initiated request for general feedback about the platform. */
-export function feedbackInviteEmail(p: { name: string; feedbackUrl: string; note?: string }) {
-  const first = esc(p.name.split(" ")[0] ?? p.name);
+/** One-time link to rate a study-store purchase (sent from Studio → Students). */
+export function productFeedbackEmail(p: { name: string; product: string; feedbackUrl: string }) {
+  const first = p.name.split(" ")[0] || p.name;
   return {
-    subject: `${p.name.split(" ")[0] ?? p.name}, how is your experience with ${SITE_NAME}?`,
+    subject: `How are you finding "${p.product}"?`,
     html: layout({
-      preheader: "Two minutes of your feedback helps us improve for every student",
-      heading: `We'd love your ${em("feedback")}`,
+      preheader: "Takes 30 seconds, and helps other students choose",
+      heading: `How was ${em("it")}, ${esc(first)}?`,
       seal: ["感想", "Your feedback"],
-      body: `<p style="margin:0">Hi ${first}, thank you for learning with us.${p.note ? ` ${esc(p.note)}` : ""} Could you tell us what's working and what we could do better? Every message is read personally.</p>`,
-      cta: { label: "Share feedback", url: p.feedbackUrl },
+      body: `<p style="margin:0">Hi ${esc(first)}, thank you for getting <strong style="color:#1d2b45">${esc(p.product)}</strong>. Could you rate it and share a line or two? It takes 30 seconds and helps other students decide.</p>
+        <p style="margin:12px 0 0;color:#6e7387;font-size:13px">This link is just for you and works once.</p>`,
+      cta: { label: "Rate it", url: p.feedbackUrl },
     }),
-    text: `Hi ${p.name}, we'd love your feedback on ${SITE_NAME}.${p.note ? ` ${p.note}` : ""} Share it here: ${p.feedbackUrl}`,
+    text: `Hi ${first}, thank you for getting "${p.product}". Please rate it here (this link works once): ${p.feedbackUrl}`,
   };
 }

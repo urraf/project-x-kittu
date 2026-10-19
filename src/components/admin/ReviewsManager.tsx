@@ -61,7 +61,7 @@ export function ReviewsManager() {
       {loading && !data ? (
         <LoadingBlock />
       ) : !data?.length ? (
-        <AdminEmpty title="No reviews yet" description="After each session, students automatically get a personal link to rate it. Their reviews will show up here." />
+        <AdminEmpty title="No reviews yet" description="After each session, students automatically get a personal link to rate it. For study-store purchases, send the link from Students. Reviews show up here." />
       ) : (
         <ul className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {data.map((r) => (
@@ -70,7 +70,7 @@ export function ReviewsManager() {
                 <div>
                   <p className="font-medium text-ink">{r.name}</p>
                   <p className="text-xs text-muted">
-                    {r.sessionTitle ? `${r.sessionTitle} · ` : ""}
+                    {r.productTitle ? `Study store: ${r.productTitle} · ` : r.sessionTitle ? `${r.sessionTitle} · ` : ""}
                     {new Date(r.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                   </p>
                 </div>

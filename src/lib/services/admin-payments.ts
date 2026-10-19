@@ -1,7 +1,7 @@
 import "server-only";
 import { Types } from "mongoose";
 import { connectDB } from "@/lib/db/connect";
-import { Booking, Order, Review, Student, type BookingDoc, type MentorSessionDoc, type StudentDoc } from "@/lib/models";
+import { Booking, Order, ProductReview, Review, Student, type BookingDoc, type MentorSessionDoc, type StudentDoc } from "@/lib/models";
 
 // Mongoose 9 query typings are very strict; these dynamic filters are built from validated input.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -241,6 +241,13 @@ export async function getAdminStudentBookings(studentId: string) {
     Booking.find({ student: studentId, status: { $in: ["confirmed", "cancelled"] } }).sort({ createdAt: -1 }).limit(100).populate("session", "title startsAt").lean(),
     Order.find({ student: studentId, status: { $in: ["paid", "cancelled"] }, "payment.paidAt": { $ne: null } }).sort({ createdAt: -1 }).limit(100).populate("product", "title").lean(),
   ]);
+  const [sessionReviews, productReviews] = await Promise.all([
+    Review.find({ booking: { $in: docs.map((d) => d._id) } }).select("booking rating").lean<{ booking: Types.ObjectId; rating: number }[]>(),
+    ProductReview.find({ order: { $in: orders.map((o) => o._id) } }).select("order rating").lean<{ order: Types.ObjectId; rating: number }[]>(),
+  ]);
+  const ratingByBooking = new Map(sessionReviews.map((r) => [String(r.booking), r.rating]));
+  const ratingByOrder = new Map(productReviews.map((r) => [String(r.order), r.rating]));
+  const feedback = (rating: number | undefined, sentAt?: Date | null) => ({ rating, sentAt: sentAt ? new Date(sentAt).toISOString() : undefined });
   const bookingRows = (docs as unknown as (BookingDoc & { session?: MentorSessionDoc })[]).map((b) => ({
     id: String(b._id),
     kind: "session" as const,
@@ -251,9 +258,10 @@ export async function getAdminStudentBookings(studentId: string) {
     refunded: Boolean(b.payment?.refundedAt),
     notes: b.notes ?? "",
     createdAt: new Date(b.createdAt).toISOString(),
+    feedback: feedback(ratingByBooking.get(String(b._id)), b.feedbackSentAt),
     session: b.session && typeof b.session === "object" && "title" in b.session ? { id: String(b.session._id), title: b.session.title, startsAt: new Date(b.session.startsAt).toISOString() } : undefined,
   }));
-  const orderRows = (orders as unknown as (PaidDoc & { createdAt: Date; product?: { _id: Types.ObjectId; title: string } })[]).map((o) => ({
+  const orderRows = (orders as unknown as (PaidDoc & { createdAt: Date; feedbackSentAt?: Date | null; product?: { _id: Types.ObjectId; title: string } })[]).map((o) => ({
     id: String(o._id),
     kind: "store" as const,
     status: (o.status === "paid" ? "confirmed" : "cancelled") as "confirmed" | "cancelled",
@@ -263,6 +271,7 @@ export async function getAdminStudentBookings(studentId: string) {
     refunded: Boolean(o.payment?.refundedAt),
     notes: "",
     createdAt: new Date(o.createdAt).toISOString(),
+    feedback: feedback(ratingByOrder.get(String(o._id)), o.feedbackSentAt),
     product: o.product && typeof o.product === "object" && "title" in o.product ? { id: String(o.product._id), title: o.product.title } : undefined,
   }));
   return [...bookingRows, ...orderRows].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());

@@ -7,11 +7,13 @@ import {
   AdminAccount,
   Booking,
   MentorSession,
+  ProductReview,
   Review,
   Student,
   TaskLock,
   type BookingDoc,
   type MentorSessionDoc,
+  type ProductReviewDoc,
   type ReviewDoc,
 } from "@/lib/models";
 import { env } from "@/lib/env";
@@ -108,6 +110,20 @@ function toReviewDTO(r: ReviewDoc & { session?: unknown }): ReviewDTO {
     text: r.text ?? "",
     createdAt: new Date(r.createdAt).toISOString(),
     sessionTitle: s && typeof s === "object" ? s.title : undefined,
+    status: (r.status ?? "visible") as ReviewDTO["status"],
+    featured: Boolean(r.featured),
+  };
+}
+
+function toProductReviewDTO(r: ProductReviewDoc & { product?: unknown }): ReviewDTO {
+  const p = r.product as { title?: string } | undefined;
+  return {
+    id: String(r._id),
+    name: r.name,
+    rating: r.rating,
+    text: r.text ?? "",
+    createdAt: new Date(r.createdAt).toISOString(),
+    productTitle: p && typeof p === "object" ? p.title : undefined,
     status: (r.status ?? "visible") as ReviewDTO["status"],
     featured: Boolean(r.featured),
   };
@@ -445,47 +461,6 @@ export async function getStudentBooking(studentId: Types.ObjectId | string, book
 /* Feedback                                                           */
 /* ================================================================== */
 
-export const feedbackSchema = z.object({
-  rating: z.number().int().min(1, "Choose a star rating").max(5),
-  text: z.string().trim().max(2000).default(""),
-  name: z.string().trim().min(2, "Add your name").max(100),
-});
-
-/** Finds the booking behind a feedback link. */
-export async function getFeedbackContext(token: string) {
-  if (!token || token.length > 100) return null;
-  await connectDB();
-  const booking = await Booking.findOne({ feedbackToken: token, status: "confirmed" }).populate("session").lean();
-  if (!booking) return null;
-  const b = booking as unknown as BookingDoc & { session: MentorSessionDoc };
-  const review = await Review.findOne({ booking: b._id }).lean<ReviewDoc>();
-  return {
-    bookingId: String(b._id),
-    name: b.name,
-    session: { title: b.session.title, startsAt: new Date(b.session.startsAt).toISOString(), durationMin: b.session.durationMin, started: new Date(b.session.startsAt) <= new Date() },
-    review: review ? { rating: review.rating, text: review.text ?? "", name: review.name } : null,
-  };
-}
-
-export async function submitFeedback(token: string, raw: unknown) {
-  const input = feedbackSchema.parse(raw);
-  await connectDB();
-  const b = (await Booking.findOne({ feedbackToken: token, status: "confirmed" }).populate("session").lean()) as unknown as
-    | (BookingDoc & { session: MentorSessionDoc })
-    | null;
-  if (!b) throw notFound("This feedback link isn't valid.");
-  if (new Date(b.session.startsAt) > new Date()) throw badRequest("You can leave feedback once the session has started.");
-  await Review.updateOne(
-    { booking: b._id },
-    {
-      $set: { rating: input.rating, text: sanitizePlain(input.text), name: sanitizePlain(input.name) },
-      $setOnInsert: { session: b.session._id, student: b.student, status: "visible", featured: false },
-    },
-    { upsert: true },
-  );
-  logger.info("review.submitted", { booking: String(b._id), rating: input.rating });
-}
-
 /* ================================================================== */
 /* Admin: sessions                                                    */
 /* ================================================================== */
@@ -731,22 +706,31 @@ export async function sendFeedbackRequestsNow(sessionId: string) {
 
 export async function listAdminReviews() {
   await connectDB();
-  const docs = await Review.find().sort({ createdAt: -1 }).limit(300).populate("session", "title").lean();
-  return (docs as unknown as ReviewDoc[]).map(toReviewDTO);
+  const [sessionReviews, productReviews] = await Promise.all([
+    Review.find().sort({ createdAt: -1 }).limit(300).populate("session", "title").lean(),
+    ProductReview.find().sort({ createdAt: -1 }).limit(300).populate("product", "title").lean(),
+  ]);
+  return [...(sessionReviews as unknown as ReviewDoc[]).map(toReviewDTO), ...(productReviews as unknown as ProductReviewDoc[]).map(toProductReviewDTO)].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
 }
 
+/** Reviews live in two collections (sessions and study store); ids are unique across both. */
 export async function updateReview(id: string, patch: { status?: "visible" | "hidden"; featured?: boolean }) {
   if (!Types.ObjectId.isValid(id)) throw notFound("Review not found");
   await connectDB();
   const doc = await Review.findByIdAndUpdate(id, { $set: patch }, { returnDocument: "after" }).populate("session", "title").lean();
-  if (!doc) throw notFound("Review not found");
-  return toReviewDTO(doc as unknown as ReviewDoc);
+  if (doc) return toReviewDTO(doc as unknown as ReviewDoc);
+  const product = await ProductReview.findByIdAndUpdate(id, { $set: patch }, { returnDocument: "after" }).populate("product", "title").lean();
+  if (!product) throw notFound("Review not found");
+  return toProductReviewDTO(product as unknown as ProductReviewDoc);
 }
 
 export async function deleteReview(id: string) {
   if (!Types.ObjectId.isValid(id)) throw notFound("Review not found");
   await connectDB();
-  await Review.deleteOne({ _id: id });
+  const { deletedCount } = await Review.deleteOne({ _id: id });
+  if (!deletedCount) await ProductReview.deleteOne({ _id: id });
 }
 
 export async function mentorshipOverview() {

@@ -121,12 +121,12 @@ export function LogoutButton() {
 
 const LABELS = ["", "Not helpful", "Could be better", "Good", "Very helpful", "Amazing"];
 
-/** Star rating + review form used by the unique feedback link. */
-export function FeedbackForm({ token, initial }: { token: string; initial: { rating: number; text: string; name: string } }) {
-  const [rating, setRating] = useState(initial.rating);
+/** Star rating + review form behind a one-time feedback link (one per booking or purchase). */
+export function FeedbackForm({ token, kind, defaultName }: { token: string; kind: "session" | "product"; defaultName: string }) {
+  const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
-  const [text, setText] = useState(initial.text);
-  const [name, setName] = useState(initial.name);
+  const [text, setText] = useState("");
+  const [name, setName] = useState(defaultName);
   const [state, setState] = useState<"idle" | "saving" | "done">("idle");
   const [error, setError] = useState("");
   async function submit(e: React.FormEvent) {
@@ -147,15 +147,15 @@ export function FeedbackForm({ token, initial }: { token: string; initial: { rat
       <div className="rounded-2xl border border-line bg-[#fffdf9] p-6 text-center" role="status">
         <CheckCircle2 className="mx-auto size-10 text-moss" />
         <h2 className="display mt-3 text-4xl">Thank you!</h2>
-        <p className="mt-2 text-ink-2">Your review helps other students decide. You can change it any time with the same link.</p>
-        <Link href="/sessions" className="btn btn-ink mt-5">See upcoming sessions</Link>
+        <p className="mt-2 text-ink-2">Your feedback has been received. It helps other students decide, and it helps us get better.</p>
+        <Link href={kind === "session" ? "/sessions" : "/store"} className="btn btn-ink mt-5">{kind === "session" ? "See upcoming sessions" : "Browse the study store"}</Link>
       </div>
     );
   }
   const shown = hover || rating;
   return (
     <form onSubmit={submit} noValidate className="rounded-2xl border border-line bg-[#fffdf9] p-6 md:p-7">
-      <p className="label">How was the session?</p>
+      <p className="label">{kind === "session" ? "How was the session?" : "How useful was it?"}</p>
       <div className="flex items-center gap-1" onMouseLeave={() => setHover(0)} role="radiogroup" aria-label="Rating">
         {[1, 2, 3, 4, 5].map((i) => (
           <button
@@ -174,7 +174,7 @@ export function FeedbackForm({ token, initial }: { token: string; initial: { rat
         <span className="ml-2 text-sm text-ink-2">{LABELS[shown]}</span>
       </div>
       <div className="mt-5">
-        <label htmlFor="fb-text" className="label">Your review <span className="font-normal text-muted">(shown on the website)</span></label>
+        <label htmlFor="fb-text" className="label">Your review {kind === "session" && <span className="font-normal text-muted">(shown on the website)</span>}</label>
         <textarea id="fb-text" rows={4} value={text} onChange={(e) => setText(e.target.value)} maxLength={2000} className="field" placeholder="What did you find most useful?" />
       </div>
       <div className="mt-4">
@@ -183,8 +183,9 @@ export function FeedbackForm({ token, initial }: { token: string; initial: { rat
         <p className="hint">Tip: you can use just your first name.</p>
       </div>
       {error && <p role="alert" className="mt-4 rounded-xl bg-accent-soft px-4 py-3 text-sm text-accent-deep">{error}</p>}
+      <p className="mt-5 text-xs text-muted">You can send feedback once with this link, so take your time.</p>
       <button type="submit" disabled={state === "saving"} className="btn btn-accent mt-6 w-full !py-3.5">
-        {state === "saving" && <Loader2 className="size-4 animate-spin" />} {initial.rating ? "Update my review" : "Submit review"}
+        {state === "saving" && <Loader2 className="size-4 animate-spin" />} Submit feedback
       </button>
     </form>
   );

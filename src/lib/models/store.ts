@@ -74,6 +74,9 @@ const OrderSchema = new Schema(
     },
     downloadCount: { type: Number, default: 0 },
     lastDownloadAt: Date,
+    /** Unique, unguessable token for the one-time feedback link (created when first needed). */
+    feedbackToken: { type: String, unique: true, sparse: true, select: false },
+    feedbackSentAt: Date,
     ipHash: { type: String, select: false },
   },
   { timestamps: true },
@@ -84,3 +87,24 @@ OrderSchema.index({ status: 1, createdAt: 1 });
 OrderSchema.index({ product: 1, student: 1 }, { unique: true, partialFilterExpression: { status: "paid" }, name: "one_paid_order_per_product" });
 export type OrderDoc = InferSchemaType<typeof OrderSchema> & { _id: Types.ObjectId; createdAt: Date; updatedAt: Date };
 export const Order: Model<InferSchemaType<typeof OrderSchema>> = models.Order || model("Order", OrderSchema);
+
+/* ------------------------------------------------------------------ */
+/* ProductReview: one rating + text per purchase, via its feedback link */
+/* ------------------------------------------------------------------ */
+
+const ProductReviewSchema = new Schema(
+  {
+    order: { type: Schema.Types.ObjectId, ref: "Order", required: true, unique: true },
+    product: { type: Schema.Types.ObjectId, ref: "Product", required: true },
+    student: { type: Schema.Types.ObjectId, ref: "Student" },
+    name: { type: String, required: true, trim: true, maxlength: 100 },
+    rating: { type: Number, required: true, min: 1, max: 5 },
+    text: { type: String, trim: true, maxlength: 2000, default: "" },
+    status: { type: String, enum: ["visible", "hidden"], default: "visible" },
+    featured: { type: Boolean, default: false },
+  },
+  { timestamps: true },
+);
+ProductReviewSchema.index({ product: 1, status: 1, createdAt: -1 });
+export type ProductReviewDoc = InferSchemaType<typeof ProductReviewSchema> & { _id: Types.ObjectId; createdAt: Date };
+export const ProductReview: Model<InferSchemaType<typeof ProductReviewSchema>> = models.ProductReview || model("ProductReview", ProductReviewSchema);

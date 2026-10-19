@@ -132,7 +132,7 @@ function BookingRow({ b }: { b: BookingDTO }) {
         <div className="mt-4">
           {b.review ? (
             <span className="inline-flex items-center gap-2 text-sm text-ink-2">
-              <Stars value={b.review.rating} /> Your review · <a href={b.feedbackUrl} className="underline underline-offset-4">Edit</a>
+              <Stars value={b.review.rating} /> Thanks for your feedback
             </span>
           ) : (
             <a href={b.feedbackUrl} className="btn btn-ink !py-2.5"><Star className="size-4" /> Rate this session</a>
@@ -397,6 +397,11 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
                             <span className="text-sm text-muted">Refunded, access removed</span>
                           )}
                           {o.amount > 0 && o.paidAt && <Link href={`/account/receipts/${o.orderId}`} className="btn btn-ghost !py-2.5 text-ink"><FileText className="size-4" /> Receipt</Link>}
+                          {active && o.rating ? (
+                            <span className="inline-flex items-center gap-1.5 text-sm text-ink-2"><Stars value={o.rating} /> Rated</span>
+                          ) : active && o.feedbackUrl ? (
+                            <a href={o.feedbackUrl} className="btn btn-ghost !py-2.5 text-ink"><Star className="size-4" /> Rate it</a>
+                          ) : null}
                         </div>
                       </div>
                     </li>

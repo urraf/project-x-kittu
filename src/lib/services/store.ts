@@ -4,7 +4,7 @@ import { Readable } from "node:stream";
 import mongoose, { Types } from "mongoose";
 import { z } from "zod";
 import { connectDB, getDb } from "@/lib/db/connect";
-import { Order, Product, Student, type OrderDoc, type ProductDoc } from "@/lib/models";
+import { Order, Product, ProductReview, Student, type OrderDoc, type ProductDoc } from "@/lib/models";
 import { env } from "@/lib/env";
 import { ApiError, badRequest, conflict, notFound } from "@/lib/http";
 import { logger } from "@/lib/logger";
@@ -15,6 +15,7 @@ import { imageSchema } from "@/lib/validation/post";
 import { sendEmail } from "@/lib/services/email";
 import { adminNewOrderEmail, orderConfirmedEmail } from "@/lib/email/templates";
 import { adminNotifyEmail } from "@/lib/services/mentorship";
+import { ensureOrderFeedbackToken, feedbackUrl } from "@/lib/services/feedback";
 import { createRazorpayOrder, paymentMode, refundPayment } from "@/lib/services/razorpay";
 import { ensureAccountPassword } from "@/lib/services/student-account";
 import type { ImageDTO } from "@/lib/types";
@@ -64,6 +65,9 @@ export type LibraryItemDTO = {
   refundedAt?: string;
   downloadCount: number;
   product?: { id: string; title: string; slug: string; category: string; coverImage?: ImageDTO; deliveryType: "file" | "link"; deliveryNote?: string };
+  /** One-time feedback link (owned, not refunded) and the rating once given. */
+  feedbackUrl?: string;
+  rating?: number;
 };
 
 const formatBytes = (n?: number | null) => (!n ? "" : n < 1024 * 1024 ? `${Math.max(1, Math.round(n / 1024))} KB` : `${(n / 1024 / 1024).toFixed(1)} MB`);
@@ -483,7 +487,19 @@ function toLibraryItem(o: OrderDoc & { product?: unknown }): LibraryItemDTO {
 export async function listStudentOrders(studentId: Types.ObjectId | string) {
   await connectDB();
   const docs = await Order.find({ student: studentId, status: { $in: ["paid", "cancelled"] }, "payment.paidAt": { $ne: null } }).sort({ createdAt: -1 }).populate("product").lean();
-  return (docs as unknown as OrderDoc[]).map(toLibraryItem);
+  const items = (docs as unknown as OrderDoc[]).map(toLibraryItem);
+  const owned = items.filter((i) => i.status === "paid" && !i.refundedAt && i.product);
+  if (!owned.length) return items;
+  const reviews = await ProductReview.find({ order: { $in: owned.map((i) => i.orderId) } }).select("order rating").lean<{ order: Types.ObjectId; rating: number }[]>();
+  const ratingByOrder = new Map(reviews.map((r) => [String(r.order), r.rating]));
+  await Promise.all(
+    owned.map(async (i) => {
+      i.rating = ratingByOrder.get(i.orderId);
+      const token = await ensureOrderFeedbackToken(i.orderId).catch(() => null);
+      if (token) i.feedbackUrl = feedbackUrl(token);
+    }),
+  );
+  return items;
 }
 
 export async function getStudentOrder(studentId: Types.ObjectId | string, orderId: string) {

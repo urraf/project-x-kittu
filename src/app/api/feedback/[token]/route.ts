@@ -1,6 +1,6 @@
 import { hitLimit } from "@/lib/auth/rate-limit";
 import { assertSameOrigin, clientIp, ok, readJson, route, tooMany } from "@/lib/http";
-import { submitFeedback } from "@/lib/services/mentorship";
+import { submitFeedback } from "@/lib/services/feedback";
 import { revalidateSite } from "@/lib/revalidate";
 
 export const dynamic = "force-dynamic";
