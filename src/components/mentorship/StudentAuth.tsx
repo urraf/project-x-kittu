@@ -275,7 +275,11 @@ export function StudentAuth({ initialMode = "login", next, google = false, notic
           </div>
           <FormError msg={errors.form} />
           <Submit busy={busy}>Continue</Submit>
-          <p className="text-center text-xs text-muted">We&apos;ll email you a code to confirm it&apos;s really you.</p>
+          <p className="text-center text-xs text-muted">
+            We&apos;ll email you a code to confirm it&apos;s really you. By continuing you agree to the{" "}
+            <a href="/terms" target="_blank" className="underline underline-offset-2 hover:text-ink">Terms</a> and{" "}
+            <a href="/privacy" target="_blank" className="underline underline-offset-2 hover:text-ink">Privacy policy</a>.
+          </p>
         </form>
       )}
       {mode === "signup" && step === "code" &&

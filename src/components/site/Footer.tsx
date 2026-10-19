@@ -113,7 +113,10 @@ export function Footer({ settings }: { settings: SiteSettings }) {
           <p>
             © {year} {settings.profile.channelName}. Made with care for students heading to Japan.
           </p>
-          <div className="flex gap-5">
+          <div className="flex flex-wrap gap-x-5 gap-y-2">
+            <Link href="/privacy" className="link-underline">Privacy</Link>
+            <Link href="/terms" className="link-underline">Terms</Link>
+            <Link href="/refund-policy" className="link-underline">Refunds</Link>
             <a href="/feed.xml" className="link-underline">RSS</a>
             <a href="/sitemap.xml" className="link-underline">Sitemap</a>
           </div>
