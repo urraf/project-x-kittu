@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { Menu, UserRound, X } from "lucide-react";
 import { Logo } from "@/components/site/Logo";
-import { InstagramIcon, YouTubeIcon } from "@/components/ui/icons";
+import { InstagramIcon, LinkedInIcon, YouTubeIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils/cn";
 
 const NAV = [
@@ -26,7 +26,12 @@ const readSignedIn = () => /(?:^|;\s*)kk_signed_in=1/.test(document.cookie);
 /** Routes that open with a dark hero — the header starts transparent there. (None: the theme is light.) */
 const DARK_HERO: RegExp[] = [];
 
-export function Header({ youtube, instagram }: { youtube?: string; instagram?: string }) {
+export function Header({ youtube, instagram, linkedin }: { youtube?: string; instagram?: string; linkedin?: string }) {
+  // Social icons appear only for the links filled in under Studio → Settings → Contact & social.
+  const socials = [
+    { href: instagram, label: "Instagram", Icon: InstagramIcon },
+    { href: linkedin, label: "LinkedIn", Icon: LinkedInIcon },
+  ].filter((s): s is { href: string; label: string; Icon: typeof InstagramIcon } => Boolean(s.href));
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   // Menu is "open for a pathname", so navigating closes it without an effect.
@@ -101,17 +106,19 @@ export function Header({ youtube, instagram }: { youtube?: string; instagram?: s
               <UserRound className="size-4" />
               <span className="hidden sm:inline">{account.label}</span>
             </Link>
-            {instagram && (
+            {socials.map(({ href, label, Icon }) => (
               <a
-                href={instagram}
+                key={label}
+                href={href}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="Instagram"
+                aria-label={label}
+                title={label}
                 className={cn("hidden size-10 place-items-center rounded-full transition-colors xl:grid", overHero ? "text-cream/80 hover:text-cream" : "text-ink-2 hover:text-ink")}
               >
-                <InstagramIcon className="size-[1.15rem]" />
+                <Icon className="size-[1.15rem]" />
               </a>
-            )}
+            ))}
             {youtube && (
               <a href={`${youtube}?sub_confirmation=1`} target="_blank" rel="noopener noreferrer" className="btn btn-accent hidden !py-2.5 xl:inline-flex">
                 <YouTubeIcon className="size-4" />
@@ -173,6 +180,11 @@ export function Header({ youtube, instagram }: { youtube?: string; instagram?: s
                 <YouTubeIcon className="size-4" /> Subscribe on YouTube
               </a>
             )}
+            {socials.map(({ href, label, Icon }) => (
+              <a key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={label} className="grid size-11 place-items-center rounded-full border border-line text-ink hover:border-ink/40">
+                <Icon className="size-[1.15rem]" />
+              </a>
+            ))}
           </div>
         </nav>
       </div>

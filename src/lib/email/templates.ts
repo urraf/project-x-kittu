@@ -64,7 +64,7 @@ function layout(opts: { preheader: string; heading: string; body: string; seal?:
         <img src="${img("/images/email/kittu-wave.png")}" width="86" alt="Kittu waving" style="display:block;margin:0 auto 8px;border:0;width:86px;height:auto">
         <div style="font:400 21px/1.2 ${SERIF};color:${C.ink}">Learn your way to ${em("Japan.")}</div>
         <div style="margin-top:12px">${link("/sessions", "Sessions")} &nbsp;·&nbsp; ${link("/store", "Study store")} &nbsp;·&nbsp; ${link("/universities", "Universities")} &nbsp;·&nbsp; ${link("/blog", "Blog")}</div>
-        <div style="margin-top:6px"><a href="https://www.youtube.com/@lifeofkittukun" style="color:${C.accentDeep};text-decoration:none">YouTube</a> &nbsp;·&nbsp; <a href="https://www.instagram.com/chitranshu_rajput_/" style="color:${C.accentDeep};text-decoration:none">Instagram</a></div>
+        <div style="margin-top:6px"><a href="https://www.youtube.com/@lifeofkittukun" style="color:${C.accentDeep};text-decoration:none">YouTube</a> &nbsp;·&nbsp; <a href="https://www.instagram.com/lifeofkittukun/" style="color:${C.accentDeep};text-decoration:none">Instagram</a></div>
         <div style="margin-top:16px;font-size:12px;color:#8a8e9e">${opts.footer ?? `Sent by ${SITE_NAME} · <a href="${home}" style="color:#8a8e9e">${home.replace(/^https?:\/\//, "").replace(/\/$/, "")}</a>`}</div>
       </td></tr>
     </table>

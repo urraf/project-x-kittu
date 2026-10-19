@@ -127,7 +127,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   },
   social: {
     youtube: "https://www.youtube.com/@lifeofkittukun",
-    instagram: "https://www.instagram.com/chitranshu_rajput_/",
+    instagram: "https://www.instagram.com/lifeofkittukun/",
     linkedin: "",
     x: "",
     email: "",
