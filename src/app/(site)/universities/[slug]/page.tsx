@@ -21,9 +21,14 @@ const langLabel = { english: "English", mixed: "English + Japanese", japanese: "
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const u = await safe("university.meta", async () => getPublicUniversity((await params).slug), null);
   if (!u) return { title: "University not found", robots: { index: false } };
+  const short = u.name.replace(/\s*\(.*\)$/, "");
+  const place = [u.city, u.prefecture && u.prefecture !== u.city ? u.prefecture : ""].filter(Boolean).join(", ");
   return {
-    title: u.name,
-    description: u.summary || `${u.name} (${typeName(u.type)} university in ${u.city}): programs for international students, official links and scholarships.`,
+    title: `${short}: English Programs & Scholarships`,
+    description:
+      u.summary ||
+      `${u.name}, a ${typeName(u.type).toLowerCase()} university in ${place}, Japan: English-taught programs, admission for international students and MEXT routes.`,
+    keywords: [u.name, short, u.nameJa, `${short} English programs`, `${short} MEXT scholarship`, `${short} for international students`, `${short} admission for Indian students`, `study in ${u.city}`, "universities in Japan", "MEXT university recommendation"].filter(Boolean),
     alternates: { canonical: `/universities/${u.slug}` },
     openGraph: { title: u.name, url: absoluteUrl(`/universities/${u.slug}`), ...(u.coverImage ? { images: [{ url: absoluteUrl(u.coverImage.url), alt: u.coverImage.alt || u.name }] } : {}) },
   };

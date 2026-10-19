@@ -2,16 +2,16 @@ import type { Metadata } from "next";
 import { ContactForm } from "@/components/site/ContactForm";
 import { SocialLinks } from "@/components/site/Footer";
 import { getSettings } from "@/lib/services/settings";
-import { absoluteUrl } from "@/lib/site";
+import { seoMeta } from "@/lib/seo";
 
 export const revalidate = 3600;
 
-export const metadata: Metadata = {
-  title: "Collaborate",
-  description: "Brand partnerships, university collaborations, talks and workshops with Life of KittuKun, a channel for students chasing global opportunities.",
-  alternates: { canonical: "/collaborate" },
-  openGraph: { title: "Work with Life of KittuKun", url: absoluteUrl("/collaborate") },
-};
+export const metadata: Metadata = seoMeta({
+  title: "Collaborate: Brand Partnerships, Talks & Workshops",
+  description: "Brand partnerships, university collaborations, talks and study-abroad workshops with Life of KittuKun, the channel for Indian students heading to Japan.",
+  path: "/collaborate",
+  keywords: ["study abroad influencer India", "education YouTuber collaboration", "study in Japan workshop", "university partnership India"],
+});
 
 const OFFERS = [
   { title: "Universities & programmes", text: "Explain your scholarship or internship to the exact students you want: ambitious, research-curious undergraduates in India." },

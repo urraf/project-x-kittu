@@ -9,16 +9,20 @@ import { UniversityCard } from "@/components/universities/UniversityCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { safe } from "@/lib/safe";
 import { searchUniversities, universitySearchSchema, universityStats, type UniversitySearch } from "@/lib/services/universities";
-import { absoluteUrl } from "@/lib/site";
+import { JsonLd } from "@/components/ui/JsonLd";
+import { KEYWORDS, breadcrumbLd, collectionLd, seoMeta } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "Universities in Japan",
-  description: "Japanese universities that accept international students, with English-taught programs, official links and scholarship routes.",
-  alternates: { canonical: "/universities" },
-  openGraph: { title: "Universities in Japan", url: absoluteUrl("/universities") },
-};
+const DESCRIPTION =
+  "200+ universities in Japan for Indian and international students, with English-taught master's and PhD programs, MEXT scholarship routes and official links.";
+
+export const metadata: Metadata = seoMeta({
+  title: "Universities in Japan with English Programs",
+  description: DESCRIPTION,
+  path: "/universities",
+  keywords: [...KEYWORDS.universities, "study in Japan for Indian students"],
+});
 
 function hrefWith(params: UniversitySearch, patch: Partial<Record<keyof UniversitySearch, string | undefined>>) {
   const next = new URLSearchParams();
@@ -36,13 +40,19 @@ export default async function UniversitiesPage({ searchParams }: { searchParams:
 
   return (
     <>
+      <JsonLd
+        data={[
+          collectionLd({ name: "Universities in Japan for international students", description: DESCRIPTION, path: "/universities", items: result.items.map((u) => ({ name: u.name, path: `/universities/${u.slug}` })) }),
+          breadcrumbLd([["Universities in Japan", "/universities"]]),
+        ]}
+      />
       <section className="seigaiha relative overflow-hidden border-b border-line bg-paper-2">
         <div aria-hidden className="absolute -right-12 -top-10 size-40 rounded-full bg-indigo-soft md:-right-20 md:-top-24 md:size-[26rem]" />
         <div className="container-x relative grid grid-cols-1 items-center gap-10 pb-10 pt-28 md:pb-14 md:pt-32 lg:grid-cols-12">
           <div className="lg:col-span-7">
           <p className="kicker flex items-center gap-3 text-muted"><span className="h-px w-8 bg-accent" /> <span className="jp text-accent">大学</span> Universities in Japan</p>
           <h1 className="display mt-5 max-w-3xl text-[2.8rem] leading-[0.98] sm:text-6xl lg:text-[4.4rem]">
-            Find your <em className="text-accent">university.</em>
+            Find your university <em className="text-accent">in Japan.</em>
           </h1>
           <p className="mt-4 max-w-2xl text-lg leading-relaxed text-ink-2">
             {stats.total ? `${stats.total} universities that welcome international students` : "Universities that welcome international students"}, with English-taught programs, official links and scholarship routes.

@@ -15,19 +15,19 @@ import { getMentorStats, listPublicReviews, listUpcomingSessions } from "@/lib/s
 import { getSettings } from "@/lib/services/settings";
 import { listPublishedProducts } from "@/lib/services/store";
 import { listPublicTestimonials } from "@/lib/services/testimonials";
-import { absoluteUrl } from "@/lib/site";
+import { KEYWORDS, breadcrumbLd, collectionLd, seoMeta } from "@/lib/seo";
 import type { MentorStats } from "@/lib/types";
 
 export const revalidate = 60;
 
 export async function generateMetadata(): Promise<Metadata> {
-  const { mentorship, profile } = await getSettings();
-  return {
-    title: "Sessions",
-    description: `${mentorship.headline} Live mentorship sessions with ${profile.name} on scholarships, internships and studying abroad.`,
-    alternates: { canonical: "/sessions" },
-    openGraph: { title: `Book a session · ${profile.channelName}`, description: mentorship.intro, url: absoluteUrl("/sessions") },
-  };
+  const { profile } = await getSettings();
+  return seoMeta({
+    title: "Live Mentorship Sessions for Studying in Japan",
+    description: `Live online sessions with ${profile.name} on the MEXT scholarship, research internships, SOP reviews and applying to Japanese universities.`,
+    path: "/sessions",
+    keywords: [...KEYWORDS.sessions, "MEXT scholarship", "study in Japan from India"],
+  });
 }
 
 const EMPTY_STATS: MentorStats = { sessions: 0, students: 0, avgRating: 0, reviewCount: 0 };
@@ -73,6 +73,12 @@ export default async function SessionsPage() {
 
   return (
     <>
+      <JsonLd
+        data={[
+          collectionLd({ name: "Live sessions on studying in Japan", description: "Upcoming live online sessions on MEXT, research internships and applying to Japanese universities.", path: "/sessions", items: sessions.map((s) => ({ name: s.title, path: `/sessions/${s.slug}` })) }),
+          breadcrumbLd([["Sessions", "/sessions"]]),
+        ]}
+      />
       {stats.reviewCount > 0 && (
         <JsonLd
           data={{

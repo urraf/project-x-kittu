@@ -41,6 +41,11 @@ export const metadata: Metadata = {
     "fully funded scholarships",
     "research proposal template",
     "JLPT",
+    "study in Japan from India",
+    "MEXT scholarship for Indian students",
+    "fully funded scholarships in Japan",
+    "masters in Japan in English",
+    "research internship in Japan",
   ],
   openGraph: {
     type: "website",
@@ -54,7 +59,12 @@ export const metadata: Metadata = {
   alternates: { types: { "application/rss+xml": `${SITE_URL}/feed.xml` } },
   category: "education",
   formatDetection: { telephone: false },
-  robots: { index: true, follow: true, googleBot: { index: true, follow: true, "max-image-preview": "large" } },
+  robots: { index: true, follow: true, googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1, "max-video-preview": -1 } },
+  // Optional: Search Console / Bing "HTML tag" verification codes (DNS verification needs nothing here).
+  verification: {
+    google: process.env.GOOGLE_SITE_VERIFICATION || undefined,
+    other: process.env.BING_SITE_VERIFICATION ? { "msvalidate.01": process.env.BING_SITE_VERIFICATION } : undefined,
+  },
 };
 
 export const viewport: Viewport = {
@@ -66,7 +76,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html
-      lang="en"
+      lang="en-IN"
       className={`${instrument.variable} ${geist.variable} ${geistMono.variable} ${newsreader.variable}`}
       data-scroll-behavior="smooth"
       suppressHydrationWarning

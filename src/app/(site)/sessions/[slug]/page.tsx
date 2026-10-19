@@ -15,6 +15,7 @@ import { getMentorStats, getPublicSessionBySlug, listPublicReviews } from "@/lib
 import { paymentMode } from "@/lib/services/razorpay";
 import { getSettings } from "@/lib/services/settings";
 import { absoluteUrl } from "@/lib/site";
+import { breadcrumbLd } from "@/lib/seo";
 import { formatDuration, formatPrice, formatSessionDate, formatSessionTime, sessionEnd } from "@/lib/utils/session-time";
 
 export const dynamic = "force-dynamic";
@@ -29,7 +30,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!s) return { title: "Session not found", robots: { index: false } };
   return {
     title: s.title,
-    description: s.summary || `Live session on ${formatSessionDate(s.startsAt)}.`,
+    description: s.summary || `Live online session on ${formatSessionDate(s.startsAt)} about studying and interning in Japan, with Q&A. Book your seat.`,
+    keywords: [s.title, "live session study in Japan", "MEXT application guidance", "Japan study mentorship", "study abroad webinar India"],
     alternates: { canonical: `/sessions/${s.slug}` },
     openGraph: { title: s.title, description: s.summary, url: absoluteUrl(`/sessions/${s.slug}`) },
   };
@@ -76,6 +78,7 @@ export default async function SessionPage({ params }: Props) {
 
   return (
     <>
+      <JsonLd data={breadcrumbLd([["Sessions", "/sessions"], [session.title, `/sessions/${session.slug}`]])} />
       <JsonLd
         data={{
           "@context": "https://schema.org",

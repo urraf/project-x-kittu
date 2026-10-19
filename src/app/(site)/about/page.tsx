@@ -10,18 +10,19 @@ import { listMilestones } from "@/lib/services/milestones";
 import { getSettings } from "@/lib/services/settings";
 import { getVideosByIds } from "@/lib/services/videos";
 import { absoluteUrl } from "@/lib/site";
+import { KEYWORDS, seoMeta } from "@/lib/seo";
 
 export const revalidate = 300;
 
 export async function generateMetadata(): Promise<Metadata> {
   const { profile } = await getSettings();
   const description = `The story of ${profile.name}: from NSUT Delhi to a fully funded research internship in Japan, a growing YouTube channel and a first job in Lucknow.`;
-  return {
-    title: "About",
+  return seoMeta({
+    title: `About ${profile.name}: Indian Student in Japan`,
     description,
-    alternates: { canonical: "/about" },
-    openGraph: { title: `About · ${profile.channelName}`, description, url: absoluteUrl("/about") },
-  };
+    path: "/about",
+    keywords: [profile.name, "Indian student in Japan", "research internship in Japan", "NSUT", ...KEYWORDS.core.slice(0, 4)],
+  });
 }
 
 export default async function AboutPage() {

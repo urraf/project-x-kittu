@@ -27,15 +27,19 @@ import { listPublishedProducts, productCategories } from "@/lib/services/store";
 import { universityStats } from "@/lib/services/universities";
 import { listPublicVideos } from "@/lib/services/videos";
 import { listPublicTestimonials } from "@/lib/services/testimonials";
-import { SITE_NAME, SITE_URL } from "@/lib/site";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
+import { KEYWORDS, seoMeta } from "@/lib/seo";
 import { formatPrice, formatSessionDate, formatSessionTime } from "@/lib/utils/session-time";
 
 export const revalidate = 300;
 
-export const metadata: Metadata = {
-  alternates: { canonical: "/" },
-  openGraph: { url: SITE_URL },
-};
+export const metadata: Metadata = seoMeta({
+  title: "Study in Japan from India: MEXT & Internships · Life of KittuKun",
+  absoluteTitle: true,
+  description: SITE_DESCRIPTION,
+  path: "/",
+  keywords: [...KEYWORDS.core, "universities in Japan", "OIST research internship", "Japan scholarships 2026"],
+});
 
 /** 3D art: Microsoft Fluent Emoji (MIT licence), in /public/images/3d. */
 const art = (name: string) => `/images/3d/${name}.webp`;
@@ -116,15 +120,32 @@ export default async function HomePage() {
   return (
     <>
       <JsonLd
-        data={{
-          "@context": "https://schema.org",
-          "@type": "EducationalOrganization",
-          name: SITE_NAME,
-          url: SITE_URL,
-          description: "Live sessions, study material and guides for students heading to Japan.",
-          founder: { "@type": "Person", name: profile.name },
-          sameAs: [social.youtube, social.instagram, social.linkedin, social.x].filter(Boolean),
-        }}
+        data={[
+          {
+            "@context": "https://schema.org",
+            "@type": "EducationalOrganization",
+            "@id": `${SITE_URL}/#organization`,
+            name: SITE_NAME,
+            url: SITE_URL,
+            logo: `${SITE_URL}/icon`,
+            description: "Live sessions, study material and guides for Indian students going to Japan: MEXT scholarships, research internships and universities.",
+            founder: { "@type": "Person", name: profile.name },
+            areaServed: "IN",
+            knowsAbout: ["Study in Japan", "MEXT scholarship", "Research internships in Japan", "Japanese universities", "Scholarship applications"],
+            email: social.email || undefined,
+            sameAs: [social.youtube, social.instagram, social.linkedin, social.x].filter(Boolean),
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            "@id": `${SITE_URL}/#website`,
+            name: SITE_NAME,
+            url: SITE_URL,
+            inLanguage: "en-IN",
+            publisher: { "@id": `${SITE_URL}/#organization` },
+            potentialAction: { "@type": "SearchAction", target: `${SITE_URL}/blog?q={search_term_string}`, "query-input": "required name=search_term_string" },
+          },
+        ]}
       />
 
       {/* ------------------------------ Hero ------------------------------ */}

@@ -7,15 +7,16 @@ import { SocialLinks } from "@/components/site/Footer";
 import { JsonLd } from "@/components/ui/JsonLd";
 import { getSettings } from "@/lib/services/settings";
 import { SITE_NAME, absoluteUrl } from "@/lib/site";
+import { seoMeta } from "@/lib/seo";
 
 export const revalidate = 3600;
 
-export const metadata: Metadata = {
+export const metadata: Metadata = seoMeta({
   title: "Contact",
-  description: "Questions about sessions, payments, downloads or applying to Japan? Send a message to Life of KittuKun and get a personal reply.",
-  alternates: { canonical: "/contact" },
-  openGraph: { title: `Contact · ${SITE_NAME}`, url: absoluteUrl("/contact") },
-};
+  description: "Questions about sessions, payments, downloads or applying to study in Japan? Send a message to Life of KittuKun and get a personal reply.",
+  path: "/contact",
+  keywords: ["contact Life of KittuKun", "study in Japan help", "MEXT application help"],
+});
 
 const HELP = [
   { Icon: CalendarCheck2, title: "Booked a session?", text: "Your join link is in your email and in your account.", href: "/account", cta: "Open my account" },

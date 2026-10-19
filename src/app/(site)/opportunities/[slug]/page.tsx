@@ -30,9 +30,11 @@ function calendarLink(title: string, deadlineIso: string, url: string) {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const o = await safe("opportunity.meta", async () => getPublicOpportunity((await params).slug), null);
   if (!o) return { title: "Opportunity not found", robots: { index: false } };
+  const kind = typeLabel(o.type).toLowerCase();
   return {
     title: o.title,
-    description: o.summary || `${typeLabel(o.type)} in ${o.country}.`,
+    description: o.summary || `${fundingLabel(o.funding)} ${kind} in ${o.country}: eligibility, benefits, deadline and how to apply, explained for Indian students.`,
+    keywords: [o.title, `${o.title} eligibility`, `${o.title} deadline`, `${kind} in ${o.country}`, `${fundingLabel(o.funding).toLowerCase()} ${kind}`, `${kind} for Indian students`, ...(o.country === "Japan" ? ["internships in Japan", "scholarships in Japan"] : [])],
     alternates: { canonical: `/opportunities/${o.slug}` },
     openGraph: { title: o.title, description: o.summary, url: absoluteUrl(`/opportunities/${o.slug}`), ...(o.coverImage ? { images: [{ url: absoluteUrl(o.coverImage.url), alt: o.coverImage.alt || o.title }] } : {}) },
     robots: o.closed ? { index: false } : undefined,

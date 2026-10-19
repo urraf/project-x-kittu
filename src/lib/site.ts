@@ -9,7 +9,7 @@ export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3
 export const SITE_NAME = "Life of KittuKun";
 
 export const SITE_DESCRIPTION =
-  "Learn your way to Japan: live sessions, study material, a university finder and fully funded internships and scholarships (MEXT, OIST and more) for Indian students, by Chitranshu Rajput.";
+  "Study in Japan from India: live sessions, MEXT and research internship guides, 200+ universities and fully funded scholarships, by Chitranshu Rajput.";
 
 export const BLOG_PAGE_SIZE = 9;
 

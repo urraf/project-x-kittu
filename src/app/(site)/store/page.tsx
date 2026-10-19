@@ -5,17 +5,16 @@ import { ProductCard } from "@/components/store/ProductCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { safe } from "@/lib/safe";
 import { listPublishedProducts, productCategories } from "@/lib/services/store";
-import { absoluteUrl } from "@/lib/site";
+import { JsonLd } from "@/components/ui/JsonLd";
+import { KEYWORDS, breadcrumbLd, collectionLd, seoMeta } from "@/lib/seo";
 import { Kittu } from "@/components/mascot/Kittu";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "Store",
-  description: "Guides, templates and resource packs for studying and working in Japan. Instant download.",
-  alternates: { canonical: "/store" },
-  openGraph: { title: "Study store", url: absoluteUrl("/store") },
-};
+const DESCRIPTION =
+  "MEXT research plan templates, SOP samples, cold-email templates for professors and step-by-step guides for studying and interning in Japan. Instant PDF download.";
+
+export const metadata: Metadata = seoMeta({ title: "MEXT & Study in Japan Guides and Templates", description: DESCRIPTION, path: "/store", keywords: KEYWORDS.store });
 
 export default async function StorePage({ searchParams }: { searchParams: Promise<{ category?: string }> }) {
   const { category } = await searchParams;
@@ -26,6 +25,12 @@ export default async function StorePage({ searchParams }: { searchParams: Promis
 
   return (
     <>
+      <JsonLd
+        data={[
+          collectionLd({ name: "Study in Japan guides and templates", description: DESCRIPTION, path: "/store", items: products.map((p) => ({ name: p.title, path: `/store/${p.slug}` })) }),
+          breadcrumbLd([["Study store", "/store"]]),
+        ]}
+      />
       <section className="seigaiha relative overflow-hidden border-b border-line bg-paper-2">
         <div aria-hidden className="absolute -right-12 -top-10 size-40 rounded-full bg-sakura md:-right-20 md:-top-24 md:size-[26rem]" />
         <Kittu pose="study" alt="" sizes="18rem" className="pointer-events-none absolute bottom-2 right-[5%] z-[1] hidden w-64 lg:block xl:right-[9%] xl:w-72" />

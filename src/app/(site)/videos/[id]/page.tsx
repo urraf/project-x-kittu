@@ -13,6 +13,7 @@ import { safe } from "@/lib/safe";
 import { getPostsForVideo, listPublishedPosts } from "@/lib/services/posts";
 import { getUpNext, getVideoByYoutubeId } from "@/lib/services/videos";
 import { absoluteUrl, seriesLabel } from "@/lib/site";
+import { breadcrumbLd } from "@/lib/seo";
 import { cleanTitle, formatCompact, formatDate, formatDuration, timeAgo, truncate } from "@/lib/utils/text";
 import { youtubeEmbedUrl, youtubeThumb, youtubeWatchUrl } from "@/lib/utils/youtube";
 
@@ -38,6 +39,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title,
     description,
+    keywords: [title, `${seriesLabel(video.series)} video`, "Life of KittuKun", "study in Japan YouTube", "Indian student in Japan"],
     alternates: { canonical: `/videos/${id}` },
     openGraph: {
       type: "video.other",
@@ -74,6 +76,7 @@ export default async function VideoPage({ params }: Props) {
 
   return (
     <>
+      <JsonLd data={breadcrumbLd([["Videos", "/videos"], [title, `/videos/${video.youtubeId}`]])} />
       <JsonLd
         data={{
           "@context": "https://schema.org",

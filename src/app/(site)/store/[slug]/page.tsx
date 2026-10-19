@@ -10,6 +10,7 @@ import { safe } from "@/lib/safe";
 import { paymentMode } from "@/lib/services/razorpay";
 import { getPublicProductBySlug, listPublishedProducts } from "@/lib/services/store";
 import { absoluteUrl } from "@/lib/site";
+import { breadcrumbLd } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +21,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!p) return { title: "Product not found", robots: { index: false } };
   return {
     title: p.title,
-    description: p.summary || `${p.category} from the study store.`,
+    description: p.summary ? (p.summary.length < 110 ? `${p.summary} Instant download from the Life of KittuKun study store.` : p.summary) : `${p.category} for studying in Japan: ${p.title}. Instant download from the Life of KittuKun study store.`,
+    keywords: [p.title, `${p.title} PDF`, p.category, "MEXT research plan template", "study in Japan guide", "scholarship application template"],
     alternates: { canonical: `/store/${p.slug}` },
     openGraph: { title: p.title, description: p.summary, url: absoluteUrl(`/store/${p.slug}`), images: p.coverImage ? [{ url: p.coverImage.url }] : undefined },
   };
@@ -40,6 +42,7 @@ export default async function ProductPage({ params }: Props) {
 
   return (
     <>
+      <JsonLd data={breadcrumbLd([["Study store", "/store"], [product.title, `/store/${product.slug}`]])} />
       <JsonLd
         data={{
           "@context": "https://schema.org",

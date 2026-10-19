@@ -14,8 +14,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const cat = (await safe("cat.meta", () => listCategories(), [])).find((c) => c.slug === slug);
   if (!cat) return { title: "Category not found", robots: { index: false } };
   return {
-    title: `${cat.name} articles`,
-    description: `Guides and stories about ${cat.name.toLowerCase()} from Life of KittuKun.`,
+    title: `${cat.name}: guides and articles`,
+    description: `Practical guides and honest stories about ${cat.name.toLowerCase()} for Indian students heading to Japan and abroad, from Life of KittuKun.`,
+    keywords: [`${cat.name} guide`, `${cat.name} for Indian students`, "study in Japan blog", "Life of KittuKun"],
     alternates: { canonical: `/blog/category/${slug}` },
   };
 }

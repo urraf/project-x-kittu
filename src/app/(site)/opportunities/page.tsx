@@ -7,18 +7,22 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { DEADLINE_FILTERS, degreeLabel, fundingLabel, typeLabel } from "@/lib/opportunities/constants";
 import { safe } from "@/lib/safe";
 import { searchOpportunities, searchSchema, type SearchParams } from "@/lib/services/opportunities";
-import { absoluteUrl } from "@/lib/site";
+import { JsonLd } from "@/components/ui/JsonLd";
+import { KEYWORDS, breadcrumbLd, collectionLd, seoMeta } from "@/lib/seo";
 import { cn } from "@/lib/utils/cn";
 import { Kittu } from "@/components/mascot/Kittu";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "Opportunity finder",
-  description: "Find internships, scholarships, fellowships and research programs in Japan and abroad. Filter by country, funding and deadline.",
-  alternates: { canonical: "/opportunities" },
-  openGraph: { title: "Opportunity finder", url: absoluteUrl("/opportunities") },
-};
+const DESCRIPTION =
+  "Fully funded internships, scholarships and research programs in Japan and abroad for Indian students: MEXT, OIST, JASSO and more, with deadlines.";
+
+export const metadata: Metadata = seoMeta({
+  title: "Japan Internships & Scholarships for Indians",
+  description: DESCRIPTION,
+  path: "/opportunities",
+  keywords: KEYWORDS.opportunities,
+});
 
 function hrefWith(params: SearchParams, patch: Partial<Record<keyof SearchParams, string | undefined>>) {
   const next = new URLSearchParams();
@@ -42,6 +46,12 @@ export default async function OpportunitiesPage({ searchParams }: { searchParams
 
   return (
     <>
+      <JsonLd
+        data={[
+          collectionLd({ name: "Internships and scholarships in Japan and abroad", description: DESCRIPTION, path: "/opportunities", items: result.items.map((o) => ({ name: o.title, path: `/opportunities/${o.slug}` })) }),
+          breadcrumbLd([["Opportunities", "/opportunities"]]),
+        ]}
+      />
       <section className="seigaiha relative overflow-hidden border-b border-line bg-paper-2">
         <div aria-hidden className="absolute -right-12 -top-10 size-36 rounded-full bg-accent/90 md:-right-24 md:-top-28 md:size-[26rem]" />
         <Kittu pose="walk" alt="" sizes="9rem" className="pointer-events-none absolute right-[24%] top-[7rem] z-[1] hidden w-28 lg:block xl:right-[27%]" />
@@ -50,7 +60,7 @@ export default async function OpportunitiesPage({ searchParams }: { searchParams
           <h1 className="display mt-5 max-w-3xl text-[2.8rem] leading-[0.98] sm:text-6xl lg:text-[4.4rem]">
             Find your next <em className="text-accent">opportunity.</em>
           </h1>
-          <p className="mt-4 max-w-2xl text-lg leading-relaxed text-ink-2">Internships, scholarships, fellowships and research programs, checked and kept up to date. Filter by what matters to you.</p>
+          <p className="mt-4 max-w-2xl text-lg leading-relaxed text-ink-2">Fully funded internships, scholarships, fellowships and research programs in Japan and beyond, checked and kept up to date. Filter by what matters to you.</p>
           <OpportunitySearch className="mt-8" initial={{ type: params.type ?? "", country: params.country ?? "", funding: params.funding ?? "", deadline: params.deadline ?? "", q: params.q ?? "" }} />
         </div>
       </section>

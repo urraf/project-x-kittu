@@ -10,7 +10,9 @@ import { YouTubeThumb } from "@/components/video/YouTubeThumb";
 import { safe } from "@/lib/safe";
 import { getSettings } from "@/lib/services/settings";
 import { getFeaturedVideos, getPopularVideos, pagePublicVideos, seriesCounts } from "@/lib/services/videos";
-import { VIDEO_SERIES, absoluteUrl, seriesLabel } from "@/lib/site";
+import { VIDEO_SERIES, seriesLabel } from "@/lib/site";
+import { KEYWORDS, collectionLd, seoMeta } from "@/lib/seo";
+import { JsonLd } from "@/components/ui/JsonLd";
 import { cleanTitle, formatCompact, formatDate, truncate } from "@/lib/utils/text";
 import { youtubeWatchUrl } from "@/lib/utils/youtube";
 import { cn } from "@/lib/utils/cn";
@@ -22,16 +24,11 @@ type Props = { searchParams: Promise<{ series?: string; page?: string }> };
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const { series } = await searchParams;
   const valid = VIDEO_SERIES.some((s) => s.id === series);
-  const title = valid ? `${seriesLabel(series!)} videos` : "Videos";
+  const title = valid ? `${seriesLabel(series!)} videos` : "Study & Intern in Japan: Videos and Vlogs";
   const description = valid
-    ? `Every ${seriesLabel(series!)} video from Life of KittuKun: guides, application tips and honest experiences.`
-    : "Guides to fully funded internships and scholarships in Japan, Korea and Europe, plus vlogs from the journey.";
-  return {
-    title,
-    description,
-    alternates: { canonical: valid ? `/videos?series=${series}` : "/videos" },
-    openGraph: { title: `${title} · Life of KittuKun`, description, url: absoluteUrl("/videos") },
-  };
+    ? `Every ${seriesLabel(series!)} video from Life of KittuKun: guides, application tips and honest experiences from an Indian student in Japan.`
+    : "Videos on MEXT scholarships, OIST research internships, applying to Japanese universities and life in Japan as an Indian student.";
+  return seoMeta({ title, description, path: valid ? `/videos?series=${series}` : "/videos", keywords: KEYWORDS.videos });
 }
 
 export default async function VideosPage({ searchParams }: Props) {
@@ -53,6 +50,7 @@ export default async function VideosPage({ searchParams }: Props) {
 
   return (
     <>
+      {showIntro && <JsonLd data={collectionLd({ name: "Life of KittuKun videos", description: "Videos on studying and interning in Japan.", path: "/videos", items: list.items.map((v) => ({ name: v.title, path: `/videos/${v.youtubeId}` })) })} />}
       <section className="seigaiha relative overflow-hidden border-b border-line bg-paper-2 text-ink">
         <div className="container-x relative z-[2] pb-16 pt-28 md:pb-20 md:pt-32">
           <div className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
