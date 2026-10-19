@@ -104,6 +104,10 @@ export function Footer({ settings }: { settings: SiteSettings }) {
                   {settings.social.email}
                 </a>
               )}
+              {settings.social.phone && (
+                <a href={`tel:${settings.social.phone.replace(/[\s-]/g, "")}`} className="link-underline mt-2 block text-sm text-muted">{settings.social.phone}</a>
+              )}
+              {settings.social.address && <p className="mt-2 whitespace-pre-line text-sm text-muted">{settings.social.address}</p>}
             </div>
           </nav>
         </div>
@@ -111,7 +115,7 @@ export function Footer({ settings }: { settings: SiteSettings }) {
         <div className="mt-16 flex flex-col gap-5 border-t border-line pt-7 text-sm text-muted md:flex-row md:items-center md:justify-between">
           <Logo tone="dark" />
           <p>
-            © {year} {settings.profile.channelName}. Made with care for students heading to Japan.
+            © {year} {settings.social.businessName || settings.profile.channelName}. Made with care for students heading to Japan.
           </p>
           <div className="flex flex-wrap gap-x-5 gap-y-2">
             <Link href="/privacy" className="link-underline">Privacy</Link>

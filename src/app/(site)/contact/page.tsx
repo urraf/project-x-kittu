@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CalendarCheck2, CreditCard, Mail, MessageCircleQuestion } from "lucide-react";
+import { CalendarCheck2, CreditCard, Mail, MapPin, MessageCircleQuestion, Phone } from "lucide-react";
 import { Kittu } from "@/components/mascot/Kittu";
 import { ContactForm, STUDENT_TOPICS } from "@/components/site/ContactForm";
 import { SocialLinks } from "@/components/site/Footer";
@@ -29,7 +29,22 @@ export default async function ContactPage({ searchParams }: { searchParams: Prom
   const email = settings.social.email;
   return (
     <>
-      <JsonLd data={{ "@context": "https://schema.org", "@type": "ContactPage", name: `Contact ${SITE_NAME}`, url: absoluteUrl("/contact") }} />
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "ContactPage",
+          name: `Contact ${SITE_NAME}`,
+          url: absoluteUrl("/contact"),
+          mainEntity: {
+            "@type": "Organization",
+            name: settings.social.businessName || SITE_NAME,
+            url: absoluteUrl("/"),
+            email: email || undefined,
+            telephone: settings.social.phone || undefined,
+            address: settings.social.address ? { "@type": "PostalAddress", streetAddress: settings.social.address, addressCountry: "IN" } : undefined,
+          },
+        }}
+      />
       <section className="seigaiha relative overflow-hidden border-b border-line bg-paper-2">
         <div aria-hidden className="absolute -right-12 -top-10 size-40 rounded-full bg-accent/90 md:-right-20 md:-top-24 md:size-[24rem]" />
         <div className="container-x relative grid grid-cols-1 items-end gap-8 pb-10 pt-28 md:pb-12 md:pt-32 lg:grid-cols-12">
@@ -75,10 +90,19 @@ export default async function ContactPage({ searchParams }: { searchParams: Prom
               </div>
             ))}
             <div className="rounded-2xl border border-line bg-indigo-soft/50 p-5">
+              {settings.social.businessName && <p className="mb-3 font-medium text-ink">{settings.social.businessName}</p>}
               {email && (
                 <a href={`mailto:${email}`} className="flex items-center gap-2 font-medium text-ink hover:text-accent-deep">
                   <Mail className="size-4 text-accent" /> {email}
                 </a>
+              )}
+              {settings.social.phone && (
+                <a href={`tel:${settings.social.phone.replace(/[\s-]/g, "")}`} className="mt-2 flex items-center gap-2 font-medium text-ink hover:text-accent-deep">
+                  <Phone className="size-4 text-accent" /> {settings.social.phone}
+                </a>
+              )}
+              {settings.social.address && (
+                <p className="mt-2 flex items-start gap-2 text-sm text-ink-2"><MapPin className="mt-0.5 size-4 shrink-0 text-accent" /> <span className="whitespace-pre-line">{settings.social.address}</span></p>
               )}
               <p className={email ? "mt-3 text-sm text-ink-2" : "text-sm text-ink-2"}>Follow along for new sessions and opportunities:</p>
               <SocialLinks social={settings.social} className="mt-3 flex-wrap text-ink" />

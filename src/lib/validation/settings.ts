@@ -32,6 +32,10 @@ export const settingsSchema = z.object({
     linkedin: url,
     x: url,
     email: z.union([z.literal(""), z.email().max(200)]),
+    /** Business details shown on Contact, the footer and policy pages (payment providers require them). */
+    businessName: str(120),
+    phone: z.union([z.literal(""), z.string().trim().max(30).refine((v) => /^[+\d][\d\s-]{6,}$/.test(v), "Enter a valid phone number")]),
+    address: str(300),
   }),
   ai: z.object({
     niche: str(1500),
@@ -127,6 +131,9 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     linkedin: "",
     x: "",
     email: "",
+    businessName: "",
+    phone: "",
+    address: "",
   },
   ai: {
     niche:

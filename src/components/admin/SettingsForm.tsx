@@ -15,7 +15,7 @@ import type { SiteSettings } from "@/lib/validation/settings";
 const TABS = [
   { id: "profile", label: "Profile & homepage" },
   { id: "about", label: "About & story" },
-  { id: "social", label: "Social links" },
+  { id: "social", label: "Contact & social" },
   { id: "ai", label: "AI writing" },
   { id: "sessions", label: "Sessions" },
   { id: "comments", label: "Comments" },
@@ -210,6 +210,19 @@ export function SettingsForm({ initial, initialTab, account, integrations }: { i
             </Field>
           ))}
           <Field label="Public contact email (optional)" error={err("social.email")}><input className="field" type="email" value={s.social.email} onChange={(e) => so("email", e.target.value)} /></Field>
+          <div className="border-t border-line pt-5">
+            <p className="text-sm font-medium text-ink">Business details</p>
+            <p className="mt-0.5 text-xs text-muted">Shown on the Contact page, in the footer and on the policy pages. Razorpay checks these when verifying the website, so use the same details as on your Razorpay account.</p>
+          </div>
+          <Field label="Business / legal name" error={err("social.businessName")} hint="e.g. Chitranshu Rajput, or your registered business name.">
+            <input className="field" value={s.social.businessName} onChange={(e) => so("businessName", e.target.value)} />
+          </Field>
+          <Field label="Phone number" error={err("social.phone")} hint="With country code, e.g. +91 98765 43210.">
+            <input className="field" type="tel" value={s.social.phone} onChange={(e) => so("phone", e.target.value)} />
+          </Field>
+          <Field label="Address" error={err("social.address")} hint="City, state and PIN code are enough if you don't want a full street address.">
+            <textarea className="field" rows={2} value={s.social.address} onChange={(e) => so("address", e.target.value)} />
+          </Field>
         </Card>
       )}
 
