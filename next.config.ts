@@ -46,7 +46,12 @@ const nextConfig: NextConfig = {
     ];
   },
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
+    return [
+      { source: "/:path*", headers: securityHeaders },
+      // Site artwork (mascot, 3D illustrations, email images) rarely changes: let browsers keep it
+      // for 30 days instead of re-asking the server on every visit (Next's default is max-age=0).
+      { source: "/images/:path*", headers: [{ key: "Cache-Control", value: "public, max-age=2592000, stale-while-revalidate=604800" }] },
+    ];
   },
 };
 

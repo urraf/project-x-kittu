@@ -6,10 +6,10 @@ import { cn } from "@/lib/utils/cn";
  * Each page uses a different pose so the mascot feels alive rather than repeated.
  */
 const POSES = {
-  stand: { src: "/images/mascot/kittu.webp", width: 720, height: 1065, label: "standing and waving" },
-  wave: { src: "/images/mascot/kittu-wave.webp", width: 900, height: 1006, label: "sitting and waving" },
-  think: { src: "/images/mascot/kittu-think.webp", width: 900, height: 999, label: "thinking" },
-  study: { src: "/images/mascot/kittu-study.webp", width: 900, height: 797, label: "studying on a laptop with books" },
+  stand: { src: "/images/mascot/kittu.webp", width: 600, height: 888, label: "standing and waving" },
+  wave: { src: "/images/mascot/kittu-wave.webp", width: 600, height: 671, label: "sitting and waving" },
+  think: { src: "/images/mascot/kittu-think.webp", width: 600, height: 666, label: "thinking" },
+  study: { src: "/images/mascot/kittu-study.webp", width: 600, height: 531, label: "studying on a laptop with books" },
   laptop: { src: "/images/mascot/kittu-laptop.webp", width: 413, height: 395, label: "working on a laptop" },
   lie: { src: "/images/mascot/kittu-lie.webp", width: 421, height: 346, label: "resting its head on its paws" },
   boba: { src: "/images/mascot/kittu-boba.webp", width: 397, height: 443, label: "sipping bubble tea" },
