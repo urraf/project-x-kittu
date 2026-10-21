@@ -4,6 +4,7 @@ import { Readable } from "node:stream";
 import mongoose, { Types } from "mongoose";
 import { z } from "zod";
 import { connectDB, getDb } from "@/lib/db/connect";
+import { announceIfPublished } from "@/lib/services/indexnow";
 import { Order, Product, ProductReview, Student, type OrderDoc, type ProductDoc } from "@/lib/models";
 import { env } from "@/lib/env";
 import { ApiError, badRequest, conflict, notFound } from "@/lib/http";
@@ -34,6 +35,8 @@ export type ProductDTO = {
   id: string;
   title: string;
   slug: string;
+  /** Last edit (ISO), for the sitemap. */
+  updatedAt?: string;
   category: string;
   summary: string;
   description: string;
@@ -90,6 +93,7 @@ function toProductDTO(p: ProductDoc): ProductDTO {
     id: String(p._id),
     title: p.title,
     slug: p.slug,
+    updatedAt: p.updatedAt ? new Date(p.updatedAt).toISOString() : undefined,
     category: p.category ?? "Guide",
     summary: p.summary ?? "",
     description: p.description ?? "",
@@ -217,7 +221,7 @@ export async function createProduct(raw: unknown) {
     slug: await uniqueProductSlug(input.title),
     delivery: { type: input.deliveryType, url: input.deliveryType === "link" ? input.deliveryUrl : undefined },
   });
-  return toAdminProductDTO(doc.toObject() as ProductDoc);
+  return announceIfPublished(await toAdminProductDTO(doc.toObject() as ProductDoc), "/store");
 }
 
 export async function updateProduct(id: string, raw: unknown) {
@@ -242,7 +246,7 @@ export async function updateProduct(id: string, raw: unknown) {
     },
     { returnDocument: "after", runValidators: true },
   ).lean<ProductDoc>();
-  return toAdminProductDTO(doc!);
+  return announceIfPublished(await toAdminProductDTO(doc!), "/store");
 }
 
 export async function deleteProduct(id: string) {

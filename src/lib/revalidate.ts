@@ -10,6 +10,9 @@ import { logger } from "@/lib/logger";
 export function revalidateSite() {
   try {
     revalidatePath("/", "layout");
+    // Metadata routes sit outside the layout tree: refresh them too so new pages reach search engines at once.
+    revalidatePath("/sitemap.xml");
+    revalidatePath("/feed.xml");
   } catch (error) {
     // revalidatePath throws outside a request context (e.g. scripts); that's fine.
     logger.debug("revalidate.skipped", { error });

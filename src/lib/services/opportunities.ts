@@ -3,6 +3,7 @@ import { cache } from "react";
 import { Types, type PipelineStage } from "mongoose";
 import { z } from "zod";
 import { connectDB } from "@/lib/db/connect";
+import { announceIfPublished } from "@/lib/services/indexnow";
 import { Opportunity, type OpportunityDoc } from "@/lib/models";
 import { badRequest, notFound } from "@/lib/http";
 import { sanitizePlain } from "@/lib/content/html";
@@ -272,7 +273,7 @@ export async function createOpportunity(raw: unknown) {
   const input = opportunityInputSchema.parse(raw);
   await connectDB();
   const doc = await Opportunity.create({ ...fields(input), coverImage: input.coverImage ?? undefined, slug: await uniqueSlug(input.title) });
-  return toDTO(doc.toObject() as OpportunityDoc);
+  return announceIfPublished(toDTO(doc.toObject() as OpportunityDoc), "/opportunities");
 }
 
 export async function updateOpportunity(id: string, raw: unknown) {
@@ -285,7 +286,7 @@ export async function updateOpportunity(id: string, raw: unknown) {
     { returnDocument: "after", runValidators: true },
   ).lean<OpportunityDoc>();
   if (!doc) throw notFound("Opportunity not found");
-  return toDTO(doc);
+  return announceIfPublished(toDTO(doc), "/opportunities");
 }
 
 export async function deleteOpportunity(id: string) {

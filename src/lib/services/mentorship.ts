@@ -3,6 +3,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { Types } from "mongoose";
 import { z } from "zod";
 import { connectDB } from "@/lib/db/connect";
+import { announceIfPublished } from "@/lib/services/indexnow";
 import {
   AdminAccount,
   Booking,
@@ -49,6 +50,7 @@ export function toSessionDTO(s: MentorSessionDoc): MentorSessionDTO {
   const start = new Date(s.startsAt).getTime();
   return {
     id: String(s._id),
+    updatedAt: (s as { updatedAt?: Date }).updatedAt ? new Date((s as { updatedAt?: Date }).updatedAt!).toISOString() : undefined,
     title: s.title,
     slug: s.slug,
     summary: s.summary ?? "",
@@ -555,7 +557,7 @@ export async function createSession(raw: unknown) {
     meeting,
   });
   logger.info("session.created", { id: String(doc._id), meeting: meeting.provider });
-  return toAdminDTO(doc.toObject() as MentorSessionDoc);
+  return announceIfPublished(await toAdminDTO(doc.toObject() as MentorSessionDoc), "/sessions");
 }
 
 export async function updateSession(id: string, raw: unknown) {
@@ -600,7 +602,7 @@ export async function updateSession(id: string, raw: unknown) {
   if (meeting?.provider === "google" && meeting.googleEventId) {
     await updateGoogleEvent(meeting.googleEventId, { title: input.title, description: input.summary, startsAt, durationMin: input.durationMin });
   }
-  return toAdminDTO(doc!);
+  return announceIfPublished(await toAdminDTO(doc!), "/sessions");
 }
 
 export async function duplicateSession(id: string) {

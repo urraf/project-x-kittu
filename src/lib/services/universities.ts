@@ -2,6 +2,7 @@ import "server-only";
 import { Types } from "mongoose";
 import { z } from "zod";
 import { connectDB } from "@/lib/db/connect";
+import { announceIfPublished } from "@/lib/services/indexnow";
 import { University, type UniversityDoc } from "@/lib/models";
 import { notFound } from "@/lib/http";
 import { sanitizePlain } from "@/lib/content/html";
@@ -249,7 +250,7 @@ export async function createUniversity(raw: unknown) {
   const input = universityInputSchema.parse(raw);
   await connectDB();
   const doc = await University.create({ ...fields(input), coverImage: input.coverImage ?? undefined, slug: await uniqueSlug(input.name) });
-  return toDTO(doc.toObject() as UniversityDoc);
+  return announceIfPublished(toDTO(doc.toObject() as UniversityDoc), "/universities");
 }
 
 export async function updateUniversity(id: string, raw: unknown) {
@@ -262,7 +263,7 @@ export async function updateUniversity(id: string, raw: unknown) {
     { returnDocument: "after", runValidators: true },
   ).lean<UniversityDoc>();
   if (!doc) throw notFound("University not found");
-  return toDTO(doc);
+  return announceIfPublished(toDTO(doc), "/universities");
 }
 
 export async function deleteUniversity(id: string) {

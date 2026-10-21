@@ -5,6 +5,7 @@ import { Types } from "mongoose";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Filter = Record<string, any>;
 import { connectDB } from "@/lib/db/connect";
+import { announceIfPublished } from "@/lib/services/indexnow";
 import { Post, type PostDoc } from "@/lib/models";
 import { conflict, notFound } from "@/lib/http";
 import { logger } from "@/lib/logger";
@@ -179,7 +180,7 @@ export async function createPost(raw: unknown, meta: CreateMeta = {}): Promise<P
       generation: meta.generation ? { ...meta.generation, generatedAt: new Date() } : undefined,
     });
     logger.info("post.created", { id: String(doc._id), slug, status: doc.status, source: doc.source });
-    return toFull(doc.toObject() as Lean);
+    return announceIfPublished(toFull(doc.toObject() as Lean), "/blog");
   } catch (err) {
     if ((err as { code?: number }).code === 11000) throw conflict("A post with this URL already exists. Try a different slug.");
     throw err;
@@ -214,7 +215,7 @@ export async function updatePost(id: string, raw: unknown): Promise<PostFull> {
     ).lean<Lean>();
     if (!doc) throw notFound("Post not found");
     logger.info("post.updated", { id, status: doc.status });
-    return toFull(doc);
+    return announceIfPublished(toFull(doc), "/blog");
   } catch (err) {
     if ((err as { code?: number }).code === 11000) throw conflict("A post with this URL already exists. Try a different slug.");
     throw err;

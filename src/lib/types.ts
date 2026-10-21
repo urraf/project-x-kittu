@@ -143,6 +143,8 @@ export type MentorSessionDTO = {
   id: string;
   title: string;
   slug: string;
+  /** Last edit (ISO), for the sitemap. */
+  updatedAt?: string;
   summary: string;
   description: string;
   highlights: string[];
