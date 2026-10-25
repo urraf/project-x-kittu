@@ -24,7 +24,7 @@ import { absoluteUrl } from "@/lib/site";
 import { sanitizePlain } from "@/lib/content/html";
 import { slugify } from "@/lib/utils/text";
 import { imageSchema } from "@/lib/validation/post";
-import { fromIstInputs, sessionEnd } from "@/lib/utils/session-time";
+import { formatSessionWhen, fromIstInputs, sessionEnd } from "@/lib/utils/session-time";
 import { sendEmail } from "@/lib/services/email";
 import { getSettings } from "@/lib/services/settings";
 import { createRazorpayOrder, paymentMode, refundPayment } from "@/lib/services/razorpay";
@@ -373,7 +373,11 @@ export async function confirmBooking(bookingId: string, payment: { provider: Pay
   const card = { title: session.title, startsAt: session.startsAt, durationMin: session.durationMin, price: session.price, meetingUrl: session.meeting?.url };
   // First confirmed booking for this email: the account gets a password, sent in this email.
   const newPassword = await ensureAccountPassword(before.student);
-  const confirmMail = bookingConfirmedEmail({ name: before.name, email: before.email, session: card, loginUrl: absoluteUrl("/account/login"), newPassword });
+  const receipt =
+    before.amount > 0 && payment.provider !== "free"
+      ? { id: String(before._id), paymentId: payment.paymentId, paidAt: new Date(), amount: before.amount, provider: payment.provider, item: session.title, itemLine: `Live group session · ${formatSessionWhen(session.startsAt, session.durationMin)}`, url: absoluteUrl(`/account/receipts/${before._id}`) }
+      : undefined;
+  const confirmMail = bookingConfirmedEmail({ name: before.name, email: before.email, session: card, loginUrl: absoluteUrl("/account/login"), newPassword, receipt });
   await sendEmail({ to: before.email, toName: before.name, kind: "booking_confirmed", ...confirmMail });
 
   const adminEmail = await adminNotifyEmail();

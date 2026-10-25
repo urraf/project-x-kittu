@@ -408,7 +408,11 @@ export async function confirmOrder(orderId: string, payment: { provider: "razorp
   logger.info("store.order_paid", { order: orderId, provider: payment.provider });
   const newPassword = await ensureAccountPassword(before.student);
   if (product) {
-    const mail = orderConfirmedEmail({ name: before.name, email: before.email, product: { title: product.title, price: before.amount }, libraryUrl: absoluteUrl("/account?tab=library"), loginUrl: absoluteUrl("/account/login?next=/account?tab=library"), newPassword });
+    const receipt =
+      before.amount > 0 && payment.provider !== "free"
+        ? { id: String(before._id), paymentId: payment.paymentId, paidAt: new Date(), amount: before.amount, provider: payment.provider, item: product.title, itemLine: `Digital product · ${product.category ?? "Download"}`, url: absoluteUrl(`/account/receipts/${before._id}`) }
+        : undefined;
+    const mail = orderConfirmedEmail({ name: before.name, email: before.email, product: { title: product.title, price: before.amount }, libraryUrl: absoluteUrl("/account?tab=library"), loginUrl: absoluteUrl("/account/login?next=/account?tab=library"), newPassword, receipt });
     await sendEmail({ to: before.email, toName: before.name, kind: "order_confirmed", ...mail });
     const adminEmail = await adminNotifyEmail();
     if (adminEmail) {

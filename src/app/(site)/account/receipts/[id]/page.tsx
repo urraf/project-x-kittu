@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { receiptNumber } from "@/lib/utils/receipt";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
@@ -37,7 +38,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
       : null;
   if (!b || !b.amount || !b.paidAt) notFound();
   const demo = b.paymentProvider === "demo";
-  const number = `KK-${b.id.slice(-8).toUpperCase()}`;
+  const number = receiptNumber(b.id);
 
   return (
     <section className="container-x max-w-3xl pb-24 pt-28 md:pt-32 print:max-w-none print:px-[12mm] print:py-[14mm]">

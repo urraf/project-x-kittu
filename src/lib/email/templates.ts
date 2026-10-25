@@ -1,5 +1,6 @@
 import { SITE_NAME, absoluteUrl } from "@/lib/site";
 import { formatDuration, formatPrice, formatSessionWhen, googleCalendarLink } from "@/lib/utils/session-time";
+import { receiptNumber } from "@/lib/utils/receipt";
 
 /**
  * Branded, inline-styled email templates (email clients ignore <style> blocks).
@@ -84,6 +85,34 @@ function sessionCard(s: Session) {
   </td></tr></table>`;
 }
 
+/** Payment details for a receipt block (paid bookings and store orders). */
+export type Receipt = { id: string; paymentId?: string | null; paidAt: Date | string; amount: number; provider: string; item: string; itemLine?: string; url: string };
+
+const receiptDate = (d: Date | string) => new Date(d).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" }) + " IST";
+const methodLabel = (p: string) => (p === "razorpay" ? "Online payment (Razorpay)" : p === "demo" ? "Demo payment (no real money)" : "Free");
+
+function receiptBlock(r: Receipt) {
+  const row = (label: string, value: string, strong = false) =>
+    `<tr><td style="padding:7px 0;border-top:1px solid ${C.line};font:400 13px/1.5 ${SANS};color:${C.muted};width:42%;vertical-align:top">${label}</td><td style="padding:7px 0;border-top:1px solid ${C.line};font:${strong ? 700 : 500} ${strong ? 15 : 13}px/1.5 ${SANS};color:${C.ink};text-align:right">${value}</td></tr>`;
+  return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:22px 0 0;border:1px solid ${C.line};border-radius:14px"><tr><td style="padding:16px 18px 10px">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>
+      <td style="font:600 15px/1.3 ${SANS};color:${C.ink}">Payment receipt</td>
+      <td style="text-align:right;font:500 12px/1.3 'SF Mono',Menlo,monospace;color:${C.ink2}">${esc(receiptNumber(r.id))}</td>
+    </tr></table>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:10px">
+      ${row("Date", esc(receiptDate(r.paidAt)))}
+      ${row("Item", `${esc(r.item)}${r.itemLine ? `<br><span style="font-weight:400;color:${C.muted}">${esc(r.itemLine)}</span>` : ""}`)}
+      ${row("Payment method", esc(methodLabel(r.provider)))}
+      ${r.paymentId ? row("Payment ID", `<span style="font-family:'SF Mono',Menlo,monospace;font-size:12px">${esc(r.paymentId)}</span>`) : ""}
+      ${row("Amount paid", esc(formatPrice(r.amount)), true)}
+    </table>
+    <p style="margin:10px 0 6px;font:400 12px/1.5 ${SANS};color:${C.muted}">Prices include applicable taxes. <a href="${esc(r.url)}" style="color:${C.accentDeep}">View &amp; print receipt</a></p>
+  </td></tr></table>`;
+}
+
+const receiptText = (r: Receipt) =>
+  [`Receipt ${receiptNumber(r.id)}`, `Date: ${receiptDate(r.paidAt)}`, `Item: ${r.item}`, `Payment: ${methodLabel(r.provider)}${r.paymentId ? ` (${r.paymentId})` : ""}`, `Amount paid: ${formatPrice(r.amount)}`, `View receipt: ${r.url}`].join("\n");
+
 const textCard = (s: Session) =>
   `${s.title}\n${formatSessionWhen(s.startsAt, s.durationMin)}\n${formatDuration(s.durationMin)} · ${formatPrice(s.price)}${s.meetingUrl ? `\nJoin: ${s.meetingUrl}` : ""}`;
 
@@ -91,7 +120,7 @@ const textCard = (s: Session) =>
  * Sent when a seat is confirmed. New accounts also get their login details
  * (email + generated password); existing students just get a login link.
  */
-export function bookingConfirmedEmail(p: { name: string; email: string; session: Session; loginUrl: string; newPassword?: string | null }) {
+export function bookingConfirmedEmail(p: { name: string; email: string; session: Session; loginUrl: string; newPassword?: string | null; receipt?: Receipt }) {
   const cal = googleCalendarLink({ title: p.session.title, startsAt: p.session.startsAt, durationMin: p.session.durationMin, details: `Join: ${p.session.meetingUrl ?? "link in your account"}`, location: p.session.meetingUrl ?? undefined });
   const first = p.name.split(" ")[0] || p.name;
   const join = p.session.meetingUrl
@@ -111,12 +140,12 @@ export function bookingConfirmedEmail(p: { name: string; email: string; session:
   return {
     subject: `You're booked: ${p.session.title}`,
     html: layout({
-      preheader: `Your seat is confirmed for ${formatSessionWhen(p.session.startsAt, p.session.durationMin)}`,
+      preheader: `Your seat is confirmed for ${formatSessionWhen(p.session.startsAt, p.session.durationMin)}${p.receipt ? `. Receipt ${receiptNumber(p.receipt.id)} inside.` : ""}`,
       heading: `You're ${em("in")}, ${esc(first)}!`,
       seal: ["予約", "Booking confirmed"],
       body: `<p style="margin:0">Your seat is confirmed. Here are the details:</p>${sessionCard(p.session)}${join}
         <p style="margin:12px 0 0">Join with the link above at the start time. We'll also send a reminder 1 hour before.
-        <a href="${esc(cal)}" style="color:#b03a20">Add it to your Google Calendar</a>.</p>${account}`,
+        <a href="${esc(cal)}" style="color:#b03a20">Add it to your Google Calendar</a>.</p>${p.receipt ? receiptBlock(p.receipt) : ""}${account}`,
       cta: { label: "Log in to my account", url: p.loginUrl },
     }),
     text: [
@@ -128,6 +157,7 @@ export function bookingConfirmedEmail(p: { name: string; email: string; session:
       "",
       `Add to calendar: ${cal}`,
       "",
+      ...(p.receipt ? [receiptText(p.receipt), ""] : []),
       p.newPassword ? `Your account is ready.\nEmail: ${p.email}\nPassword: ${p.newPassword}\n(Change it after you log in: My account → Password.)` : "You can see this booking in your account, using your existing password.",
       `Log in: ${p.loginUrl}`,
     ].join("\n"),
@@ -212,37 +242,39 @@ export function otpEmail(p: { name: string; code: string; purpose: "signup" | "r
   };
 }
 
-export function orderConfirmedEmail(p: { name: string; email: string; product: { title: string; price: number }; libraryUrl: string; loginUrl: string; newPassword?: string | null }) {
+export function orderConfirmedEmail(p: { name: string; email: string; product: { title: string; price: number }; libraryUrl: string; loginUrl: string; newPassword?: string | null; receipt?: Receipt }) {
   const first = p.name.split(" ")[0] || p.name;
   const account = p.newPassword
     ? `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:22px 0 0;border:1px solid #e4dccd;border-radius:12px"><tr><td style="padding:16px 18px;font:400 14px/1.6 Helvetica,Arial,sans-serif;color:#3d4862">
-        <div style="font:600 15px/1.3 Helvetica,Arial,sans-serif;color:#1d2b45">Your account is ready</div>
-        <div style="margin-top:4px">Your purchase is saved in your library. Log in to download it any time.</div>
+        <div style="font:600 15px/1.3 Helvetica,Arial,sans-serif;color:#1d2b45">Log in with email too</div>
+        <div style="margin-top:4px">Your purchase is saved in your library. You can also log in with this password:</div>
         <div style="margin-top:12px">Email: <strong style="color:#1d2b45">${esc(p.email)}</strong></div>
         <div>Password: <code style="font:600 15px/1 'Courier New',monospace;background:#f4eee3;padding:3px 8px;border-radius:6px;color:#1d2b45">${esc(p.newPassword)}</code></div>
         <div style="margin-top:10px;color:#6e7387;font-size:13px">Tip: change it after you log in (My account → Profile &amp; security).</div>
       </td></tr></table>`
-    : `<p style="margin:18px 0 0">It's saved in <strong>My library</strong> in your account. Log in with your existing password to download it any time.</p>`;
+    : `<p style="margin:18px 0 0">It's saved in <strong>My library</strong> in your account, ready to download any time.</p>`;
+  const paid = Boolean(p.receipt && p.receipt.amount > 0);
   return {
-    subject: `Your download is ready: ${p.product.title}`,
+    subject: paid ? `Payment receipt: ${p.product.title} (${formatPrice(p.receipt!.amount)})` : `Your download is ready: ${p.product.title}`,
     html: layout({
-      preheader: `Thanks for your purchase, ${first}. Your download is ready.`,
+      preheader: paid ? `Payment received. Receipt ${receiptNumber(p.receipt!.id)}, and your download is ready.` : `Thanks, ${first}. Your download is ready.`,
       heading: `Thank you, ${em(`${esc(first)}!`)}`,
-      seal: ["教材", "Study store"],
-      body: `<p style="margin:0">Your purchase is complete:</p>
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:16px 0;background:#f4eee3;border-radius:12px"><tr><td style="padding:16px 18px;font:400 14px/1.6 Helvetica,Arial,sans-serif;color:#3d4862">
-          <div style="font:600 16px/1.3 Helvetica,Arial,sans-serif;color:#1d2b45">${esc(p.product.title)}</div>
-          <div style="margin-top:4px">${esc(formatPrice(p.product.price))}</div>
-        </td></tr></table>${account}`,
-      cta: { label: "Open my library", url: p.newPassword ? p.loginUrl : p.libraryUrl },
+      seal: ["教材", paid ? "Payment received" : "Study store"],
+      body: `<p style="margin:0">${paid ? "Your payment was successful and your guide is ready to download:" : "Your guide is ready to download:"}</p>
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:16px 0 0;background:#f4eee3;border-left:3px solid ${C.accent};border-radius:12px"><tr><td style="padding:16px 18px;font:400 14px/1.6 ${SANS};color:#3d4862">
+          <div style="font:600 16px/1.3 ${SANS};color:#1d2b45">${esc(p.product.title)}</div>
+          <div style="margin-top:4px">Instant download · yours to keep</div>
+        </td></tr></table>${paid ? receiptBlock(p.receipt!) : ""}${account}`,
+      cta: { label: "Download from my library", url: p.libraryUrl },
     }),
     text: [
       `Thank you, ${first}!`,
       "",
-      `Your purchase is complete: ${p.product.title} (${formatPrice(p.product.price)}).`,
+      paid ? `Your payment was successful. ${p.product.title} is ready to download.` : `${p.product.title} is ready to download.`,
       "",
-      p.newPassword ? `Your account is ready.\nEmail: ${p.email}\nPassword: ${p.newPassword}\n(Change it after you log in.)` : "It's saved in My library. Log in with your existing password to download it.",
-      `Open your library: ${p.newPassword ? p.loginUrl : p.libraryUrl}`,
+      ...(paid ? [receiptText(p.receipt!), ""] : []),
+      p.newPassword ? `You can also log in with email.\nEmail: ${p.email}\nPassword: ${p.newPassword}` : "It's saved in My library in your account.",
+      `Open your library: ${p.libraryUrl}`,
     ].join("\n"),
   };
 }

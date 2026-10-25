@@ -14,20 +14,22 @@ import type { MessageDTO } from "@/lib/types";
 /** Phones and tablets have a mail app; on a computer, open Gmail in the browser instead of the (often missing) desktop mail app. */
 const isMobile = () => typeof navigator !== "undefined" && (/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent)));
 
-function replyLinks(m: MessageDTO) {
+function replyLinks(m: MessageDTO, mailbox?: string) {
   const subject = "Re: your message to Life of KittuKun";
   const first = m.name.split(" ")[0] || m.name;
   const quoted = m.message.split("\n").map((l) => `> ${l}`).join("\n");
   const body = `Hi ${first},\n\n\n\n---\nOn ${new Date(m.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}, ${m.name} wrote:\n${quoted}`;
+  const mailto = `mailto:${m.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   return {
-    mailto: `mailto:${m.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`,
-    gmail: `https://mail.google.com/mail/?${new URLSearchParams({ view: "cm", fs: "1", to: m.email, su: subject, body })}`,
+    mailto,
+    // Gmail's own mailto handler: opens the normal inbox with a pre-filled compose window on top.
+    gmail: `https://mail.google.com/mail/?${new URLSearchParams({ ...(mailbox ? { authuser: mailbox } : {}), extsrc: "mailto", url: mailto })}`,
   };
 }
 
 const TOPICS: Record<string, string> = { question: "Question", session: "Sessions & bookings", payment: "Payments & downloads", account: "Account", feedback: "Feedback", collaboration: "Collaboration", speaking: "Talk / workshop", other: "Other" };
 
-export function MessagesInbox() {
+export function MessagesInbox({ mailbox }: { mailbox?: string }) {
   const router = useRouter();
   const [tab, setTab] = useState<"inbox" | "archived">("inbox");
   const { data: items, mutate } = useApi<MessageDTO[]>(`/api/admin/messages${tab === "archived" ? "?status=archived" : ""}`);
@@ -99,11 +101,11 @@ export function MessagesInbox() {
                   <p className="mt-2 text-xs text-muted">{m.email}</p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <a
-                      href={replyLinks(m).mailto}
+                      href={replyLinks(m, mailbox).mailto}
                       onClick={(e) => {
                         if (isMobile()) return; // phone: open the mail app
                         e.preventDefault();
-                        window.open(replyLinks(m).gmail, "_blank", "noopener,noreferrer");
+                        window.open(replyLinks(m, mailbox).gmail, "_blank", "noopener,noreferrer");
                       }}
                       title="Opens Gmail in a new tab (the mail app on phones)"
                       className="inline-flex h-8 items-center gap-1.5 rounded-full bg-ink px-3.5 text-[0.8rem] font-medium text-cream"
