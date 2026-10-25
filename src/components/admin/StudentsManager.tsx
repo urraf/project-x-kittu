@@ -171,7 +171,7 @@ export function StudentsManager() {
     <>
       <PageHeader
         title="Students"
-        description="Everyone with a student account: created automatically on their first booking, or by signing up. Click a student to see their bookings."
+        description="Everyone with a student account. Students sign up (email or Google) before booking or buying. Click a student to see their bookings and purchases."
         actions={
           <>
             <Button onClick={copyEmails} disabled={!data?.items.length}><Copy className="size-4" /> Copy emails</Button>

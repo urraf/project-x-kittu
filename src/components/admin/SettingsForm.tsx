@@ -20,9 +20,19 @@ const TABS = [
   { id: "sessions", label: "Sessions" },
   { id: "comments", label: "Comments" },
   { id: "automation", label: "Automation" },
+  { id: "policies", label: "Policies" },
   { id: "password", label: "Login & password" },
 ] as const;
 type Tab = (typeof TABS)[number]["id"];
+
+const POLICY_FIELDS: { key: Exclude<keyof SiteSettings["legal"], "updatedOn">; label: string; path: string; hint: string }[] = [
+  { key: "sessionTerms", label: "Session terms", path: "/session-terms", hint: "Shown at session checkout. Students must agree before booking or paying." },
+  { key: "productTerms", label: "Study material terms", path: "/product-terms", hint: "Shown at study-store checkout. Buyers must agree before paying." },
+  { key: "terms", label: "Terms of use", path: "/terms", hint: "General rules for using the website." },
+  { key: "privacy", label: "Privacy policy", path: "/privacy", hint: "What personal data is collected and how it is used." },
+  { key: "refund", label: "Refunds & cancellations", path: "/refund-policy", hint: "When refunds are given. Razorpay checks this page." },
+  { key: "shipping", label: "Delivery policy", path: "/shipping-policy", hint: "How sessions and downloads are delivered. Razorpay checks this page." },
+];
 
 const lines = (s: string) => s.split("\n").map((l) => l.trim()).filter(Boolean);
 
@@ -96,6 +106,7 @@ export function SettingsForm({ initial, initialTab, account, integrations }: { i
   const ai = <K extends keyof SiteSettings["ai"]>(k: K, v: SiteSettings["ai"][K]) => setS((x) => ({ ...x, ai: { ...x.ai, [k]: v } }));
   const cm = <K extends keyof SiteSettings["comments"]>(k: K, v: SiteSettings["comments"][K]) => setS((x) => ({ ...x, comments: { ...x.comments, [k]: v } }));
   const au = <K extends keyof SiteSettings["automation"]>(k: K, v: SiteSettings["automation"][K]) => setS((x) => ({ ...x, automation: { ...x.automation, [k]: v } }));
+  const lg = (k: keyof SiteSettings["legal"], v: string) => setS((x) => ({ ...x, legal: { ...x.legal, [k]: v } }));
   const mt = <K extends keyof SiteSettings["mentorship"]>(k: K, v: SiteSettings["mentorship"][K]) => setS((x) => ({ ...x, mentorship: { ...x.mentorship, [k]: v } }));
   const err = (k: string) => errors[k];
 
@@ -117,7 +128,7 @@ export function SettingsForm({ initial, initialTab, account, integrations }: { i
       if (e instanceof ApiClientError) {
         setErrors(e.fieldErrors);
         const first = Object.keys(e.fieldErrors)[0] ?? "";
-        const t = first.startsWith("social") ? "social" : first.startsWith("ai") ? "ai" : first.startsWith("automation") ? "automation" : first.startsWith("comments") ? "comments" : first.startsWith("mentorship") ? "sessions" : first.match(/longBio|quickFacts|interests|principles/) ? "about" : first ? "profile" : null;
+        const t = first.startsWith("legal") ? "policies" : first.startsWith("social") ? "social" : first.startsWith("ai") ? "ai" : first.startsWith("automation") ? "automation" : first.startsWith("comments") ? "comments" : first.startsWith("mentorship") ? "sessions" : first.match(/longBio|quickFacts|interests|principles/) ? "about" : first ? "profile" : null;
         if (t) setTab(t as Tab);
       }
       toast.error(errorMessage(e));
@@ -254,6 +265,30 @@ export function SettingsForm({ initial, initialTab, account, integrations }: { i
       )}
 
       {tab === "password" && <AccountSettings initial={account} />}
+
+      {tab === "policies" && (
+        <div className="max-w-3xl space-y-5">
+          <Card>
+            <p className="text-sm text-ink-2">
+              These texts appear on the website&apos;s policy pages. Students must tick <strong className="text-ink">Session terms</strong> before booking and{" "}
+              <strong className="text-ink">Study material terms</strong> before buying. Write in Markdown: <code>## Heading</code>, <code>- bullet</code>,{" "}
+              <code>**bold**</code>, <code>[link text](/contact)</code>. <code>{"{email}"}</code> becomes your public contact email. The &quot;Last updated&quot; date changes automatically when you save an edit.
+            </p>
+          </Card>
+          {POLICY_FIELDS.map((f) => (
+            <Card key={f.key} className="space-y-2">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <p className="font-medium text-ink">{f.label}</p>
+                <a href={f.path} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-accent-deep hover:underline">View page ↗</a>
+              </div>
+              <p className="text-xs text-muted">{f.hint}</p>
+              <Field label="Text (Markdown)" error={err(`legal.${f.key}`)}>
+                <textarea className="field font-mono text-[0.8rem] leading-relaxed" rows={14} value={s.legal[f.key]} onChange={(e) => lg(f.key, e.target.value)} />
+              </Field>
+            </Card>
+          ))}
+        </div>
+      )}
 
       {tab === "sessions" && (
         <>

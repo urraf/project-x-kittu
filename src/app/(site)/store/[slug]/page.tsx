@@ -36,7 +36,7 @@ export default async function ProductPage({ params }: Props) {
   const related = more.filter((p) => p.id !== product.id).slice(0, 4);
   const steps = [
     { Icon: Mail, text: product.price ? "Pay securely. Your receipt arrives by email." : "Enter your details. No payment needed." },
-    { Icon: Library, text: "It's saved in My library in your account (created automatically if you're new)." },
+    { Icon: Library, text: "It's saved in My library in your account, ready to download any time." },
     { Icon: Download, text: product.deliveryType === "link" ? "Open the access link any time from your library." : "Download it instantly, and again whenever you need." },
   ];
 

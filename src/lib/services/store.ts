@@ -303,8 +303,8 @@ export const buyInputSchema = z.object({
     .trim()
     .max(30)
     .refine((p) => /^[+\d][\d\s-]{6,}$/.test(p), "Enter a valid phone number"),
-  captchaToken: z.string().max(2000).optional(),
-  captchaAnswer: z.union([z.string(), z.number()]).optional(),
+  /** The checkout's "I agree to the terms" box. Required: the time is saved with the booking/order. */
+  acceptTerms: z.literal(true, { error: "Please tick the box to accept the terms before continuing." }),
   website: z.string().max(500).optional(),
 });
 
@@ -341,6 +341,7 @@ export async function startOrder(productId: string, input: z.infer<typeof buyInp
     phone: input.phone,
     amount: product.price,
     status: "pending",
+    termsAcceptedAt: new Date(),
     ipHash: createHash("sha256").update(meta.ip).digest("hex").slice(0, 32),
   });
 

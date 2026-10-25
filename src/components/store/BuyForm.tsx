@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import { CheckCircle2, Download, KeyRound, Loader2, Lock, MailCheck, RefreshCw, ShieldCheck, Zap } from "lucide-react";
+import { useRef, useState } from "react";
+import { CheckCircle2, Download, KeyRound, Loader2, Lock, MailCheck, ShieldCheck, Zap } from "lucide-react";
+import { LoginToContinue, TermsCheckbox } from "@/components/payments/CheckoutGate";
 import { postJson, useCheckout, type CheckoutInfo } from "@/components/payments/useCheckout";
 import { PriceTag, discountPct } from "@/components/store/ProductCard";
 import { formatPrice } from "@/lib/utils/session-time";
 import type { ProductDTO } from "@/lib/services/store";
 
-type Captcha = { question: string; token: string };
 type Start = { orderId: string; status: "paid"; newAccount: boolean } | { orderId: string; status: "payment_required"; demo: boolean; razorpay: CheckoutInfo };
 type Done = { orderId: string; newAccount?: boolean };
 
@@ -18,29 +18,13 @@ export function BuyForm({ product, paymentMode, student }: { product: ProductDTO
   const [name, setName] = useState(student?.name ?? "");
   const [email, setEmail] = useState(student?.email ?? "");
   const [phone, setPhone] = useState(student?.phone || "+91 ");
-  const [answer, setAnswer] = useState("");
-  const [captcha, setCaptcha] = useState<Captcha | null>(null);
+  const [agree, setAgree] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<Done | null>(null);
   const website = useRef<HTMLInputElement>(null);
   const { pay, dialog } = useCheckout<Done>();
   const off = discountPct(product);
-
-  const loadCaptcha = () => {
-    setAnswer("");
-    fetch("/api/captcha", { cache: "no-store" })
-      .then((r) => r.json())
-      .then((j) => j?.ok && setCaptcha(j.data))
-      .catch(() => {});
-  };
-  useEffect(() => {
-    if (student) return;
-    fetch("/api/captcha", { cache: "no-store" })
-      .then((r) => r.json())
-      .then((j) => j?.ok && setCaptcha(j.data))
-      .catch(() => {});
-  }, [student]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -49,7 +33,7 @@ export function BuyForm({ product, paymentMode, student }: { product: ProductDTO
     if (name.trim().length < 2) errs.name = "Please enter your name.";
     if (!/^\S+@\S+\.\S+$/.test(email.trim())) errs.email = "Enter a valid email address.";
     if (!/^[+\d][\d\s-]{6,}$/.test(cleanPhone) || cleanPhone.replace(/\D/g, "").length < 8) errs.phone = "Enter a valid phone number.";
-    if (!student && !answer.trim()) errs.captchaAnswer = "Please answer the math question.";
+    if (!agree) errs.acceptTerms = "Please tick the box to accept the terms before continuing.";
     setErrors(errs);
     if (Object.keys(errs).length) return;
     setBusy(true);
@@ -58,8 +42,7 @@ export function BuyForm({ product, paymentMode, student }: { product: ProductDTO
         name,
         email,
         phone: cleanPhone,
-        captchaToken: captcha?.token,
-        captchaAnswer: answer,
+        acceptTerms: agree,
         website: website.current?.value ?? "",
       });
       const result = start.status === "paid" ? { orderId: start.orderId, newAccount: start.newAccount } : await pay(`/api/store/orders/${start.orderId}`, start.razorpay, start.demo);
@@ -70,7 +53,6 @@ export function BuyForm({ product, paymentMode, student }: { product: ProductDTO
       const f: Record<string, string> = {};
       e2.details?.forEach((d) => (f[d.path] = d.message));
       setErrors({ ...f, form: Object.keys(f).length ? "" : e2.message });
-      if (!student) loadCaptcha();
     } finally {
       setBusy(false);
     }
@@ -84,15 +66,14 @@ export function BuyForm({ product, paymentMode, student }: { product: ProductDTO
         <p className="mt-3 text-ink-2"><strong className="text-ink">{product.title}</strong> is now in your library.</p>
         <ul className="mt-5 space-y-3 text-[0.95rem] text-ink-2">
           <li className="flex gap-3"><MailCheck className="mt-0.5 size-5 shrink-0 text-accent" /> <span>We&apos;ve emailed your receipt to <strong className="break-all text-ink">{email}</strong>.</span></li>
-          {!student && (
-            <li className="flex gap-3"><KeyRound className="mt-0.5 size-5 shrink-0 text-accent" /> <span>{done.newAccount ? <>Your account is ready. The email has your <strong className="text-ink">login email and password</strong>.</> : <>Log in with your existing password to download.</>}</span></li>
+          {done.newAccount && (
+            <li className="flex gap-3"><KeyRound className="mt-0.5 size-5 shrink-0 text-accent" /> <span>The email also has a <strong className="text-ink">password</strong>, so you can log in with your email next time too.</span></li>
           )}
         </ul>
-        {student ? (
-          <a href={`/api/account/library/${done.orderId}/download`} className="btn btn-accent mt-7"><Download className="size-4" /> Download now</a>
-        ) : (
-          <Link href="/account/login?next=/account?tab=library" className="btn btn-ink mt-7">Log in to download</Link>
-        )}
+        <div className="mt-7 flex flex-wrap gap-2">
+          <a href={`/api/account/library/${done.orderId}/download`} className="btn btn-accent"><Download className="size-4" /> Download now</a>
+          <Link href="/account?tab=library" className="btn btn-ghost text-ink">My library</Link>
+        </div>
       </div>
     );
   }
@@ -108,13 +89,11 @@ export function BuyForm({ product, paymentMode, student }: { product: ProductDTO
         <p className="mt-3 flex items-center gap-1.5 text-sm text-ink-2"><Zap className="size-4 text-gold" /> Instant access after {product.price ? "payment" : "sign-up"} · yours to keep</p>
       </div>
       <div className="space-y-4 p-6 md:p-7">
-        {student ? (
-          <p className="text-sm text-muted">Buying as <strong className="text-ink">{student.email}</strong>. It goes straight to your library.</p>
+        {!student ? (
+          <LoginToContinue next={`/store/${product.slug}#buy`} action={product.price ? "buy this guide" : "get this guide"} />
         ) : (
-          <p className="text-sm text-muted">
-            New here? An account is created for you. Have one? <Link href={`/account/login?next=${encodeURIComponent(`/store/${product.slug}#buy`)}`} className="font-medium text-ink underline underline-offset-4">Log in</Link>
-          </p>
-        )}
+        <>
+        <p className="text-sm text-muted">Buying as <strong className="text-ink">{student.email}</strong>. It goes straight to your library.</p>
         <div>
           <label htmlFor="by-name" className="label">Full name</label>
           <input id="by-name" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} className="field" maxLength={100} aria-invalid={!!errors.name} />
@@ -132,27 +111,19 @@ export function BuyForm({ product, paymentMode, student }: { product: ProductDTO
             {errors.phone && <p className="mt-1.5 text-sm text-accent-deep">{errors.phone}</p>}
           </div>
         </div>
-        {!student && (
-          <div>
-            <label htmlFor="by-captcha" className="label">Quick check: what is</label>
-            <div className="flex items-stretch gap-2">
-              <span className="flex min-w-[6.5rem] select-none items-center justify-center rounded-[10px] border border-line bg-paper-2 px-3 font-mono text-ink" aria-live="polite">{captcha ? `${captcha.question} =` : "…"}</span>
-              <input id="by-captcha" inputMode="numeric" autoComplete="off" value={answer} onChange={(e) => setAnswer(e.target.value.replace(/[^\d-]/g, ""))} className="field w-20 text-center font-mono" aria-invalid={!!errors.captchaAnswer} />
-              <button type="button" onClick={loadCaptcha} aria-label="New question" className="grid w-11 place-items-center rounded-[10px] border border-line text-muted hover:text-ink"><RefreshCw className="size-4" /></button>
-            </div>
-            {errors.captchaAnswer && <p className="mt-1.5 text-sm text-accent-deep">{errors.captchaAnswer}</p>}
-          </div>
-        )}
+        <TermsCheckbox id="by-terms" checked={agree} onChange={(v) => { setAgree(v); if (v) setErrors((e) => ({ ...e, acceptTerms: "" })); }} termsHref="/product-terms" termsLabel="study material terms" error={errors.acceptTerms} />
         <div aria-hidden className="absolute -left-[9999px] h-px w-px overflow-hidden">
           <label htmlFor="by-website">Website</label>
           <input id="by-website" ref={website} tabIndex={-1} autoComplete="off" />
         </div>
         {errors.form && <p role="alert" className="rounded-xl bg-accent-soft px-4 py-3 text-sm text-accent-deep">{errors.form}</p>}
-        <button type="submit" disabled={busy || (!student && !captcha)} className="btn btn-accent w-full !py-3.5 text-base">
+        <button type="submit" disabled={busy} className="btn btn-accent w-full !py-3.5 text-base">
           {busy ? <Loader2 className="size-4 animate-spin" /> : product.price ? <Lock className="size-4" /> : <Download className="size-4" />}
           {busy ? "Please wait…" : product.price ? `Buy now · ${formatPrice(product.price)}` : "Get it free"}
         </button>
         {product.price > 0 && <p className="text-center text-xs text-muted">{note}</p>}
+        </>
+        )}
         <ul className="grid grid-cols-1 gap-2.5 border-t border-line pt-4 text-[0.82rem] text-ink-2 sm:grid-cols-2">
           <li className="flex items-center gap-2"><Zap className="size-4 shrink-0 text-moss" /> Instant download</li>
           <li className="flex items-center gap-2"><MailCheck className="size-4 shrink-0 text-moss" /> Receipt by email</li>

@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { BadgeCheck, CheckCircle2, KeyRound, Loader2, Lock, MailCheck, RefreshCw, RotateCcw, ShieldCheck } from "lucide-react";
+import { useRef, useState } from "react";
+import { BadgeCheck, CheckCircle2, KeyRound, Loader2, Lock, MailCheck, RotateCcw, ShieldCheck } from "lucide-react";
 import { DemoCheckout } from "@/components/mentorship/DemoCheckout";
+import { LoginToContinue, TermsCheckbox } from "@/components/payments/CheckoutGate";
 import { formatPrice, formatSessionWhen } from "@/lib/utils/session-time";
 import type { MentorSessionDTO } from "@/lib/types";
 
-type Captcha = { question: string; token: string; expiresInSec: number };
 type RazorpayInfo = {
   keyId: string;
   orderId: string;
@@ -64,27 +64,11 @@ export function BookingForm({ session, paymentMode, student }: { session: Mentor
   const [phone, setPhone] = useState(student?.phone || "+91 ");
   const [newAccount, setNewAccount] = useState(false);
   const [notes, setNotes] = useState("");
-  const [answer, setAnswer] = useState("");
-  const [captcha, setCaptcha] = useState<Captcha | null>(null);
+  const [agree, setAgree] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [stage, setStage] = useState<"form" | "working" | "paying" | "done">("form");
   const [demo, setDemo] = useState<{ bookingId: string; info: RazorpayInfo } | null>(null);
   const website = useRef<HTMLInputElement>(null);
-
-  const loadCaptcha = useCallback(() => {
-    setAnswer("");
-    fetch("/api/captcha", { cache: "no-store" })
-      .then((r) => r.json())
-      .then((j) => j?.ok && setCaptcha(j.data))
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    fetch("/api/captcha", { cache: "no-store" })
-      .then((r) => r.json())
-      .then((j) => j?.ok && setCaptcha(j.data))
-      .catch(() => {});
-  }, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -94,9 +78,9 @@ export function BookingForm({ session, paymentMode, student }: { session: Mentor
     if (name.trim().length < 2) errs.name = "Please enter your name.";
     if (!/^\S+@\S+\.\S+$/.test(email.trim())) errs.email = "Enter a valid email address.";
     if (!/^[+\d][\d\s-]{6,}$/.test(cleanPhone) || cleanPhone.replace(/\D/g, "").length < 8) errs.phone = "Enter a valid phone number.";
-    if (!answer.trim()) errs.captchaAnswer = "Please answer the math question.";
+    if (!agree) errs.acceptTerms = "Please tick the box to accept the terms before continuing.";
     setErrors(errs);
-    if (Object.keys(errs).length || !captcha) return;
+    if (Object.keys(errs).length) return;
 
     setStage("working");
     try {
@@ -105,8 +89,7 @@ export function BookingForm({ session, paymentMode, student }: { session: Mentor
         email,
         phone: cleanPhone,
         notes,
-        captchaToken: captcha.token,
-        captchaAnswer: answer,
+        acceptTerms: agree,
         website: website.current?.value ?? "",
       });
       if (start.status === "confirmed") {
@@ -148,7 +131,6 @@ export function BookingForm({ session, paymentMode, student }: { session: Mentor
             releaseSeat(start.bookingId, start.razorpay.orderId);
             setErrors({ form: "Payment was cancelled. You can try again whenever you're ready." });
             setStage("form");
-            loadCaptcha();
           },
         },
       });
@@ -160,7 +142,6 @@ export function BookingForm({ session, paymentMode, student }: { session: Mentor
       e.details?.forEach((d) => (fieldErrors[d.path] = d.message));
       setErrors({ ...fieldErrors, form: Object.keys(fieldErrors).length ? "" : e.message });
       setStage("form");
-      loadCaptcha();
     }
   }
 
@@ -169,7 +150,6 @@ export function BookingForm({ session, paymentMode, student }: { session: Mentor
     setDemo(null);
     setErrors({ form: message });
     setStage("form");
-    loadCaptcha();
   }
 
   async function payDemo() {
@@ -195,13 +175,11 @@ export function BookingForm({ session, paymentMode, student }: { session: Mentor
         </p>
         <ul className="mt-5 space-y-3 text-[0.95rem] text-ink-2">
           <li className="flex gap-3"><MailCheck className="mt-0.5 size-5 shrink-0 text-accent" /> <span>We&apos;ve emailed the meeting link to <strong className="break-all text-ink">{email}</strong>, and you&apos;ll get a reminder 1 hour before.</span></li>
-          {student ? null : newAccount ? (
-            <li className="flex gap-3"><KeyRound className="mt-0.5 size-5 shrink-0 text-accent" /> <span>Your account is ready. The same email has your <strong className="text-ink">login email and password</strong>.</span></li>
-          ) : (
-            <li className="flex gap-3"><KeyRound className="mt-0.5 size-5 shrink-0 text-accent" /> <span>You already have an account. Log in with your existing password to see this booking.</span></li>
+          {newAccount && (
+            <li className="flex gap-3"><KeyRound className="mt-0.5 size-5 shrink-0 text-accent" /> <span>The email also has a <strong className="text-ink">password</strong>, so you can log in with your email next time too.</span></li>
           )}
         </ul>
-        <Link href={student ? "/account" : "/account/login?next=/account"} className="btn btn-ink mt-7">{student ? "Go to my account" : "Log in to my account"}</Link>
+        <Link href="/account" className="btn btn-ink mt-7">Go to my account</Link>
       </div>
     );
   }
@@ -236,13 +214,13 @@ export function BookingForm({ session, paymentMode, student }: { session: Mentor
       </div>
       <div className="p-6 md:p-7">
         <h2 className="display text-3xl">Reserve your seat</h2>
-        {student ? (
-          <p className="mt-1 text-sm text-muted">Booking as <strong className="text-ink">{student.email}</strong>. It will show up in your account.</p>
+        {!student ? (
+          <div className="mt-5">
+            <LoginToContinue next={`/sessions/${session.slug}#book`} action="book your seat" />
+          </div>
         ) : (
-          <p className="mt-1 text-sm text-muted">
-            New here? Your account is created automatically. Have one? <Link href={`/account/login?next=${encodeURIComponent(`/sessions/${session.slug}#book`)}`} className="font-medium text-ink underline underline-offset-4">Log in</Link>
-          </p>
-        )}
+        <>
+        <p className="mt-1 text-sm text-muted">Booking as <strong className="text-ink">{student.email}</strong>. It will show up in your account.</p>
         <div className="mt-6 space-y-4">
           <div>
             <label htmlFor="bk-name" className="label">Full name</label>
@@ -265,35 +243,25 @@ export function BookingForm({ session, paymentMode, student }: { session: Mentor
             <label htmlFor="bk-notes" className="label">What do you want help with? <span className="font-normal text-muted">(optional)</span></label>
             <textarea id="bk-notes" rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} className={field} maxLength={1500} placeholder="e.g. 3rd-year CSE, CGPA 7.4, targeting MEXT and Max Planck internships" />
           </div>
-          <div>
-            <label htmlFor="bk-captcha" className="label">Quick check: what is</label>
-            <div className="flex items-stretch gap-2">
-              <span className="flex min-w-[6.5rem] select-none items-center justify-center rounded-[10px] border border-line bg-paper-2 px-3 font-mono text-ink" aria-live="polite">
-                {captcha ? `${captcha.question} =` : "…"}
-              </span>
-              <input id="bk-captcha" inputMode="numeric" autoComplete="off" value={answer} onChange={(e) => setAnswer(e.target.value.replace(/[^\d-]/g, ""))} className="field w-20 text-center font-mono" aria-invalid={!!errors.captchaAnswer} />
-              <button type="button" onClick={loadCaptcha} aria-label="New question" className="grid w-11 place-items-center rounded-[10px] border border-line text-muted hover:text-ink">
-                <RefreshCw className="size-4" />
-              </button>
-            </div>
-            {errors.captchaAnswer && <p className="mt-1.5 text-sm text-accent-deep">{errors.captchaAnswer}</p>}
-          </div>
+          <TermsCheckbox id="bk-terms" checked={agree} onChange={(v) => { setAgree(v); if (v) setErrors((e) => ({ ...e, acceptTerms: "" })); }} termsHref="/session-terms" termsLabel="session terms" error={errors.acceptTerms} />
         </div>
         <div aria-hidden className="absolute -left-[9999px] h-px w-px overflow-hidden">
           <label htmlFor="bk-website">Website</label>
           <input id="bk-website" ref={website} tabIndex={-1} autoComplete="off" />
         </div>
         {errors.form && <p role="alert" className="mt-5 rounded-xl bg-accent-soft px-4 py-3 text-sm text-accent-deep">{errors.form}</p>}
-        <button type="submit" disabled={busy || !captcha || session.seatsLeft === 0} className="btn btn-accent mt-6 w-full !py-3.5 text-base">
+        <button type="submit" disabled={busy || session.seatsLeft === 0} className="btn btn-accent mt-6 w-full !py-3.5 text-base">
           {busy ? <Loader2 className="size-4 animate-spin" /> : session.price ? <Lock className="size-4" /> : null}
           {stage === "paying" ? "Complete the payment…" : busy ? "Please wait…" : session.price ? `Pay ${formatPrice(session.price)} & book my seat` : "Book my free seat"}
         </button>
         {session.price > 0 && <p className="mt-3 text-center text-xs text-muted">{payNote}</p>}
+        </>
+        )}
         <ul className="mt-6 grid grid-cols-1 gap-2.5 border-t border-line pt-5 text-[0.82rem] text-ink-2 sm:grid-cols-2">
           <li className="flex items-center gap-2"><MailCheck className="size-4 shrink-0 text-moss" /> Instant confirmation by email</li>
           <li className="flex items-center gap-2"><BadgeCheck className="size-4 shrink-0 text-moss" /> Join link + 1-hour reminder</li>
           <li className="flex items-center gap-2"><ShieldCheck className="size-4 shrink-0 text-moss" /> {session.price ? "Secure checkout" : "No payment needed"}</li>
-          <li className="flex items-center gap-2"><RotateCcw className="size-4 shrink-0 text-moss" /> {session.price ? "Full refund if cancelled" : "Free, just show up"}</li>
+          <li className="flex items-center gap-2"><RotateCcw className="size-4 shrink-0 text-moss" /> {session.price ? "Full refund if we cancel" : "Free, just show up"}</li>
         </ul>
       </div>
       {demo && (

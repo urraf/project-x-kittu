@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Archive, ArchiveRestore, Mail, Reply, Trash2 } from "lucide-react";
+import { Archive, ArchiveRestore, Copy, Mail, Reply, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { api, errorMessage } from "@/lib/admin/api";
 import { useApi } from "@/lib/admin/hooks";
@@ -10,6 +10,20 @@ import { AdminEmpty, Button, ConfirmDialog, LoadingBlock, PageHeader } from "@/c
 import { timeAgo } from "@/lib/utils/text";
 import { cn } from "@/lib/utils/cn";
 import type { MessageDTO } from "@/lib/types";
+
+/** Phones and tablets have a mail app; on a computer, open Gmail in the browser instead of the (often missing) desktop mail app. */
+const isMobile = () => typeof navigator !== "undefined" && (/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent)));
+
+function replyLinks(m: MessageDTO) {
+  const subject = "Re: your message to Life of KittuKun";
+  const first = m.name.split(" ")[0] || m.name;
+  const quoted = m.message.split("\n").map((l) => `> ${l}`).join("\n");
+  const body = `Hi ${first},\n\n\n\n---\nOn ${new Date(m.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}, ${m.name} wrote:\n${quoted}`;
+  return {
+    mailto: `mailto:${m.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`,
+    gmail: `https://mail.google.com/mail/?${new URLSearchParams({ view: "cm", fs: "1", to: m.email, su: subject, body })}`,
+  };
+}
 
 const TOPICS: Record<string, string> = { question: "Question", session: "Sessions & bookings", payment: "Payments & downloads", account: "Account", feedback: "Feedback", collaboration: "Collaboration", speaking: "Talk / workshop", other: "Other" };
 
@@ -54,7 +68,7 @@ export function MessagesInbox() {
 
   return (
     <>
-      <PageHeader title="Messages" description="Enquiries sent through the Collaborate page." />
+      <PageHeader title="Messages" description="Messages sent through the Contact and Collaborate pages. Reply opens Gmail in your browser (or the mail app on your phone)." />
       <div className="mb-5 inline-flex rounded-full border border-line bg-[#fffdf9] p-1 text-sm">
         {(["inbox", "archived"] as const).map((t) => (
           <button key={t} type="button" onClick={() => setTab(t)} className={cn("rounded-full px-4 py-1.5 capitalize", tab === t ? "bg-ink text-cream" : "text-ink-2")}>{t}</button>
@@ -84,7 +98,25 @@ export function MessagesInbox() {
                   <p className="whitespace-pre-line rounded-xl bg-paper-2 p-4 text-[0.95rem] leading-relaxed text-ink">{m.message}</p>
                   <p className="mt-2 text-xs text-muted">{m.email}</p>
                   <div className="mt-3 flex flex-wrap gap-2">
-                    <a href={`mailto:${m.email}?subject=${encodeURIComponent("Re: your message to Life of KittuKun")}`} className="inline-flex h-8 items-center gap-1.5 rounded-full bg-ink px-3.5 text-[0.8rem] font-medium text-cream"><Reply className="size-3.5" /> Reply by email</a>
+                    <a
+                      href={replyLinks(m).mailto}
+                      onClick={(e) => {
+                        if (isMobile()) return; // phone: open the mail app
+                        e.preventDefault();
+                        window.open(replyLinks(m).gmail, "_blank", "noopener,noreferrer");
+                      }}
+                      title="Opens Gmail in a new tab (the mail app on phones)"
+                      className="inline-flex h-8 items-center gap-1.5 rounded-full bg-ink px-3.5 text-[0.8rem] font-medium text-cream"
+                    >
+                      <Reply className="size-3.5" /> Reply by email
+                    </a>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => navigator.clipboard.writeText(m.email).then(() => toast.success("Email address copied"), () => toast.error("Couldn't copy. Select the address above instead."))}
+                    >
+                      <Copy className="size-3.5" /> Copy email
+                    </Button>
                     {m.status === "archived" ? (
                       <Button size="sm" onClick={() => setStatus(m, "read")}><ArchiveRestore className="size-3.5" /> Move to inbox</Button>
                     ) : (

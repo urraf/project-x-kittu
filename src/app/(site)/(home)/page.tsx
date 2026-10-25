@@ -63,7 +63,7 @@ const WHY = [
 
 const PLATFORM_FAQS = [
   { q: "What can I do on this platform?", a: "Join live group sessions, download guides and templates from the store, read free step-by-step guides, and find internships, scholarships and universities in Japan." },
-  { q: "Do I need an account?", a: "Guides, videos, opportunities and the university directory are free and open. An account is created automatically when you book a session or buy something, or you can sign up any time." },
+  { q: "Do I need an account?", a: "Guides, videos, opportunities and the university directory are free and open to everyone. To book a session or buy study material, create a free account first (with email or Google). It keeps your bookings, receipts and downloads in one place." },
   { q: "How do I get what I buy?", a: "Right after payment it appears in My library in your account, ready to download as many times as you need. You also get a receipt by email." },
 ];
 

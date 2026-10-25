@@ -54,6 +54,9 @@ export async function updateSettings(patch: unknown): Promise<SiteSettings> {
   const current = await loadSettings();
   const next = settingsSchema.parse(deepMerge(current, patch));
   if (next.ai.maxWords < next.ai.minWords) next.ai.maxWords = next.ai.minWords + 300;
+  // Stamp the policies' "Last updated" date whenever any policy text changes.
+  const policyText = (l: SiteSettings["legal"]) => JSON.stringify({ ...l, updatedOn: "" });
+  if (policyText(current.legal) !== policyText(next.legal)) next.legal.updatedOn = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" }); // YYYY-MM-DD in IST
   await Settings.updateOne({ key: "site" }, { $set: { data: next } }, { upsert: true });
   return next;
 }

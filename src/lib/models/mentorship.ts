@@ -94,6 +94,8 @@ const BookingSchema = new Schema(
       refundedAt: Date,
     },
     confirmedAt: Date,
+    /** When the student ticked "I agree to the session terms" at checkout. */
+    termsAcceptedAt: Date,
     /** Unique, unguessable token for the no-login feedback link. */
     feedbackToken: { type: String, unique: true, sparse: true, select: false },
     reminderSentAt: Date,

@@ -74,6 +74,8 @@ const OrderSchema = new Schema(
     },
     downloadCount: { type: Number, default: 0 },
     lastDownloadAt: Date,
+    /** When the buyer ticked "I agree to the study material terms" at checkout. */
+    termsAcceptedAt: Date,
     /** Unique, unguessable token for the one-time feedback link (created when first needed). */
     feedbackToken: { type: String, unique: true, sparse: true, select: false },
     feedbackSentAt: Date,

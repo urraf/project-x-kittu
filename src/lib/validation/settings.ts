@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { DEFAULT_LEGAL } from "@/lib/legal/defaults";
 import { DEFAULT_CATEGORIES } from "@/lib/site";
 
 const str = (max: number) => z.string().trim().max(max);
@@ -72,6 +73,17 @@ export const settingsSchema = z.object({
     pastStudents: z.number().int().min(0).max(1000000),
     benefits: z.array(str(200).min(1)).max(8),
     faqs: z.array(z.object({ q: str(200).min(1), a: str(800).min(1) })).max(10),
+  }),
+  /** Policy pages (Markdown), editable in Studio → Settings → Policies. {email} = public contact email. */
+  legal: z.object({
+    terms: str(30000),
+    sessionTerms: str(30000),
+    productTerms: str(30000),
+    privacy: str(30000),
+    refund: str(30000),
+    shipping: str(30000),
+    /** Set automatically when any policy text changes (YYYY-MM-DD). */
+    updatedOn: str(20),
   }),
 });
 
@@ -215,7 +227,8 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     faqs: [
       { q: "How do I join the session?", a: "You'll get the meeting link by email right after booking, and again 1 hour before the session. It's also in your account." },
       { q: "Is it a group session?", a: "Yes. Each session is a small live group, so you also hear other students' questions. There's time for everyone." },
-      { q: "Can I get a refund?", a: "If the session is cancelled, you'll get a full refund. For anything else, reply to your confirmation email and we'll help." },
+      { q: "Can I get a refund?", a: "Yes, if the session is cancelled or moved and you can't make the new time, or you couldn't join because of a problem on our side. See the refund policy for details." },
     ],
   },
+  legal: { ...DEFAULT_LEGAL, updatedOn: "2026-10-26" },
 };

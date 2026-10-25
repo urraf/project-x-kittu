@@ -14,7 +14,7 @@ const PERKS = [
   { Icon: Video, title: "Join links in one place", text: "Every session you book, with its meeting link ready when it starts." },
   { Icon: CalendarCheck2, title: "Your bookings & receipts", text: "Upcoming and past sessions, and what you paid." },
   { Icon: Star, title: "Rate your sessions", text: "Leave feedback after each session in one click." },
-  { Icon: KeyRound, title: "Already booked?", text: "Your account was created with your first booking. The password is in that email." },
+  { Icon: KeyRound, title: "New here?", text: "Create a free account to book sessions and buy study material. It takes under a minute, or use Google." },
 ];
 
 const GOOGLE_ERRORS: Record<string, string> = {

@@ -199,8 +199,8 @@ export const bookingInputSchema = z.object({
     .max(30)
     .refine((p) => /^[+\d][\d\s-]{6,}$/.test(p), "Enter a valid phone number"),
   notes: z.string().trim().max(1500).default(""),
-  captchaToken: z.string().min(10, "Please answer the math question").max(2000),
-  captchaAnswer: z.union([z.string(), z.number()]).refine((v) => String(v).trim() !== "", "Please answer the math question"),
+  /** The checkout's "I agree to the terms" box. Required: the time is saved with the booking/order. */
+  acceptTerms: z.literal(true, { error: "Please tick the box to accept the terms before continuing." }),
   website: z.string().max(500).optional(),
 });
 
@@ -274,6 +274,7 @@ export async function startBooking(sessionId: string, input: z.infer<typeof book
     status: "pending",
     holdExpiresAt: new Date(Date.now() + HOLD_MINUTES * 60_000),
     feedbackToken: randomBytes(24).toString("base64url"),
+    termsAcceptedAt: new Date(),
     ipHash: createHash("sha256").update(meta.ip).digest("hex").slice(0, 32),
   });
 
