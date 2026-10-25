@@ -57,7 +57,7 @@ function loadRazorpay(): Promise<void> {
   });
 }
 
-export function BookingForm({ session, paymentMode, student }: { session: MentorSessionDTO; paymentMode: "razorpay" | "demo" | "off"; student?: SignedInStudent | null }) {
+export function BookingForm({ session, paymentMode, student, google }: { session: MentorSessionDTO; paymentMode: "razorpay" | "demo" | "off"; student?: SignedInStudent | null; google?: boolean }) {
   const router = useRouter();
   const [name, setName] = useState(student?.name ?? "");
   const [email, setEmail] = useState(student?.email ?? "");
@@ -216,7 +216,7 @@ export function BookingForm({ session, paymentMode, student }: { session: Mentor
         <h2 className="display text-3xl">Reserve your seat</h2>
         {!student ? (
           <div className="mt-5">
-            <LoginToContinue next={`/sessions/${session.slug}#book`} action="book your seat" />
+            <LoginToContinue next={`/sessions/${session.slug}#book`} action="book your seat" google={google} />
           </div>
         ) : (
         <>

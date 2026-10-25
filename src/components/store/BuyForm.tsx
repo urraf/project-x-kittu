@@ -13,7 +13,7 @@ import type { ProductDTO } from "@/lib/services/store";
 type Start = { orderId: string; status: "paid"; newAccount: boolean } | { orderId: string; status: "payment_required"; demo: boolean; razorpay: CheckoutInfo };
 type Done = { orderId: string; newAccount?: boolean };
 
-export function BuyForm({ product, paymentMode, student }: { product: ProductDTO; paymentMode: "razorpay" | "demo" | "off"; student?: { name: string; email: string; phone: string } | null }) {
+export function BuyForm({ product, paymentMode, student, google }: { product: ProductDTO; paymentMode: "razorpay" | "demo" | "off"; student?: { name: string; email: string; phone: string } | null; google?: boolean }) {
   const router = useRouter();
   const [name, setName] = useState(student?.name ?? "");
   const [email, setEmail] = useState(student?.email ?? "");
@@ -90,7 +90,7 @@ export function BuyForm({ product, paymentMode, student }: { product: ProductDTO
       </div>
       <div className="space-y-4 p-6 md:p-7">
         {!student ? (
-          <LoginToContinue next={`/store/${product.slug}#buy`} action={product.price ? "buy this guide" : "get this guide"} />
+          <LoginToContinue next={`/store/${product.slug}#buy`} action={product.price ? "buy this guide" : "get this guide"} google={google} />
         ) : (
         <>
         <p className="text-sm text-muted">Buying as <strong className="text-ink">{student.email}</strong>. It goes straight to your library.</p>

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { isGoogleSignInConfigured } from "@/lib/auth/google";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -297,6 +298,7 @@ export default async function SessionPage({ params }: Props) {
                   session={session}
                   paymentMode={paymentMode()}
                   student={student ? { name: student.name, email: student.email, phone: student.phone ?? "" } : null}
+                  google={isGoogleSignInConfigured()}
                 />
               )}
             </div>

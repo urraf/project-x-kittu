@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { isGoogleSignInConfigured } from "@/lib/auth/google";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Check, Download, Library, Mail } from "lucide-react";
@@ -103,7 +104,7 @@ export default async function ProductPage({ params }: Props) {
 
         <aside className="lg:col-span-5">
           <div className="lg:sticky lg:top-24">
-            <BuyForm product={product} paymentMode={paymentMode()} student={student ? { name: student.name, email: student.email, phone: student.phone ?? "" } : null} />
+            <BuyForm product={product} paymentMode={paymentMode()} student={student ? { name: student.name, email: student.email, phone: student.phone ?? "" } : null} google={isGoogleSignInConfigured()} />
           </div>
         </aside>
       </div>
