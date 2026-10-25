@@ -74,6 +74,17 @@ export const settingsSchema = z.object({
     benefits: z.array(str(200).min(1)).max(8),
     faqs: z.array(z.object({ q: str(200).min(1), a: str(800).min(1) })).max(10),
   }),
+  /** Welcome popup shown once per visit. "auto" promotes the next session (or a guide); "custom" uses the text below. */
+  popup: z.object({
+    enabled: z.boolean(),
+    mode: z.enum(["auto", "custom"]),
+    badge: str(40),
+    title: str(120),
+    text: str(300),
+    ctaLabel: str(40),
+    ctaHref: z.union([z.literal(""), z.string().trim().max(500).refine((v) => /^(https?:\/\/|\/)/.test(v), "Use a full link (https://…) or a page path like /sessions")]),
+    delaySec: z.number().int().min(0).max(60),
+  }),
   /** Policy pages (Markdown), editable in Studio → Settings → Policies. {email} = public contact email. */
   legal: z.object({
     terms: str(30000),
@@ -229,6 +240,16 @@ export const DEFAULT_SETTINGS: SiteSettings = {
       { q: "Is it a group session?", a: "Yes. Each session is a small live group, so you also hear other students' questions. There's time for everyone." },
       { q: "Can I get a refund?", a: "Yes, if the session is cancelled or moved and you can't make the new time, or you couldn't join because of a problem on our side. See the refund policy for details." },
     ],
+  },
+  popup: {
+    enabled: true,
+    mode: "auto",
+    badge: "Limited offer",
+    title: "Your road to Japan starts here",
+    text: "Join a live session and get your questions answered by someone who has done it.",
+    ctaLabel: "See sessions",
+    ctaHref: "/sessions",
+    delaySec: 6,
   },
   legal: { ...DEFAULT_LEGAL, updatedOn: "2026-10-26" },
 };

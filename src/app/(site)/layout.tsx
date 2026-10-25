@@ -2,6 +2,7 @@ import { Footer } from "@/components/site/Footer";
 import { Header } from "@/components/site/Header";
 import { RevealObserver } from "@/components/ui/RevealObserver";
 import { ChatAssistant } from "@/components/assistant/ChatAssistant";
+import { OfferPopup } from "@/components/site/OfferPopup";
 import { getSettings } from "@/lib/services/settings";
 
 export default async function SiteLayout({ children }: { children: React.ReactNode }) {
@@ -13,6 +14,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
       <Footer settings={settings} />
       <RevealObserver />
       <ChatAssistant />
+      <OfferPopup />
     </>
   );
 }

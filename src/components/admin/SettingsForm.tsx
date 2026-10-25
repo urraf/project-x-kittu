@@ -20,6 +20,7 @@ const TABS = [
   { id: "sessions", label: "Sessions" },
   { id: "comments", label: "Comments" },
   { id: "automation", label: "Automation" },
+  { id: "popup", label: "Popup" },
   { id: "policies", label: "Policies" },
   { id: "password", label: "Login & password" },
 ] as const;
@@ -106,6 +107,7 @@ export function SettingsForm({ initial, initialTab, account, integrations }: { i
   const ai = <K extends keyof SiteSettings["ai"]>(k: K, v: SiteSettings["ai"][K]) => setS((x) => ({ ...x, ai: { ...x.ai, [k]: v } }));
   const cm = <K extends keyof SiteSettings["comments"]>(k: K, v: SiteSettings["comments"][K]) => setS((x) => ({ ...x, comments: { ...x.comments, [k]: v } }));
   const au = <K extends keyof SiteSettings["automation"]>(k: K, v: SiteSettings["automation"][K]) => setS((x) => ({ ...x, automation: { ...x.automation, [k]: v } }));
+  const pu = <K extends keyof SiteSettings["popup"]>(k: K, v: SiteSettings["popup"][K]) => setS((x) => ({ ...x, popup: { ...x.popup, [k]: v } }));
   const lg = (k: keyof SiteSettings["legal"], v: string) => setS((x) => ({ ...x, legal: { ...x.legal, [k]: v } }));
   const mt = <K extends keyof SiteSettings["mentorship"]>(k: K, v: SiteSettings["mentorship"][K]) => setS((x) => ({ ...x, mentorship: { ...x.mentorship, [k]: v } }));
   const err = (k: string) => errors[k];
@@ -128,7 +130,7 @@ export function SettingsForm({ initial, initialTab, account, integrations }: { i
       if (e instanceof ApiClientError) {
         setErrors(e.fieldErrors);
         const first = Object.keys(e.fieldErrors)[0] ?? "";
-        const t = first.startsWith("legal") ? "policies" : first.startsWith("social") ? "social" : first.startsWith("ai") ? "ai" : first.startsWith("automation") ? "automation" : first.startsWith("comments") ? "comments" : first.startsWith("mentorship") ? "sessions" : first.match(/longBio|quickFacts|interests|principles/) ? "about" : first ? "profile" : null;
+        const t = first.startsWith("popup") ? "popup" : first.startsWith("legal") ? "policies" : first.startsWith("social") ? "social" : first.startsWith("ai") ? "ai" : first.startsWith("automation") ? "automation" : first.startsWith("comments") ? "comments" : first.startsWith("mentorship") ? "sessions" : first.match(/longBio|quickFacts|interests|principles/) ? "about" : first ? "profile" : null;
         if (t) setTab(t as Tab);
       }
       toast.error(errorMessage(e));
@@ -265,6 +267,33 @@ export function SettingsForm({ initial, initialTab, account, integrations }: { i
       )}
 
       {tab === "password" && <AccountSettings initial={account} />}
+
+      {tab === "popup" && (
+        <Card className="max-w-2xl space-y-5">
+          <Toggle checked={s.popup.enabled} onChange={(v) => pu("enabled", v)} label="Show a welcome popup to visitors" description="Appears once per visit, a few seconds after someone arrives. Never on checkout, account or policy pages." />
+          <Field label="What it shows">
+            <select className="field" value={s.popup.mode} onChange={(e) => pu("mode", e.target.value as "auto" | "custom")} disabled={!s.popup.enabled}>
+              <option value="auto">Automatic: the next live session (or a study guide if none)</option>
+              <option value="custom">My own offer (write it below)</option>
+            </select>
+          </Field>
+          <Field label="Show after (seconds)" hint="How long after arriving the popup appears. 5–8 seconds feels natural.">
+            <input className="field max-w-[8rem]" type="number" min={0} max={60} value={s.popup.delaySec} onChange={(e) => pu("delaySec", Math.max(0, Math.min(60, Number(e.target.value) || 0)))} disabled={!s.popup.enabled} />
+          </Field>
+          {s.popup.mode === "custom" && (
+            <div className="space-y-4 border-t border-line pt-5">
+              <Field label="Badge (optional)" hint="Short label on the image, e.g. “50% off this week”." error={err("popup.badge")}><input className="field" value={s.popup.badge} onChange={(e) => pu("badge", e.target.value)} maxLength={40} /></Field>
+              <Field label="Title" error={err("popup.title")}><input className="field" value={s.popup.title} onChange={(e) => pu("title", e.target.value)} maxLength={120} /></Field>
+              <Field label="Text" error={err("popup.text")} counter={{ value: s.popup.text.length, max: 300 }}><textarea className="field" rows={3} value={s.popup.text} onChange={(e) => pu("text", e.target.value)} /></Field>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Button text" error={err("popup.ctaLabel")}><input className="field" value={s.popup.ctaLabel} onChange={(e) => pu("ctaLabel", e.target.value)} maxLength={40} /></Field>
+                <Field label="Button link" hint="A page like /sessions or /store/your-guide." error={err("popup.ctaHref")}><input className="field" value={s.popup.ctaHref} onChange={(e) => pu("ctaHref", e.target.value)} placeholder="/sessions" /></Field>
+              </div>
+            </div>
+          )}
+          <p className="text-xs text-muted">To see it again after closing, open the website in a new private/incognito window.</p>
+        </Card>
+      )}
 
       {tab === "policies" && (
         <div className="max-w-3xl space-y-5">
