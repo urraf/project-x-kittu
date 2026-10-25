@@ -22,8 +22,8 @@ function replyLinks(m: MessageDTO, mailbox?: string) {
   const mailto = `mailto:${m.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   return {
     mailto,
-    // Gmail's own mailto handler: opens the normal inbox with a pre-filled compose window on top.
-    gmail: `https://mail.google.com/mail/?${new URLSearchParams({ ...(mailbox ? { authuser: mailbox } : {}), extsrc: "mailto", url: mailto })}`,
+    // tf=cm without fs=1: the normal inbox with a pre-filled compose window docked bottom-right (fs=1 would be full screen).
+    gmail: `https://mail.google.com/mail/?${new URLSearchParams({ ...(mailbox ? { authuser: mailbox } : {}), tf: "cm", to: m.email, su: subject, body })}`,
   };
 }
 
