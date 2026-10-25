@@ -33,8 +33,8 @@ export function LoginToContinue({ next, action, google }: { next: string; action
         </>
       )}
       <div className={cn("flex flex-col gap-2 sm:flex-row sm:justify-center", !google && "mt-4")}>
-        <Link href={`/account/login?mode=signup&next=${q}`} className={cn("btn !py-3", google ? "btn-ghost text-ink" : "btn-accent")}><UserPlus className="size-4" /> Create account</Link>
-        <Link href={`/account/login?next=${q}`} className="btn btn-ghost !py-3 text-ink"><LogIn className="size-4" /> Log in</Link>
+        <Link href={`/account/login?mode=signup&next=${q}`} className="btn btn-accent !py-3"><UserPlus className="size-4" /> Create account</Link>
+        <Link href={`/account/login?next=${q}`} className="btn btn-ghost !py-3 text-accent-deep"><LogIn className="size-4" /> Log in</Link>
       </div>
     </div>
   );
