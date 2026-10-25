@@ -3,6 +3,7 @@ import { connectDB } from "@/lib/db/connect";
 import { EmailLog } from "@/lib/models";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
+import { getSettings } from "@/lib/services/settings";
 
 /**
  * Transactional email over HTTPS (Brevo or Resend), or SMTP (e.g. Gmail with an
@@ -84,9 +85,17 @@ async function sendViaResend(msg: EmailMessage) {
 }
 
 /** Sends an email. Never throws: failures are logged and reported as false. */
-export async function sendEmail(msg: EmailMessage): Promise<boolean> {
+/** Replies go to the public contact address (e.g. connect@…) unless a message sets its own (admin alerts reply to the student). */
+async function defaultReplyTo() {
+  if (env.emailReplyTo) return env.emailReplyTo;
+  const { social } = await getSettings().catch(() => ({ social: { email: "" } }));
+  return social.email || undefined;
+}
+
+export async function sendEmail(input: EmailMessage): Promise<boolean> {
   const provider = emailProvider();
   await connectDB().catch(() => {});
+  const msg: EmailMessage = { ...input, replyTo: input.replyTo ?? (await defaultReplyTo()) };
   if (!provider || !env.emailFrom) {
     logger.warn("email.not_configured", { kind: msg.kind, to: msg.to });
     // Local development only: show the email in the terminal so codes and passwords can be tested.

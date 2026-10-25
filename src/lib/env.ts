@@ -104,6 +104,10 @@ export const env = {
   },
   /** e.g. "Life of KittuKun <hello@yourdomain.com>" */
   /** Sender. Defaults to the Gmail account when Gmail SMTP is used. */
+  /** Where student replies go (optional). Defaults to the public contact email in Studio → Settings. */
+  get emailReplyTo() {
+    return read("EMAIL_REPLY_TO");
+  },
   get emailFrom() {
     return read("EMAIL_FROM") ?? (read("SMTP_USER") ? `Life of KittuKun <${read("SMTP_USER")}>` : undefined);
   },
