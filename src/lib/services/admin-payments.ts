@@ -164,14 +164,46 @@ export type AdminStudentDTO = {
   lastBookingAt?: string;
 };
 
-export async function listAdminStudents({ q = "", page = 1 }: { q?: string; page?: number }) {
+export const STUDENT_VIEWS = ["all", "customers", "refunded", "new"] as const;
+export type StudentView = (typeof STUDENT_VIEWS)[number];
+
+/**
+ * Who is a customer right now, who only has refunded/cancelled items, and who
+ * has never booked or bought. Used for the Students filter tabs.
+ */
+async function studentGroups() {
+  const [activeB, activeO, doneB, doneO] = await Promise.all([
+    Booking.distinct("student", { status: "confirmed" }),
+    Order.distinct("student", { status: "paid" }),
+    Booking.distinct("student", { status: { $in: ["confirmed", "cancelled"] } }),
+    Order.distinct("student", { status: { $in: ["paid", "cancelled"] }, "payment.paidAt": { $ne: null } }),
+  ]);
+  const key = (ids: unknown[]) => new Set(ids.map(String));
+  const active = key([...activeB, ...activeO]);
+  const transacted = key([...doneB, ...doneO]);
+  const refundedOnly = [...transacted].filter((id) => !active.has(id));
+  return { active: [...active], refundedOnly, transacted: [...transacted] };
+}
+
+function viewFilter(view: StudentView, g: Awaited<ReturnType<typeof studentGroups>>): Filter {
+  if (view === "customers") return { _id: { $in: g.active } };
+  if (view === "refunded") return { _id: { $in: g.refundedOnly } };
+  if (view === "new") return { _id: { $nin: g.transacted } };
+  return {};
+}
+
+export async function listAdminStudents({ q = "", page = 1, view = "all" }: { q?: string; page?: number; view?: StudentView }) {
   await connectDB();
-  const filter: Filter = {};
+  const groups = await studentGroups();
+  const filter: Filter = { ...viewFilter(view, groups) };
   const term = q.trim().slice(0, 100);
   if (term) {
     const rx = { $regex: escapeRegex(term), $options: "i" };
     filter.$or = [{ name: rx }, { email: rx }, { phone: rx }];
   }
+  const counts = Object.fromEntries(
+    await Promise.all(STUDENT_VIEWS.map(async (v) => [v, await Student.countDocuments(viewFilter(v, groups))] as const)),
+  ) as Record<StudentView, number>;
   const [students, total] = await Promise.all([
     Student.find(filter).select("+passwordHash").sort({ createdAt: -1 }).skip((page - 1) * PAGE_SIZE).limit(PAGE_SIZE).lean<(StudentDoc & { passwordHash?: string })[]>(),
     Student.countDocuments(filter),
@@ -230,7 +262,7 @@ export async function listAdminStudents({ q = "", page = 1 }: { q?: string; page
       lastBookingAt: lastBooking ? new Date(lastBooking).toISOString() : undefined,
     };
   });
-  return { items, total, page, pages: Math.max(1, Math.ceil(total / PAGE_SIZE)) };
+  return { items, total, page, pages: Math.max(1, Math.ceil(total / PAGE_SIZE)), counts };
 }
 
 /** One student's bookings, newest first (for the expandable row). */

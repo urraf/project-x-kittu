@@ -27,7 +27,15 @@ type StudentRow = {
   reviews: number;
   lastBookingAt?: string;
 };
-type Data = { items: StudentRow[]; total: number; page: number; pages: number };
+type View = "all" | "customers" | "refunded" | "new";
+type Data = { items: StudentRow[]; total: number; page: number; pages: number; counts?: Record<View, number> };
+
+const VIEWS: { id: View; label: string; hint: string }[] = [
+  { id: "all", label: "All", hint: "Everyone with an account" },
+  { id: "customers", label: "Customers", hint: "Have an active booking or own a guide" },
+  { id: "refunded", label: "Refunded only", hint: "Everything they bought was cancelled or refunded" },
+  { id: "new", label: "Signed up only", hint: "Have an account but haven't booked or bought yet" },
+];
 type StudentBooking = {
   id: string;
   kind: "session" | "store";
@@ -135,6 +143,7 @@ export function StudentsManager() {
   const [search, setSearch] = useState("");
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
+  const [view, setView] = useState<View>("all");
   const [open, setOpen] = useState<string | null>(null);
 
   useEffect(() => {
@@ -145,7 +154,7 @@ export function StudentsManager() {
     return () => clearTimeout(t);
   }, [search]);
 
-  const { data, loading } = useApi<Data>(`/api/admin/students?${new URLSearchParams({ page: String(page), ...(q ? { q } : {}) })}`);
+  const { data, loading } = useApi<Data>(`/api/admin/students?${new URLSearchParams({ page: String(page), view, ...(q ? { q } : {}) })}`);
 
   function copyEmails() {
     if (!data?.items.length) return;
@@ -162,7 +171,7 @@ export function StudentsManager() {
     const blob = new Blob(["﻿" + rows.map((r) => r.map(csvCell).join(",")).join("\n")], { type: "text/csv;charset=utf-8" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `students-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `students${view === "all" ? "" : `-${view}`}-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(a.href);
   }
@@ -180,6 +189,23 @@ export function StudentsManager() {
         }
       />
 
+      <div className="mb-4 flex flex-wrap gap-1 rounded-full border border-line bg-[#fffdf9] p-1 text-sm sm:w-fit" role="tablist" aria-label="Show students">
+        {VIEWS.map((v) => (
+          <button
+            key={v.id}
+            type="button"
+            role="tab"
+            aria-selected={view === v.id}
+            title={v.hint}
+            onClick={() => (setView(v.id), setPage(1), setOpen(null))}
+            className={cn("inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5", view === v.id ? "bg-ink text-cream" : "text-ink-2 hover:text-ink")}
+          >
+            {v.label}
+            {data?.counts && <span className={cn("rounded-full px-1.5 text-[0.7rem]", view === v.id ? "bg-cream/20" : "bg-paper-3 text-ink-2")}>{data.counts[v.id]}</span>}
+          </button>
+        ))}
+      </div>
+
       <label className="relative mb-5 block">
         <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted" />
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name, email or phone" className="field !pl-10" aria-label="Search students" />
@@ -188,7 +214,10 @@ export function StudentsManager() {
       {loading && !data ? (
         <LoadingBlock />
       ) : !data?.items.length ? (
-        <AdminEmpty title={q ? "No students match" : "No students yet"} description={q ? "Try a different search." : "Student accounts appear here after their first booking or sign-up."} />
+        <AdminEmpty
+          title={q ? "No students match" : view === "all" ? "No students yet" : `No students in “${VIEWS.find((v) => v.id === view)!.label}”`}
+          description={q ? "Try a different search." : view === "all" ? "Student accounts appear here when people sign up to book or buy." : VIEWS.find((v) => v.id === view)!.hint + "."}
+        />
       ) : (
         <>
           <ul className="card divide-y divide-line overflow-hidden">
