@@ -1,6 +1,8 @@
 import "server-only";
 import { z } from "zod";
 import { env } from "@/lib/env";
+import { connectDB } from "@/lib/db/connect";
+import { MentorSession, Opportunity, Post, Product, University, Video } from "@/lib/models";
 import { GroqError, groqChat } from "@/lib/ai/groq";
 import { logger } from "@/lib/logger";
 import { safe } from "@/lib/safe";
@@ -59,7 +61,7 @@ async function siteContext() {
     "",
     "OPEN OPPORTUNITIES (soonest deadline first):",
     ...(opps.items.length
-      ? opps.items.slice(0, 12).map((o) => `- ${o.title} | ${o.type} | ${o.funding} | ${o.deadline ? `deadline ${fmtDate(o.deadline)}` : o.rolling ? "rolling" : "deadline not announced"} | /opportunities/${o.slug}`)
+      ? opps.items.slice(0, 12).map((o) => `- ${o.title} | ${o.categories.map((c) => c.name).join(", ") || o.categoryLabel} | ${o.country} | ${o.funding} | ${o.deadline ? `deadline ${fmtDate(o.deadline)}` : o.rolling ? "rolling" : "deadline not announced"} | /opportunities/${o.slug}`)
       : ["- None listed right now."]),
     "",
     `UNIVERSITIES: ${uni.total} Japanese universities in the directory (${uni.byType.national ?? 0} national, ${uni.byType.public ?? 0} public, ${uni.byType.private ?? 0} private). Program details are verified for ${uni.verified}. For personal recommendations, send people to the JapanUniMatch tool at /universities#match.`,
@@ -88,7 +90,7 @@ async function pageContext(path: string) {
       const { items } = await searchOpportunities({ sort: "deadline", closed: "1" });
       const o = items.find((x) => x.slug === slug);
       if (o)
-        return `The visitor is viewing the opportunity "${o.title}" by ${o.organization || "n/a"} (${o.type}, ${o.funding}, ${o.deadline ? `deadline ${fmtDate(o.deadline)}` : o.rolling ? "rolling" : "deadline not announced"}). Summary: ${o.summary}. Eligibility: ${o.eligibility.slice(0, 600)}. Benefits: ${o.benefits.slice(0, 400)}. Apply: ${o.applyUrl}.`;
+        return `The visitor is viewing the opportunity "${o.title}" by ${o.organization || "n/a"} (${o.categories.map((c) => c.name).join(", ") || o.categoryLabel}, ${o.country}, ${o.funding}, ${o.deadline ? `deadline ${fmtDate(o.deadline)}` : o.rolling ? "rolling" : "deadline not announced"}). Summary: ${o.summary}. Eligibility: ${o.eligibility.slice(0, 600)}. Benefits: ${o.benefits.slice(0, 400)}. Apply: ${o.applyUrl}.`;
     }
     if (section === "store") {
       const x = await getPublicProductBySlug(slug);
@@ -138,6 +140,43 @@ SITE DATA (live):
 ${site}`;
 }
 
+/** Does this site page exist? Used to catch links the model made up. */
+async function pageExists(section: string, slug: string) {
+  await connectDB();
+  switch (section) {
+    case "sessions": return Boolean(await MentorSession.exists({ slug, status: "published" }));
+    case "store": return Boolean(await Product.exists({ slug, status: "published" }));
+    case "opportunities": return Boolean(await Opportunity.exists({ slug, status: "published" }));
+    case "blog": return Boolean(await Post.exists({ slug, status: "published" }));
+    case "universities": return Boolean(await University.exists({ slug }));
+    case "videos": return Boolean(await Video.exists({ youtubeId: slug }));
+    default: return true;
+  }
+}
+
+/**
+ * Checks every internal link in a reply. A link to a page that doesn't exist
+ * (the model guessed the address) becomes a search of that section for the
+ * link's text, so students never land on a "not found" page.
+ */
+async function repairLinks(reply: string) {
+  const re = /\[([^\]]+)\]\(\s*<?(\/(sessions|store|opportunities|blog|universities|videos)\/([^)\s>#?]+)[^)\s>]*)>?\s*\)/g;
+  const found = [...reply.matchAll(re)];
+  if (!found.length) return reply;
+  const checks = await Promise.all(found.map((m) => safe("chat.link", () => pageExists(m[3]!, decodeURIComponent(m[4]!)), true)));
+  let out = reply;
+  found.forEach((m, i) => {
+    if (checks[i]) return;
+    const section = m[3]!;
+    const label = m[1]!.replace(/\*\*/g, "").trim();
+    const searchable = section === "opportunities" || section === "universities" || section === "blog";
+    const fixed = searchable ? `/${section}?q=${encodeURIComponent(label.slice(0, 60))}${section === "opportunities" || section === "universities" ? "#results" : ""}` : `/${section}`;
+    out = out.replace(m[0], `[${label}](${fixed})`);
+    logger.warn("chat.link_repaired", { from: m[2], to: fixed });
+  });
+  return out;
+}
+
 export async function askKittu(raw: unknown) {
   const { messages, path } = chatInputSchema.parse(raw);
   const [site, page] = await Promise.all([siteContext(), pageContext(path)]);
@@ -159,5 +198,5 @@ export async function askKittu(raw: unknown) {
     logger.warn("chat.fallback_model", { status: err.status });
     res = await groqChat({ ...base, model: "openai/gpt-oss-20b", maxAttempts: 2 });
   }
-  return { reply: res.content.trim() };
+  return { reply: await repairLinks(res.content.trim()) };
 }

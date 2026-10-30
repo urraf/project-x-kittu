@@ -20,7 +20,7 @@ import { VideoCard } from "@/components/video/VideoCard";
 import { safe } from "@/lib/safe";
 import { cn } from "@/lib/utils/cn";
 import { getMentorStats, listPublicReviews, listUpcomingSessions } from "@/lib/services/mentorship";
-import { closingSoon, opportunityCounts } from "@/lib/services/opportunities";
+import { closingSoon, opportunityCounts, opportunityFacets, type OpportunityFacets } from "@/lib/services/opportunities";
 import { listPublishedPosts } from "@/lib/services/posts";
 import { getSettings } from "@/lib/services/settings";
 import { listPublishedProducts, productCategories } from "@/lib/services/store";
@@ -69,6 +69,7 @@ const PLATFORM_FAQS = [
 
 export default async function HomePage() {
   const settings = await getSettings();
+  const oppFacets = await safe("home.oppFacets", () => opportunityFacets(), { categories: [], countries: [] } as OpportunityFacets);
   const [upcoming, reviews, stats, posts, videos, products, opportunities, testimonials, oppCounts, uniStats, categories] = await Promise.all([
     safe("home.sessions", () => listUpcomingSessions(12), []),
     safe("home.reviews", () => listPublicReviews(10), []),
@@ -286,7 +287,7 @@ export default async function HomePage() {
           <SectionHeader kicker="Opportunity finder" title={<>Find internships, scholarships &amp; <em className="text-accent">fellowships</em></>} description="Hand-picked programs for students heading to Japan, with official links and deadlines. Filter by type, country, funding and how soon it closes." />
           <div className="relative mt-8">
             <Kittu pose="jump" alt="" sizes="8rem" className="pointer-events-none absolute -top-[6.6rem] right-8 z-0 hidden w-28 md:block lg:right-14" />
-            <OpportunitySearch className="relative z-10 !bg-[#fffdf9]" withKeyword={false} />
+            <OpportunitySearch className="relative z-10 !bg-[#fffdf9]" withKeyword={false} facets={oppFacets} />
           </div>
           {opportunities.length > 0 && (
             <>

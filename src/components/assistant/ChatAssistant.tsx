@@ -50,24 +50,27 @@ function friendlyLabel(href: string) {
 
 /** Tiny, safe markdown: **bold**, [links](/path), bullets, numbered steps and a "Next step:" callout. No HTML is ever injected. */
 function Rich({ text, onNavigate }: { text: string; onNavigate: () => void }) {
-  const inline = (line: string, key: string) => {
+  const chip = "mx-0.5 rounded-md bg-accent-soft px-1.5 py-0.5 text-[0.85rem] font-medium text-accent-deep no-underline [box-decoration-break:clone] transition-colors hover:bg-accent hover:text-white";
+  const link = (href: string, text: string | undefined, key: string) => {
+    const label = !text || /^(\/|https?:)/.test(text.trim()) ? friendlyLabel(href) : text.replace(/\*\*/g, "");
+    if (href.startsWith("/") && !href.startsWith("//")) return <Link key={key} href={href} onClick={onNavigate} className={chip}>{label} <span aria-hidden>→</span></Link>;
+    if (/^https?:\/\//.test(href)) return <a key={key} href={href} target="_blank" rel="noopener noreferrer nofollow" className={chip}>{label} <span aria-hidden>↗</span></a>;
+    return label;
+  };
+  const inline = (line: string, key: string): React.ReactNode[] => {
     const parts: React.ReactNode[] = [];
-    const re = /\*\*([^*]+)\*\*|\[([^\]]+)\]\(([^)\s]+)\)|\[(\/[^\]\s]+)\](?!\()/g;
+    // Earliest match wins: **bold** (which may itself contain a link), [text](href), a bare [/path], or a raw https:// URL.
+    const re = /\*\*(.+?)\*\*|\[([^\]]+)\]\(\s*<?([^)\s>]+)>?\s*\)|\[(\/[^\]\s]+)\](?!\()|(https?:\/\/[^\s)<>\]]+[^\s)<>\].,;:!?'"])/g;
     let last = 0;
     let m: RegExpExecArray | null;
     let i = 0;
     while ((m = re.exec(line))) {
       if (m.index > last) parts.push(line.slice(last, m.index));
-      if (m[1]) parts.push(<strong key={`${key}-${i++}`} className="font-semibold text-ink">{m[1]}</strong>);
-      else {
-        // [text](href), or a bare [/path] the model sometimes writes.
-        const href = m[3] ?? m[4]!;
-        const label = !m[2] || /^(\/|https?:)/.test(m[2]) ? friendlyLabel(href) : m[2];
-        const chip = "mx-0.5 rounded-md bg-accent-soft px-1.5 py-0.5 text-[0.85rem] font-medium text-accent-deep no-underline [box-decoration-break:clone] transition-colors hover:bg-accent hover:text-white";
-        if (href.startsWith("/") && !href.startsWith("//")) parts.push(<Link key={`${key}-${i++}`} href={href} onClick={onNavigate} className={chip}>{label} <span aria-hidden>→</span></Link>);
-        else if (/^https:\/\//.test(href)) parts.push(<a key={`${key}-${i++}`} href={href} target="_blank" rel="noopener noreferrer nofollow" className={chip}>{label} <span aria-hidden>↗</span></a>);
-        else parts.push(label);
-      }
+      const k = `${key}-${i++}`;
+      if (m[1] !== undefined) parts.push(<strong key={k} className="font-semibold text-ink">{inline(m[1], k)}</strong>);
+      else if (m[3]) parts.push(link(m[3], m[2], k));
+      else if (m[4]) parts.push(link(m[4], undefined, k));
+      else if (m[5]) parts.push(link(m[5], undefined, k));
       last = m.index + m[0].length;
     }
     if (last < line.length) parts.push(line.slice(last));
@@ -192,14 +195,14 @@ export function ChatAssistant() {
         aria-controls="kittu-chat"
         aria-label={open ? "Close chat with Kittu" : "Chat with Kittu, the study assistant"}
         className={cn(
-          "group fixed bottom-4 right-4 z-[60] flex items-center gap-2 rounded-full border border-line bg-[#fffdf9] py-1.5 pl-1.5 pr-4 shadow-[0_18px_40px_-18px_rgba(29,43,69,0.55)] transition-all hover:-translate-y-0.5 sm:bottom-6 sm:right-6",
+          "kk-chat-launcher group fixed bottom-4 right-4 z-[60] flex items-center gap-2 rounded-full border border-line bg-[#fffdf9] py-1.5 pl-1.5 pr-4 shadow-[0_18px_40px_-18px_rgba(29,43,69,0.55)] transition-all hover:-translate-y-0.5 sm:bottom-6 sm:right-6",
           open && "max-sm:hidden",
         )}
       >
         <span className="relative size-11 overflow-hidden rounded-full bg-sakura ring-2 ring-accent">
           <Image src="/images/mascot/kittu-avatar.webp" alt="" fill sizes="44px" className="object-cover" />
         </span>
-        <span className="text-left leading-tight">
+        <span className="kk-chat-label text-left leading-tight">
           <span className="block text-[0.65rem] text-muted"><span className="jp text-accent">質問?</span> Need help?</span>
           <span className="block text-sm font-medium text-ink">{open ? "Close chat" : "Ask Kittu"}</span>
         </span>

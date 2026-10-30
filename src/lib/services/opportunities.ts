@@ -11,7 +11,9 @@ import { slugify } from "@/lib/utils/text";
 import { imageSchema } from "@/lib/validation/post";
 import { groqChat, parseJsonObject } from "@/lib/ai/groq";
 import { isGroqConfigured } from "@/lib/env";
-import { COUNTRIES, DEGREE_LEVELS, FUNDING_TYPES, OPPORTUNITY_TYPES } from "@/lib/opportunities/constants";
+import { DEGREE_LEVELS, FUNDING_TYPES } from "@/lib/opportunities/constants";
+import { COUNTRY_OPTIONS, POPULAR_COUNTRIES } from "@/lib/opportunities/countries";
+import { artTypeFor, categoryCounts, categoryIdsForFilter, categoryIndex, ensureCategories, legacyTypeToCategorySlug, type CategoryNode } from "@/lib/services/opportunity-categories";
 import type { ImageDTO } from "@/lib/types";
 
 // Mongoose 9 query typings are very strict; these dynamic filters are built from validated input.
@@ -30,7 +32,12 @@ export type OpportunityDTO = {
   id: string;
   title: string;
   slug: string;
+  /** Legacy top-level type, used for card artwork. */
   type: string;
+  /** Categories and subcategories this opportunity is in. */
+  categories: { id: string; name: string; slug: string }[];
+  /** Short label for cards: the first category's name. */
+  categoryLabel: string;
   organization: string;
   country: string;
   location: string;
@@ -56,14 +63,19 @@ export type OpportunityDTO = {
   updatedAt: string;
 };
 
-function toDTO(o: OpportunityDoc): OpportunityDTO {
+type CategoryIndex = Awaited<ReturnType<typeof categoryIndex>>;
+
+function toDTO(o: OpportunityDoc, idx: CategoryIndex): OpportunityDTO {
   const deadline = o.deadline ? new Date(o.deadline) : null;
   const msLeft = deadline ? deadline.getTime() - Date.now() : null;
+  const cats = ((o as { categories?: unknown[] }).categories ?? []).map((id) => idx.byId.get(String(id))).filter((c): c is NonNullable<typeof c> => Boolean(c));
   return {
     id: String(o._id),
     title: o.title,
     slug: o.slug,
     type: o.type,
+    categories: cats.map((c) => ({ id: c.id, name: c.name, slug: c.slug })),
+    categoryLabel: cats[0]?.name ?? "Opportunity",
     organization: o.organization ?? "",
     country: o.country ?? "",
     location: o.location ?? "",
@@ -89,14 +101,23 @@ function toDTO(o: OpportunityDoc): OpportunityDTO {
   };
 }
 
+/** Converts documents to DTOs with their category names resolved. */
+async function toDTOs(docs: OpportunityDoc[]) {
+  const idx = await categoryIndex();
+  return docs.map((d) => toDTO(d, idx));
+}
+
 /* ------------------------------------------------------------------ */
 /* Public search                                                       */
 /* ------------------------------------------------------------------ */
 
 export const searchSchema = z.object({
   q: z.string().trim().max(100).optional().catch(undefined),
+  /** Category or subcategory slug (a top-level category includes its subcategories). */
+  category: z.string().max(70).optional().catch(undefined),
+  /** Old links (?type=internship) still work: mapped to the matching category. */
   type: z.string().max(40).optional().catch(undefined),
-  country: z.string().max(60).optional().catch(undefined),
+  country: z.string().max(80).optional().catch(undefined),
   funding: z.string().max(40).optional().catch(undefined),
   deadline: z.enum(["7", "30", "90", "rolling"]).optional().catch(undefined),
   level: z.string().max(30).optional().catch(undefined),
@@ -110,10 +131,15 @@ const openFilter = (now: Date): Filter => ({ $or: [{ deadline: { $gte: now } }, 
 
 export async function searchOpportunities(params: SearchParams) {
   await connectDB();
+  await ensureCategories();
   const now = new Date();
   const and: Filter[] = [{ status: "published" }];
   if (!params.closed) and.push(openFilter(now));
-  if (params.type) and.push({ type: params.type });
+  const categorySlug = params.category || legacyTypeToCategorySlug(params.type);
+  if (categorySlug) {
+    const ids = await categoryIdsForFilter(categorySlug);
+    and.push(ids ? { categories: { $in: ids } } : { _id: null }); // unknown category: no results
+  } else if (params.type) and.push({ type: params.type });
   if (params.country) and.push({ country: params.country });
   if (params.funding) and.push({ funding: params.funding });
   if (params.level) and.push({ degreeLevels: { $in: [params.level, "any"] } });
@@ -141,7 +167,31 @@ export async function searchOpportunities(params: SearchParams) {
     ]),
     Opportunity.countDocuments(match),
   ]);
-  return { items: docs.map(toDTO), total, page, pages: Math.max(1, Math.ceil(total / PAGE_SIZE)) };
+  return { items: await toDTOs(docs), total, page, pages: Math.max(1, Math.ceil(total / PAGE_SIZE)) };
+}
+
+type FacetCategory = Omit<CategoryNode, "children"> & { count: number };
+export type OpportunityFacets = { categories: (FacetCategory & { children: FacetCategory[] })[]; countries: { name: string; count: number }[] };
+
+/** Filter menus for the finder: every category (with live counts) and the countries that have opportunities. */
+export async function opportunityFacets(): Promise<OpportunityFacets> {
+  await connectDB();
+  await ensureCategories();
+  const live = { status: "published", ...openFilter(new Date()) };
+  const [{ tree }, counts, countryRows] = await Promise.all([
+    categoryIndex(),
+    categoryCounts(live),
+    Opportunity.aggregate<{ _id: string; n: number }>([{ $match: live }, { $group: { _id: "$country", n: { $sum: 1 } } }]),
+  ]);
+  const rank = (name: string) => (POPULAR_COUNTRIES as readonly string[]).indexOf(name);
+  const countries = countryRows
+    .filter((r) => r._id)
+    .map((r) => ({ name: r._id, count: r.n }))
+    .sort((a, b) => (rank(a.name) === -1 ? 999 : rank(a.name)) - (rank(b.name) === -1 ? 999 : rank(b.name)) || a.name.localeCompare(b.name));
+  return {
+    categories: tree.map((t) => ({ ...t, count: counts[t.id] ?? 0, children: t.children.map((c) => ({ ...c, count: counts[c.id] ?? 0 })) })),
+    countries,
+  };
 }
 
 /** For the homepage: what closes soonest. */
@@ -159,17 +209,19 @@ export async function opportunityCounts() {
 /** Counts a view; wrapped in React's per-request cache so metadata + page count once. */
 export const getPublicOpportunity = cache(async (slug: string) => {
   await connectDB();
+  await ensureCategories();
   const doc = await Opportunity.findOneAndUpdate({ slug, status: "published" }, { $inc: { views: 1 } }, { returnDocument: "after" }).lean<OpportunityDoc>();
-  return doc ? toDTO(doc) : null;
+  return doc ? (await toDTOs([doc]))[0]! : null;
 });
 
 export async function relatedOpportunities(o: OpportunityDTO, limit = 3) {
   await connectDB();
-  const docs = await Opportunity.find({ status: "published", _id: { $ne: o.id }, $or: [{ type: o.type }, { country: o.country }], ...openFilter(new Date()) })
+  const sameCategory = o.categories.map((c) => new Types.ObjectId(c.id));
+  const docs = await Opportunity.find({ status: "published", _id: { $ne: o.id }, $and: [openFilter(new Date()), { $or: [{ categories: { $in: sameCategory } }, { country: o.country }] }] })
     .sort({ deadline: 1 })
     .limit(limit)
     .lean<OpportunityDoc[]>();
-  return docs.map(toDTO);
+  return toDTOs(docs);
 }
 
 export async function listOpportunitySlugs() {
@@ -191,20 +243,23 @@ const httpsUrl = z
 export const opportunityInputSchema = z
   .object({
     title: z.string().trim().min(3, "Add a title").max(160),
-    type: z.string().trim().min(1, "Pick a type").max(40),
+    categories: z
+      .array(z.string().refine((v) => Types.ObjectId.isValid(v), "Invalid category"))
+      .min(1, "Pick at least one category")
+      .max(10, "Pick up to 10 categories"),
     organization: z.string().trim().max(140).default(""),
-    country: z.string().trim().min(1, "Pick a country").max(60),
+    country: z.string().trim().min(1, "Pick a country").max(80),
     location: z.string().trim().max(120).default(""),
     funding: z.string().trim().min(1, "Pick a funding type").max(40),
     deadline: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Pick a date").or(z.literal("")).default(""),
     rolling: z.boolean().default(false),
     period: z.string().trim().max(80).default(""),
     degreeLevels: z.array(z.string().trim().max(30)).max(8).default([]),
-    fields: z.array(z.string().trim().min(1).max(40)).max(12).default([]),
-    summary: z.string().trim().max(320).default(""),
-    description: z.string().trim().max(6000).default(""),
-    eligibility: z.string().trim().max(3000).default(""),
-    benefits: z.string().trim().max(3000).default(""),
+    fields: z.array(z.string().trim().min(1).max(60)).max(20, "Up to 20 fields").default([]),
+    summary: z.string().trim().max(500, "Keep the summary under 500 characters (it shows on the card)").default(""),
+    description: z.string().trim().max(20000, "The description is too long (max 20,000 characters)").default(""),
+    eligibility: z.string().trim().max(8000, "Too long (max 8,000 characters)").default(""),
+    benefits: z.string().trim().max(8000, "Too long (max 8,000 characters)").default(""),
     applyUrl: httpsUrl,
     sourceUrl: httpsUrl,
     coverImage: imageSchema.nullable().optional(),
@@ -221,10 +276,14 @@ async function uniqueSlug(base: string, excludeId?: string) {
   return candidate;
 }
 
-function fields(input: z.infer<typeof opportunityInputSchema>) {
+async function fields(input: z.infer<typeof opportunityInputSchema>) {
+  const idx = await categoryIndex();
+  const categories = [...new Set(input.categories)].filter((id) => idx.byId.has(id));
+  if (!categories.length) throw badRequest("Those categories no longer exist. Pick again.", [{ path: "categories", message: "Pick at least one category" }]);
   return {
     title: sanitizePlain(input.title),
-    type: input.type,
+    categories: categories.map((id) => new Types.ObjectId(id)),
+    type: artTypeFor(categories, idx),
     organization: sanitizePlain(input.organization),
     country: sanitizePlain(input.country),
     location: sanitizePlain(input.location),
@@ -258,22 +317,25 @@ export async function listAdminOpportunities({ q = "", view = "all", page = 1 }:
     const rx = { $regex: escapeRegex(q.trim().slice(0, 100)), $options: "i" };
     filter.$and = [{ $or: [{ title: rx }, { organization: rx }, { country: rx }] }];
   }
+  await ensureCategories();
   const [docs, total] = await Promise.all([Opportunity.find(filter).sort({ createdAt: -1 }).skip((page - 1) * 50).limit(50).lean<OpportunityDoc[]>(), Opportunity.countDocuments(filter)]);
-  return { items: docs.map(toDTO), total, page, pages: Math.max(1, Math.ceil(total / 50)) };
+  return { items: await toDTOs(docs), total, page, pages: Math.max(1, Math.ceil(total / 50)) };
 }
 
 export async function getAdminOpportunity(id: string) {
   if (!Types.ObjectId.isValid(id)) return null;
   await connectDB();
+  await ensureCategories();
   const doc = await Opportunity.findById(id).lean<OpportunityDoc>();
-  return doc ? toDTO(doc) : null;
+  return doc ? (await toDTOs([doc]))[0]! : null;
 }
 
 export async function createOpportunity(raw: unknown) {
   const input = opportunityInputSchema.parse(raw);
   await connectDB();
-  const doc = await Opportunity.create({ ...fields(input), coverImage: input.coverImage ?? undefined, slug: await uniqueSlug(input.title) });
-  return announceIfPublished(toDTO(doc.toObject() as OpportunityDoc), "/opportunities");
+  await ensureCategories();
+  const doc = await Opportunity.create({ ...(await fields(input)), coverImage: input.coverImage ?? undefined, slug: await uniqueSlug(input.title) });
+  return announceIfPublished((await toDTOs([doc.toObject() as OpportunityDoc]))[0]!, "/opportunities");
 }
 
 export async function updateOpportunity(id: string, raw: unknown) {
@@ -282,11 +344,11 @@ export async function updateOpportunity(id: string, raw: unknown) {
   await connectDB();
   const doc = await Opportunity.findByIdAndUpdate(
     id,
-    { $set: { ...fields(input), ...(input.coverImage ? { coverImage: input.coverImage } : {}) }, ...(input.coverImage ? {} : { $unset: { coverImage: 1 } }) },
+    { $set: { ...(await fields(input)), ...(input.coverImage ? { coverImage: input.coverImage } : {}) }, ...(input.coverImage ? {} : { $unset: { coverImage: 1 } }) },
     { returnDocument: "after", runValidators: true },
   ).lean<OpportunityDoc>();
   if (!doc) throw notFound("Opportunity not found");
-  return announceIfPublished(toDTO(doc), "/opportunities");
+  return announceIfPublished((await toDTOs([doc]))[0]!, "/opportunities");
 }
 
 export async function deleteOpportunity(id: string) {
@@ -303,7 +365,7 @@ export async function deleteOpportunity(id: string) {
 const extracted = z.object({
   title: z.string().max(200).nullish(),
   organization: z.string().max(200).nullish(),
-  type: z.string().max(40).nullish(),
+  categories: z.array(z.string().max(80)).max(5).nullish(),
   country: z.string().max(80).nullish(),
   location: z.string().max(160).nullish(),
   funding: z.string().max(40).nullish(),
@@ -311,9 +373,9 @@ const extracted = z.object({
   rolling: z.boolean().nullish(),
   period: z.string().max(120).nullish(),
   degreeLevels: z.array(z.string().max(30)).max(8).nullish(),
-  fields: z.array(z.string().max(60)).max(12).nullish(),
-  summary: z.string().max(600).nullish(),
-  description: z.string().max(8000).nullish(),
+  fields: z.array(z.string().max(60)).max(20).nullish(),
+  summary: z.string().max(800).nullish(),
+  description: z.string().max(20000).nullish(),
   eligibility: z.string().max(4000).nullish(),
   benefits: z.string().max(4000).nullish(),
   applyUrl: z.string().max(2048).nullish(),
@@ -328,9 +390,11 @@ export async function draftFromText(text: string) {
   const clipped = text.trim().slice(0, 12000);
   if (clipped.length < 80) throw badRequest("Paste the full announcement (at least a few sentences).");
   const ids = (list: readonly { id: string }[]) => list.map((x) => x.id).join(", ");
+  const idx = await categoryIndex();
+  const categoryNames = [...idx.byId.values()].map((c) => c.name);
   const system = `You extract structured data about student opportunities from announcements. Use ONLY facts stated in the text. Never guess dates, amounts, links or requirements: if something is not stated, use null. Reply with one JSON object only.`;
   const user = `Return JSON with these keys:
-title (official program name), organization, type (one of: ${ids(OPPORTUNITY_TYPES)}), country (prefer one of: ${COUNTRIES.join(", ")}), location (city/campus or "Online"),
+title (official program name), organization, categories (array of 1-3 names, only from: ${categoryNames.join(", ")}; prefer the most specific subcategory), country (the host country's common English name, or "Worldwide / online" or "Multiple countries"), location (city/campus or "Online"),
 funding (one of: ${ids(FUNDING_TYPES)}), deadline (YYYY-MM-DD, the application deadline, or null), rolling (true only if applications are explicitly rolling/open-ended),
 period (program dates/duration as written), degreeLevels (array, from: ${ids(DEGREE_LEVELS)}), fields (array of short subject areas, e.g. "Engineering"),
 summary (1-2 plain sentences, max 300 chars), description (plain text, 2-4 short paragraphs, neutral tone), eligibility (plain text, one requirement per line),
@@ -348,19 +412,19 @@ ${clipped}
   return {
     title: (data.title ?? "").slice(0, 160),
     organization: (data.organization ?? "").slice(0, 140),
-    type: pick(OPPORTUNITY_TYPES, data.type),
-    country: (data.country ?? "").slice(0, 60),
+    categories: [...new Set((data.categories ?? []).map((n) => [...idx.byId.values()].find((c) => c.name.toLowerCase() === n.trim().toLowerCase())?.id).filter((id): id is string => Boolean(id)))].slice(0, 3),
+    country: COUNTRY_OPTIONS.find((c) => c.toLowerCase() === (data.country ?? "").trim().toLowerCase()) ?? (data.country ?? "").slice(0, 80),
     location: (data.location ?? "").slice(0, 120),
     funding: pick(FUNDING_TYPES, data.funding),
     deadline,
     rolling: Boolean(data.rolling) && !deadline,
     period: (data.period ?? "").slice(0, 80),
     degreeLevels: (data.degreeLevels ?? []).filter((d) => DEGREE_LEVELS.some((x) => x.id === d)),
-    fields: (data.fields ?? []).map((f) => f.slice(0, 40)).slice(0, 12),
-    summary: (data.summary ?? "").slice(0, 320),
-    description: (data.description ?? "").slice(0, 6000),
-    eligibility: (data.eligibility ?? "").slice(0, 3000),
-    benefits: (data.benefits ?? "").slice(0, 3000),
+    fields: (data.fields ?? []).map((f) => f.slice(0, 60)).slice(0, 20),
+    summary: (data.summary ?? "").slice(0, 500),
+    description: (data.description ?? "").slice(0, 20000),
+    eligibility: (data.eligibility ?? "").slice(0, 8000),
+    benefits: (data.benefits ?? "").slice(0, 8000),
     applyUrl: urlInText,
   };
 }

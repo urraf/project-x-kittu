@@ -3,31 +3,59 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ChevronDown, Search, SlidersHorizontal, X } from "lucide-react";
-import { COUNTRIES, FUNDING_TYPES } from "@/lib/opportunities/constants";
+import { FUNDING_TYPES } from "@/lib/opportunities/constants";
 import { cn } from "@/lib/utils/cn";
+import type { OpportunityFacets } from "@/lib/services/opportunities";
 
-export type SearchValues = { type: string; country: string; funding: string; deadline: string; q?: string };
+export type SearchValues = { category: string; country: string; funding: string; deadline: string; q?: string };
 
 /** One-tap filters: the things students actually look for. */
 const QUICK: { label: string; jp: string; patch: Partial<SearchValues> }[] = [
-  { label: "Internships", jp: "研修", patch: { type: "internship" } },
-  { label: "Scholarships", jp: "奨学金", patch: { type: "scholarship" } },
-  { label: "Fellowships", jp: "研究", patch: { type: "fellowship" } },
+  { label: "Internships", jp: "研修", patch: { category: "internships" } },
+  { label: "Scholarships", jp: "奨学金", patch: { category: "scholarships" } },
+  { label: "Fellowships", jp: "研究", patch: { category: "fellowships" } },
   { label: "Fully funded", jp: "全額", patch: { funding: "fully-funded" } },
   { label: "Closing soon", jp: "締切", patch: { deadline: "30" } },
 ];
 
 const isOn = (v: SearchValues, patch: Partial<SearchValues>) => Object.entries(patch).every(([k, val]) => v[k as keyof SearchValues] === val);
 
+function Select({ label, value, onChange, children }: { label: string; value: string; onChange: (v: string) => void; children: React.ReactNode }) {
+  return (
+    <label className="relative block min-w-0">
+      <span className="sr-only">{label}</span>
+      <select value={value} onChange={(e) => onChange(e.target.value)} className="h-11 w-full appearance-none rounded-xl border border-line bg-paper pl-3.5 pr-9 text-sm text-ink focus:border-ink focus:outline-none">
+        {children}
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
+    </label>
+  );
+}
+
 /**
- * Simple opportunity finder: a search box, one-tap filter chips, and a
- * "More filters" drawer for country and funding. Navigates to /opportunities.
+ * Opportunity finder: a search box, one-tap filter chips, and dropdowns for
+ * category (with subcategories and live counts), country and funding.
+ * Navigates to /opportunities.
  */
-export function OpportunitySearch({ initial, className, withKeyword = true }: { initial?: Partial<SearchValues>; className?: string; compact?: boolean; withKeyword?: boolean }) {
+export function OpportunitySearch({
+  initial,
+  className,
+  withKeyword = true,
+  facets,
+  filtersOpen = false,
+}: {
+  initial?: Partial<SearchValues>;
+  className?: string;
+  withKeyword?: boolean;
+  /** Category tree and countries with counts (without them, the dropdowns are hidden). */
+  facets?: OpportunityFacets;
+  /** Show the dropdowns straight away (the finder page) instead of behind "More filters". */
+  filtersOpen?: boolean;
+}) {
   const router = useRouter();
-  const empty: SearchValues = { type: "", country: "", funding: "", deadline: "", q: "" };
+  const empty: SearchValues = { category: "", country: "", funding: "", deadline: "", q: "" };
   const [v, setV] = useState<SearchValues>({ ...empty, ...initial });
-  const [more, setMore] = useState(Boolean(initial?.country || (initial?.funding && initial.funding !== "fully-funded")));
+  const [more, setMore] = useState(filtersOpen || Boolean(initial?.country || initial?.category || (initial?.funding && initial.funding !== "fully-funded")));
 
   const go = (next: SearchValues) => {
     const params = new URLSearchParams();
@@ -41,11 +69,21 @@ export function OpportunitySearch({ initial, className, withKeyword = true }: { 
     setV(next);
     go(next);
   };
-  const active = Boolean(v.type || v.country || v.funding || v.deadline || v.q);
+  const pick = (k: keyof SearchValues) => (val: string) => {
+    const next = { ...v, [k]: val };
+    setV(next);
+    go(next);
+  };
+  const active = Boolean(v.category || v.country || v.funding || v.deadline || v.q);
+  // Hide a quick chip if the admin deleted or renamed that category.
+  const quick = QUICK.filter((q) => !q.patch.category || !facets || facets.categories.some((c) => c.slug === q.patch.category));
 
   return (
     <form
-      onSubmit={(e) => { e.preventDefault(); go(v); }}
+      onSubmit={(e) => {
+        e.preventDefault();
+        go(v);
+      }}
       role="search"
       aria-label="Find opportunities"
       className={cn("rounded-3xl border border-line bg-[#fffdf9]/95 p-3 shadow-[0_24px_60px_-45px_rgba(29,43,69,0.6)] backdrop-blur sm:p-4", className)}
@@ -72,7 +110,7 @@ export function OpportunitySearch({ initial, className, withKeyword = true }: { 
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        {QUICK.map((q) => {
+        {quick.map((q) => {
           const on = isOn(v, q.patch);
           return (
             <button
@@ -89,35 +127,43 @@ export function OpportunitySearch({ initial, className, withKeyword = true }: { 
             </button>
           );
         })}
-        <button type="button" onClick={() => setMore((m) => !m)} aria-expanded={more} className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-ink-2 hover:text-ink">
-          <SlidersHorizontal className="size-4" /> More filters <ChevronDown className={cn("size-3.5 transition-transform", more && "rotate-180")} />
-        </button>
+        {facets && !filtersOpen && (
+          <button type="button" onClick={() => setMore((m) => !m)} aria-expanded={more} className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-ink-2 hover:text-ink">
+            <SlidersHorizontal className="size-4" /> More filters <ChevronDown className={cn("size-3.5 transition-transform", more && "rotate-180")} />
+          </button>
+        )}
         {active && (
-          <button type="button" onClick={() => { setV(empty); go(empty); }} className="ml-auto inline-flex items-center gap-1 text-sm text-muted hover:text-ink">
+          <button
+            type="button"
+            onClick={() => {
+              setV(empty);
+              go(empty);
+            }}
+            className="ml-auto inline-flex items-center gap-1 text-sm text-muted hover:text-ink"
+          >
             <X className="size-3.5" /> Clear
           </button>
         )}
       </div>
 
-      {more && (
-        <div className="mt-3 grid gap-2 border-t border-dashed border-line pt-3 sm:grid-cols-2">
-          {[
-            { key: "country" as const, label: "Country", any: "Any country", options: COUNTRIES.map((c) => ({ id: c, label: c })) },
-            { key: "funding" as const, label: "Funding", any: "Any funding", options: FUNDING_TYPES.map((f) => ({ id: f.id, label: f.label })) },
-          ].map((f) => (
-            <label key={f.key} className="relative block">
-              <span className="sr-only">{f.label}</span>
-              <select
-                value={v[f.key]}
-                onChange={(e) => { const next = { ...v, [f.key]: e.target.value }; setV(next); go(next); }}
-                className="h-11 w-full appearance-none rounded-xl border border-line bg-paper pl-3.5 pr-9 text-sm text-ink focus:border-ink focus:outline-none"
-              >
-                <option value="">{f.any}</option>
-                {f.options.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
-            </label>
-          ))}
+      {facets && more && (
+        <div className="mt-3 grid gap-2 border-t border-dashed border-line pt-3 sm:grid-cols-3">
+          <Select label="Category" value={v.category} onChange={pick("category")}>
+            <option value="">All categories</option>
+            {facets.categories.map((c) => [
+              <option key={c.id} value={c.slug}>{`${c.name} (${c.count})`}</option>,
+              ...c.children.map((s) => <option key={s.id} value={s.slug}>{`    ${s.name} (${s.count})`}</option>),
+            ])}
+          </Select>
+          <Select label="Country" value={v.country} onChange={pick("country")}>
+            <option value="">All countries</option>
+            {facets.countries.map((c) => <option key={c.name} value={c.name}>{`${c.name} (${c.count})`}</option>)}
+            {v.country && !facets.countries.some((c) => c.name === v.country) && <option value={v.country}>{v.country} (0)</option>}
+          </Select>
+          <Select label="Funding" value={v.funding} onChange={pick("funding")}>
+            <option value="">Any funding</option>
+            {FUNDING_TYPES.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}
+          </Select>
         </div>
       )}
     </form>

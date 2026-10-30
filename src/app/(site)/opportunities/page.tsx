@@ -5,8 +5,9 @@ import { OpportunityCard } from "@/components/opportunities/OpportunityCard";
 import { OpportunitySearch } from "@/components/opportunities/OpportunitySearch";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { DEADLINE_FILTERS, degreeLabel, fundingLabel, typeLabel } from "@/lib/opportunities/constants";
+import { legacyTypeToCategorySlug } from "@/lib/opportunities/legacy";
 import { safe } from "@/lib/safe";
-import { searchOpportunities, searchSchema, type SearchParams } from "@/lib/services/opportunities";
+import { opportunityFacets, searchOpportunities, searchSchema, type OpportunityFacets, type SearchParams } from "@/lib/services/opportunities";
 import { JsonLd } from "@/components/ui/JsonLd";
 import { KEYWORDS, breadcrumbLd, collectionLd, seoMeta } from "@/lib/seo";
 import { cn } from "@/lib/utils/cn";
@@ -33,10 +34,22 @@ function hrefWith(params: SearchParams, patch: Partial<Record<keyof SearchParams
 export default async function OpportunitiesPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const raw = await searchParams;
   const params = searchSchema.parse(Object.fromEntries(Object.entries(raw).map(([k, v]) => [k, Array.isArray(v) ? v[0] : v])));
-  const result = await safe("opportunities.search", () => searchOpportunities(params), { items: [], total: 0, page: 1, pages: 1 });
+  const [result, facets] = await Promise.all([
+    safe("opportunities.search", () => searchOpportunities(params), { items: [], total: 0, page: 1, pages: 1 }),
+    safe("opportunities.facets", () => opportunityFacets(), { categories: [], countries: [] } as OpportunityFacets),
+  ]);
+  const categorySlug = params.category || legacyTypeToCategorySlug(params.type) || "";
+  const categoryName = facets.categories.flatMap((c) => [c, ...c.children]).find((c) => c.slug === categorySlug)?.name;
+  // When filtering by a category, label each card with that category (or its matching subcategory), not just its first one.
+  const inFilter = new Set(categorySlug ? [categorySlug, ...(facets.categories.find((c) => c.slug === categorySlug)?.children.map((c) => c.slug) ?? [])] : []);
+  const labelFor = (o: (typeof result.items)[number]) => {
+    const match = o.categories.find((c) => inFilter.has(c.slug) && c.slug !== categorySlug) ?? o.categories.find((c) => inFilter.has(c.slug));
+    return match ? { ...o, categoryLabel: match.name } : o;
+  };
 
   const chips = [
     params.q && { key: "q" as const, label: `“${params.q}”` },
+    params.category && { key: "category" as const, label: categoryName ?? params.category },
     params.type && { key: "type" as const, label: typeLabel(params.type) },
     params.country && { key: "country" as const, label: params.country },
     params.funding && { key: "funding" as const, label: fundingLabel(params.funding) },
@@ -61,7 +74,7 @@ export default async function OpportunitiesPage({ searchParams }: { searchParams
             Find your next <em className="text-accent">opportunity.</em>
           </h1>
           <p className="mt-4 max-w-2xl text-lg leading-relaxed text-ink-2">Fully funded internships, scholarships, fellowships and research programs in Japan and beyond, checked and kept up to date. Filter by what matters to you.</p>
-          <OpportunitySearch className="mt-8" initial={{ type: params.type ?? "", country: params.country ?? "", funding: params.funding ?? "", deadline: params.deadline ?? "", q: params.q ?? "" }} />
+          <OpportunitySearch className="mt-8" facets={facets} filtersOpen initial={{ category: categorySlug, country: params.country ?? "", funding: params.funding ?? "", deadline: params.deadline ?? "", q: params.q ?? "" }} />
         </div>
       </section>
 
@@ -95,7 +108,7 @@ export default async function OpportunitiesPage({ searchParams }: { searchParams
           <div className="mt-8">
             {result.items.length ? (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {result.items.map((o) => <OpportunityCard key={o.id} o={o} />)}
+                {result.items.map((o) => <OpportunityCard key={o.id} o={labelFor(o)} />)}
               </div>
             ) : (
               <EmptyState

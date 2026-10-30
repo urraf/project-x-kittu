@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowUpRight, Building2, CalendarClock, CalendarPlus, Check, Clock, GraduationCap, MapPin, Wallet } from "lucide-react";
 import { DeadlineChip, OpportunityCard, fundingTone } from "@/components/opportunities/OpportunityCard";
 import { ShareButton } from "@/components/ui/ShareButton";
-import { degreeLabel, fundingLabel, typeLabel } from "@/lib/opportunities/constants";
+import { degreeLabel, fundingLabel } from "@/lib/opportunities/constants";
 import { safe } from "@/lib/safe";
 import { getPublicOpportunity, relatedOpportunities } from "@/lib/services/opportunities";
 import { absoluteUrl } from "@/lib/site";
@@ -30,11 +30,11 @@ function calendarLink(title: string, deadlineIso: string, url: string) {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const o = await safe("opportunity.meta", async () => getPublicOpportunity((await params).slug), null);
   if (!o) return { title: "Opportunity not found", robots: { index: false } };
-  const kind = typeLabel(o.type).toLowerCase();
+  const kind = o.categoryLabel.toLowerCase();
   return {
     title: o.title,
     description: o.summary || `${fundingLabel(o.funding)} ${kind} in ${o.country}: eligibility, benefits, deadline and how to apply, explained for Indian students.`,
-    keywords: [o.title, `${o.title} eligibility`, `${o.title} deadline`, `${kind} in ${o.country}`, `${fundingLabel(o.funding).toLowerCase()} ${kind}`, `${kind} for Indian students`, ...(o.country === "Japan" ? ["internships in Japan", "scholarships in Japan"] : [])],
+    keywords: [o.title, `${o.title} eligibility`, `${o.title} deadline`, ...o.categories.map((c) => c.name), `${kind} in ${o.country}`, `${fundingLabel(o.funding).toLowerCase()} ${kind}`, `${kind} for Indian students`, ...(o.country === "Japan" ? ["internships in Japan", "scholarships in Japan"] : [])],
     alternates: { canonical: `/opportunities/${o.slug}` },
     openGraph: { title: o.title, description: o.summary, url: absoluteUrl(`/opportunities/${o.slug}`), ...(o.coverImage ? { images: [{ url: absoluteUrl(o.coverImage.url), alt: o.coverImage.alt || o.title }] } : {}) },
     robots: o.closed ? { index: false } : undefined,
@@ -87,7 +87,9 @@ export default async function OpportunityPage({ params }: Props) {
             </figure>
           )}
           <div className="mt-6 flex flex-wrap items-center gap-2">
-            <span className="rounded-full bg-indigo-soft px-3 py-1 text-xs font-medium text-indigo">{typeLabel(o.type)}</span>
+            {o.categories.map((c) => (
+              <Link key={c.id} href={`/opportunities?category=${c.slug}#results`} className="rounded-full bg-indigo-soft px-3 py-1 text-xs font-medium text-indigo hover:bg-indigo hover:text-white">{c.name}</Link>
+            ))}
             <span className={cn("rounded-full px-3 py-1 text-xs font-medium", fundingTone(o.funding))}>{fundingLabel(o.funding)}</span>
             <DeadlineChip o={o} />
           </div>

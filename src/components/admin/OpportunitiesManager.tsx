@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Plus, Search } from "lucide-react";
+import { FolderTree, Plus, Search } from "lucide-react";
 import { useApi } from "@/lib/admin/hooks";
 import { AdminEmpty, Button, LoadingBlock, PageHeader } from "@/components/admin/ui";
 import { DeadlineChip } from "@/components/opportunities/OpportunityCard";
-import { fundingLabel, typeLabel } from "@/lib/opportunities/constants";
+import { fundingLabel } from "@/lib/opportunities/constants";
 import { cn } from "@/lib/utils/cn";
 import type { OpportunityDTO } from "@/lib/services/opportunities";
 
@@ -32,9 +32,14 @@ export function OpportunitiesManager() {
         title="Opportunities"
         description="Internships, scholarships, fellowships and programs shown in the Opportunity finder. Closed ones hide from the site automatically after their deadline."
         actions={
-          <Link href="/admin/opportunities/new" className="inline-flex h-10 items-center gap-2 rounded-full bg-ink px-4 text-[0.88rem] font-medium text-cream hover:bg-ink-2">
-            <Plus className="size-4" /> Add opportunity
-          </Link>
+          <>
+            <Link href="/admin/opportunities/categories" className="inline-flex h-10 items-center gap-2 rounded-full border border-line bg-[#fffdf9] px-4 text-[0.88rem] font-medium text-ink hover:border-ink/40">
+              <FolderTree className="size-4" /> Categories
+            </Link>
+            <Link href="/admin/opportunities/new" className="inline-flex h-10 items-center gap-2 rounded-full bg-ink px-4 text-[0.88rem] font-medium text-cream hover:bg-ink-2">
+              <Plus className="size-4" /> Add opportunity
+            </Link>
+          </>
         }
       />
       <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center">
@@ -65,7 +70,7 @@ export function OpportunitiesManager() {
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className={cn("rounded-full px-2 py-0.5 text-[0.7rem] font-medium", o.status === "published" ? "bg-[#dde8de] text-moss" : "bg-paper-3 text-ink-2")}>{o.status === "published" ? "Live" : "Draft"}</span>
-                      <span className="text-xs text-muted">{typeLabel(o.type)} · {fundingLabel(o.funding)} · {o.country}</span>
+                      <span className="text-xs text-muted">{o.categories.map((c) => c.name).join(", ") || "No category"} · {fundingLabel(o.funding)} · {o.country}</span>
                     </div>
                     <p className="mt-1 truncate font-medium text-ink">{o.title}</p>
                     {o.organization && <p className="truncate text-sm text-ink-2">{o.organization}</p>}

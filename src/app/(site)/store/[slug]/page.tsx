@@ -4,6 +4,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Check, Download, Library, Mail } from "lucide-react";
 import { BuyForm } from "@/components/store/BuyForm";
+import { MobileBookBar } from "@/components/mentorship/MobileBookBar";
+import { formatPrice } from "@/lib/utils/session-time";
 import { ProductCard, ProductCover } from "@/components/store/ProductCard";
 import { JsonLd } from "@/components/ui/JsonLd";
 import { getStudent } from "@/lib/auth/student";
@@ -119,6 +121,7 @@ export default async function ProductPage({ params }: Props) {
           </div>
         </section>
       )}
+      <MobileBookBar price={product.price ? formatPrice(product.price) : "Free"} targetId="buy" cta={product.price ? "Buy now" : "Get it"} note="Instant download · yours to keep" />
     </>
   );
 }

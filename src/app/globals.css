@@ -414,3 +414,16 @@
   .kk-progress { animation: none; width: 60%; }
   .kk-dots::after { animation: none; content: "…"; }
 }
+
+/* Phones/tablets: when a "Book now / Buy now" bar is pinned to the bottom,
+   lift the Kittu chat button above it and shrink it to the avatar so the
+   booking button is never covered. */
+@media (max-width: 1023.98px) {
+  body[data-bookbar] .kk-chat-launcher {
+    bottom: calc(5.75rem + env(safe-area-inset-bottom));
+    padding-right: 0.375rem;
+  }
+  body[data-bookbar] .kk-chat-label {
+    display: none;
+  }
+}

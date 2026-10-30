@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight, Building2, CalendarClock, GraduationCap, MapPin } from "lucide-react";
-import { degreeLabel, fundingLabel, typeLabel } from "@/lib/opportunities/constants";
+import { degreeLabel, fundingLabel } from "@/lib/opportunities/constants";
 import { cn } from "@/lib/utils/cn";
 import type { OpportunityDTO } from "@/lib/services/opportunities";
 
@@ -56,7 +56,7 @@ export function OpportunityCard({ o, compact = true }: { o: OpportunityDTO; comp
         <span aria-hidden className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-ink/35 to-transparent" />
         <DeadlineChip o={o} className="absolute right-3 top-3 shadow-sm" />
         <div className="absolute bottom-3 left-3 flex flex-wrap gap-1.5">
-          <span className="rounded-full bg-[#fffdf9]/95 px-2.5 py-1 text-xs font-medium text-indigo">{typeLabel(o.type)}</span>
+          <span className="max-w-[60%] truncate rounded-full bg-[#fffdf9]/95 px-2.5 py-1 text-xs font-medium text-indigo">{o.categoryLabel}</span>
           <span className={cn("rounded-full px-2.5 py-1 text-xs font-medium", fundingTone(o.funding))}>{fundingLabel(o.funding)}</span>
         </div>
       </div>

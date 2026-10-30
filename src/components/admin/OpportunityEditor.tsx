@@ -3,19 +3,23 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { ArrowLeft, ExternalLink, Sparkles, Trash2 } from "lucide-react";
+import { ArrowLeft, ExternalLink, FolderTree, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ApiClientError, api, errorMessage } from "@/lib/admin/api";
 import { ImageField } from "@/components/admin/ImageField";
 import { Button, ConfirmDialog, Dialog, Field, PageHeader, Toggle } from "@/components/admin/ui";
-import { COUNTRIES, DEGREE_LEVELS, FUNDING_TYPES, OPPORTUNITY_TYPES } from "@/lib/opportunities/constants";
+import { DEGREE_LEVELS, FUNDING_TYPES } from "@/lib/opportunities/constants";
+import { COUNTRY_OPTIONS } from "@/lib/opportunities/countries";
+import { useApi } from "@/lib/admin/hooks";
 import { cn } from "@/lib/utils/cn";
 import type { ImageDTO } from "@/lib/types";
 import type { OpportunityDTO } from "@/lib/services/opportunities";
 
+type CategoryNode = { id: string; name: string; children: { id: string; name: string }[] };
+
 type Form = {
   title: string;
-  type: string;
+  categories: string[];
   organization: string;
   country: string;
   location: string;
@@ -40,7 +44,7 @@ const toDate = (iso?: string) => (iso ? new Date(new Date(iso).getTime() + 5.5 *
 
 const fromDTO = (o?: OpportunityDTO): Form => ({
   title: o?.title ?? "",
-  type: o?.type ?? "internship",
+  categories: o?.categories.map((c) => c.id) ?? [],
   organization: o?.organization ?? "",
   country: o?.country ?? "Japan",
   location: o?.location ?? "",
@@ -71,6 +75,8 @@ export function OpportunityEditor({ opportunity, siteUrl, aiReady }: { opportuni
   const [aiBusy, setAiBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setForm((f) => ({ ...f, [k]: v }));
+  const { data: categoryTree } = useApi<CategoryNode[]>("/api/admin/opportunity-categories");
+  const toggleCategory = (id: string) => set("categories", form.categories.includes(id) ? form.categories.filter((x) => x !== id) : [...form.categories, id]);
 
   async function save(status: Form["status"]) {
     setSaving(true);
@@ -88,7 +94,11 @@ export function OpportunityEditor({ opportunity, siteUrl, aiReady }: { opportuni
         router.replace(`/admin/opportunities/${created.id}`);
       }
     } catch (e) {
-      if (e instanceof ApiClientError) setErrors(e.fieldErrors);
+      if (e instanceof ApiClientError) {
+        setErrors(e.fieldErrors);
+        // Bring the first problem into view so it's obvious why it didn't save.
+        requestAnimationFrame(() => document.querySelector("[data-field-error]")?.scrollIntoView({ behavior: "smooth", block: "center" }));
+      }
       toast.error(errorMessage(e));
     } finally {
       setSaving(false);
@@ -155,18 +165,40 @@ export function OpportunityEditor({ opportunity, siteUrl, aiReady }: { opportuni
           <Field label="Title" htmlFor="o-title" error={errors.title} counter={{ value: form.title.length, max: 160 }}>
             <input id="o-title" className="field" value={form.title} onChange={(e) => set("title", e.target.value)} placeholder="e.g. OIST Research Internship 2027" />
           </Field>
+          <div className={cn("rounded-xl border p-4", errors.categories ? "border-accent bg-accent-soft/30" : "border-line")} {...(errors.categories ? { "data-field-error": "" } : {})}>
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <p className="label !mb-0">Categories <span className="font-normal text-muted">(pick one or more)</span></p>
+              <Link href="/admin/opportunities/categories" target="_blank" className="inline-flex items-center gap-1 text-xs font-medium text-accent-deep hover:underline"><FolderTree className="size-3.5" /> Manage categories</Link>
+            </div>
+            {!categoryTree ? (
+              <p className="mt-3 text-sm text-muted">Loading categories…</p>
+            ) : (
+              <div className="mt-3 grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
+                {categoryTree.map((top) => (
+                  <div key={top.id}>
+                    <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-ink">
+                      <input type="checkbox" className="size-4 accent-[var(--color-accent)]" checked={form.categories.includes(top.id)} onChange={() => toggleCategory(top.id)} />
+                      {top.name}
+                    </label>
+                    {top.children.map((c) => (
+                      <label key={c.id} className="ml-6 mt-1.5 flex cursor-pointer items-center gap-2 text-sm text-ink-2">
+                        <input type="checkbox" className="size-4 accent-[var(--color-accent)]" checked={form.categories.includes(c.id)} onChange={() => toggleCategory(c.id)} />
+                        {c.name}
+                      </label>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
+            {errors.categories ? <p className="mt-2 text-[0.78rem] text-accent-deep">{errors.categories}</p> : <p className="hint">Tip: tick the most specific one (e.g. “Masters scholarships”). It also shows under its parent.</p>}
+          </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Type" htmlFor="o-type" error={errors.type}>
-              <select id="o-type" className="field" value={form.type} onChange={(e) => set("type", e.target.value)}>
-                {OPPORTUNITY_TYPES.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
-              </select>
-            </Field>
             <Field label="Organisation" htmlFor="o-org" error={errors.organization}>
               <input id="o-org" className="field" value={form.organization} onChange={(e) => set("organization", e.target.value)} placeholder="e.g. Okinawa Institute of Science and Technology" />
             </Field>
             <Field label="Country" htmlFor="o-country" error={errors.country}>
               <input id="o-country" list="o-countries" className="field" value={form.country} onChange={(e) => set("country", e.target.value)} />
-              <datalist id="o-countries">{COUNTRIES.map((c) => <option key={c} value={c} />)}</datalist>
+              <datalist id="o-countries">{COUNTRY_OPTIONS.map((c) => <option key={c} value={c} />)}</datalist>
             </Field>
             <Field label="City / campus (optional)" htmlFor="o-loc">
               <input id="o-loc" className="field" value={form.location} onChange={(e) => set("location", e.target.value)} placeholder="e.g. Okinawa, or Online" />
@@ -204,10 +236,10 @@ export function OpportunityEditor({ opportunity, siteUrl, aiReady }: { opportuni
               onBlur={(e) => set("fields", e.target.value.split(",").map((f) => f.trim()).filter(Boolean).slice(0, 12))}
             />
           </Field>
-          <Field label="Short summary" htmlFor="o-summary" hint="1–2 sentences shown on the card." error={errors.summary} counter={{ value: form.summary.length, max: 320 }}>
+          <Field label="Short summary" htmlFor="o-summary" hint="1–2 sentences shown on the card." error={errors.summary} counter={{ value: form.summary.length, max: 500 }}>
             <textarea id="o-summary" rows={2} className="field" value={form.summary} onChange={(e) => set("summary", e.target.value)} />
           </Field>
-          <Field label="About the program" htmlFor="o-desc" hint="Plain text. Blank lines start a new paragraph." error={errors.description}>
+          <Field label="About the program" htmlFor="o-desc" hint="Plain text. Blank lines start a new paragraph." error={errors.description} counter={{ value: form.description.length, max: 20000 }}>
             <textarea id="o-desc" rows={6} className="field" value={form.description} onChange={(e) => set("description", e.target.value)} />
           </Field>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

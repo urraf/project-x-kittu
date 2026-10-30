@@ -76,7 +76,7 @@ export function Field({
         {counter && <span className={cn("font-mono text-[0.7rem]", tone)}>{counter.value}/{counter.max}</span>}
       </div>
       {children}
-      {error ? <p className="mt-1.5 text-[0.78rem] text-accent-deep">{error}</p> : hint ? <p className="hint">{hint}</p> : null}
+      {error ? <p data-field-error="" className="mt-1.5 text-[0.78rem] text-accent-deep">{error}</p> : hint ? <p className="hint">{hint}</p> : null}
     </div>
   );
 }
