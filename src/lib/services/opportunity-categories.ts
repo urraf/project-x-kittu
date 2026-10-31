@@ -56,6 +56,50 @@ const ART_TYPE: Record<string, string> = {
   jobs: "job",
 };
 
+type Classifiable = { categories?: unknown[]; title?: string | null; summary?: string | null; fields?: string[] | null; degreeLevels?: string[] | null; country?: string | null };
+
+/**
+ * Subcategories that clearly apply, for an opportunity filed only under a
+ * top-level category (e.g. Scholarships + "master" level → Masters scholarships).
+ * Only subcategories of categories it's already in are suggested.
+ */
+export function suggestSubcategories(o: Classifiable, index: Awaited<ReturnType<typeof categoryIndex>>): string[] {
+  const chosen = new Set((o.categories ?? []).map(String));
+  const text = [o.title, o.summary, ...(o.fields ?? [])].filter(Boolean).join(" ");
+  const levels = new Set(o.degreeLevels ?? []);
+  const rules: Record<string, Record<string, boolean>> = {
+    internships: {
+      "research-internships": /research/i.test(text),
+      "international-internships": Boolean(o.country) && !/^india$/i.test(o.country!.trim()),
+    },
+    events: {
+      conferences: /\b(conference|summit|symposium|workshop)\b/i.test(text),
+      competitions: /\b(competition|hackathon|challenge|contest|olympiad)\b/i.test(text),
+    },
+  };
+  // A scholarship's level is the program's level, not who can apply (a PhD program open to bachelor's holders is
+  // still a PhD scholarship). So: levels named in the title, else in the summary, else the eligible degree levels.
+  const levelsIn = (str: string) => ({
+    ug: /\b(undergrad\w*|bachelor'?s?|b\.?tech)\b/i.test(str),
+    ma: /\b(master'?s?|msc|m\.?tech|mba|llm)\b|(?<!under)\bgraduate\b/i.test(str),
+    phd: /\b(ph\.?d|dphil|doctoral|doctorate)\b|(?<!under)\bgraduate\b/i.test(str),
+  });
+  const named = (l: ReturnType<typeof levelsIn>) => l.ug || l.ma || l.phd;
+  const fromTitle = levelsIn(o.title ?? "");
+  const fromSummary = levelsIn(o.summary ?? "");
+  const level = named(fromTitle) ? fromTitle : named(fromSummary) ? fromSummary : { ug: levels.has("bachelor") || levels.has("high-school"), ma: levels.has("master"), phd: levels.has("phd") };
+  rules.scholarships = { "undergraduate-scholarships": level.ug, "masters-scholarships": level.ma, "phd-scholarships": level.phd };
+
+  const out: string[] = [];
+  for (const top of index.tree) {
+    if (!chosen.has(top.id) || top.children.some((c) => chosen.has(c.id))) continue; // only when no subcategory was picked
+    const r = rules[top.slug];
+    if (!r) continue;
+    for (const child of top.children) if (r[child.slug]) out.push(child.id);
+  }
+  return out;
+}
+
 let ensured = false;
 /**
  * Creates the default categories if there are none, and moves opportunities
@@ -83,6 +127,19 @@ export async function ensureCategories() {
       if (id) await Opportunity.updateOne({ _id: o._id }, { $set: { categories: [id] } });
     }
     logger.info("opportunity_categories.migrated", { count: legacy.length });
+  }
+  // One time per opportunity: fill in the obvious subcategories (never again after, so admin edits stick).
+  const unsorted = await Opportunity.find({ subcategorized: { $ne: true } }).select("categories title summary fields degreeLevels country").lean<(Classifiable & { _id: Types.ObjectId })[]>();
+  if (unsorted.length) {
+    ensured = true; // categoryIndex() below calls ensureCategories(): don't recurse
+    const index = await categoryIndex();
+    let added = 0;
+    for (const o of unsorted) {
+      const subs = suggestSubcategories(o, index);
+      added += subs.length;
+      await Opportunity.updateOne({ _id: o._id }, { $addToSet: { categories: { $each: subs.map((id) => new Types.ObjectId(id)) } }, $set: { subcategorized: true } });
+    }
+    logger.info("opportunity_categories.subcategorized", { opportunities: unsorted.length, added });
   }
   ensured = true;
 }

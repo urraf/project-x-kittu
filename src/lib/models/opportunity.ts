@@ -13,6 +13,8 @@ const OpportunitySchema = new Schema(
     type: { type: String, required: true, trim: true, maxlength: 60 },
     /** One or more categories (and/or subcategories) from Studio → Opportunities → Categories. */
     categories: { type: [{ type: Schema.Types.ObjectId, ref: "OpportunityCategory" }], default: [] },
+    /** True once subcategories were filled in automatically (or the admin saved it), so it never happens twice. */
+    subcategorized: { type: Boolean, default: false },
     organization: { type: String, trim: true, maxlength: 140, default: "" },
     country: { type: String, trim: true, maxlength: 80, default: "Japan" },
     location: { type: String, trim: true, maxlength: 120, default: "" },

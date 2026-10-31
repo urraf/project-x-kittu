@@ -13,7 +13,7 @@ import { groqChat, parseJsonObject } from "@/lib/ai/groq";
 import { isGroqConfigured } from "@/lib/env";
 import { DEGREE_LEVELS, FUNDING_TYPES } from "@/lib/opportunities/constants";
 import { COUNTRY_OPTIONS, POPULAR_COUNTRIES } from "@/lib/opportunities/countries";
-import { artTypeFor, categoryCounts, categoryIdsForFilter, categoryIndex, ensureCategories, legacyTypeToCategorySlug, type CategoryNode } from "@/lib/services/opportunity-categories";
+import { artTypeFor, categoryCounts, categoryIdsForFilter, categoryIndex, ensureCategories, legacyTypeToCategorySlug, suggestSubcategories, type CategoryNode } from "@/lib/services/opportunity-categories";
 import type { ImageDTO } from "@/lib/types";
 
 // Mongoose 9 query typings are very strict; these dynamic filters are built from validated input.
@@ -334,7 +334,10 @@ export async function createOpportunity(raw: unknown) {
   const input = opportunityInputSchema.parse(raw);
   await connectDB();
   await ensureCategories();
-  const doc = await Opportunity.create({ ...(await fields(input)), coverImage: input.coverImage ?? undefined, slug: await uniqueSlug(input.title) });
+  const f = await fields(input);
+  // New opportunity filed only under a top-level category: add the subcategories that clearly apply.
+  const subs = suggestSubcategories({ ...input, categories: f.categories }, await categoryIndex());
+  const doc = await Opportunity.create({ ...f, categories: [...f.categories, ...subs.map((id) => new Types.ObjectId(id))], subcategorized: true, coverImage: input.coverImage ?? undefined, slug: await uniqueSlug(input.title) });
   return announceIfPublished((await toDTOs([doc.toObject() as OpportunityDoc]))[0]!, "/opportunities");
 }
 
@@ -344,7 +347,7 @@ export async function updateOpportunity(id: string, raw: unknown) {
   await connectDB();
   const doc = await Opportunity.findByIdAndUpdate(
     id,
-    { $set: { ...(await fields(input)), ...(input.coverImage ? { coverImage: input.coverImage } : {}) }, ...(input.coverImage ? {} : { $unset: { coverImage: 1 } }) },
+    { $set: { ...(await fields(input)), subcategorized: true, ...(input.coverImage ? { coverImage: input.coverImage } : {}) }, ...(input.coverImage ? {} : { $unset: { coverImage: 1 } }) },
     { returnDocument: "after", runValidators: true },
   ).lean<OpportunityDoc>();
   if (!doc) throw notFound("Opportunity not found");

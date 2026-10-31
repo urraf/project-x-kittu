@@ -150,10 +150,15 @@ export function OpportunitySearch({
         <div className="mt-3 grid gap-2 border-t border-dashed border-line pt-3 sm:grid-cols-3">
           <Select label="Category" value={v.category} onChange={pick("category")}>
             <option value="">All categories</option>
-            {facets.categories.map((c) => [
-              <option key={c.id} value={c.slug}>{`${c.name} (${c.count})`}</option>,
-              ...c.children.map((s) => <option key={s.id} value={s.slug}>{`    ${s.name} (${s.count})`}</option>),
-            ])}
+            {/* Only categories that have open opportunities (plus the one selected), so no choice leads to an empty page. */}
+            {facets.categories
+              .filter((c) => c.count > 0 || c.slug === v.category || c.children.some((s) => s.slug === v.category))
+              .map((c) => [
+                <option key={c.id} value={c.slug}>{`${c.name} (${c.count})`}</option>,
+                ...c.children
+                  .filter((s) => s.count > 0 || s.slug === v.category)
+                  .map((s) => <option key={s.id} value={s.slug}>{`    ${s.name} (${s.count})`}</option>),
+              ])}
           </Select>
           <Select label="Country" value={v.country} onChange={pick("country")}>
             <option value="">All countries</option>
