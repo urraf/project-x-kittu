@@ -35,6 +35,8 @@ export const settingsSchema = z.object({
     email: z.union([z.literal(""), z.email().max(200)]),
     /** Business details shown on Contact, the footer and policy pages (payment providers require them). */
     businessName: str(120),
+    /** WhatsApp number for "Ask on WhatsApp" buttons (with country code). Empty hides them. */
+    whatsapp: z.union([z.literal(""), z.string().trim().max(30).refine((v) => v.replace(/\D/g, "").length >= 8, "Enter the number with country code, e.g. +91 82877 09708")]),
     phone: z.union([z.literal(""), z.string().trim().max(30).refine((v) => /^[+\d][\d\s-]{6,}$/.test(v), "Enter a valid phone number")]),
     address: str(300),
   }),
@@ -155,6 +157,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     x: "",
     email: "",
     businessName: "",
+    whatsapp: "+91 82877 09708",
     phone: "",
     address: "",
   },

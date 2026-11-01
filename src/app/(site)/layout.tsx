@@ -9,11 +9,11 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
   const settings = await getSettings();
   return (
     <>
-      <Header youtube={settings.social.youtube} instagram={settings.social.instagram} linkedin={settings.social.linkedin} />
+      <Header youtube={settings.social.youtube} instagram={settings.social.instagram} linkedin={settings.social.linkedin} whatsapp={settings.social.whatsapp} />
       <main id="main">{children}</main>
       <Footer settings={settings} />
       <RevealObserver />
-      <ChatAssistant />
+      <ChatAssistant whatsapp={settings.social.whatsapp} />
       <OfferPopup />
     </>
   );

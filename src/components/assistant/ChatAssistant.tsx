@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { ArrowUp, RotateCcw, X } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
+import { WhatsAppButton } from "@/components/site/WhatsAppButton";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -121,7 +122,7 @@ function Rich({ text, onNavigate }: { text: string; onNavigate: () => void }) {
   return <>{blocks.map((b, i) => <Fragment key={i}>{b}</Fragment>)}</>;
 }
 
-export function ChatAssistant() {
+export function ChatAssistant({ whatsapp }: { whatsapp?: string }) {
   const path = usePathname() || "/";
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([GREETING]);
@@ -296,7 +297,10 @@ export function ChatAssistant() {
                 <ArrowUp className="size-4" />
               </button>
             </div>
-            <p className="mt-1.5 px-1 text-center text-[0.65rem] text-muted">Kittu can make mistakes. Check official pages for deadlines and requirements.</p>
+            <p className="mt-1.5 px-1 text-center text-[0.65rem] text-muted">
+              Kittu can make mistakes. Check official pages for deadlines and requirements.
+              {whatsapp && <> Prefer a person? <WhatsAppButton variant="link" number={whatsapp} label="Chat on WhatsApp" className="!text-[0.65rem]" message="Hi! I have a question about Life of KittuKun." /></>}
+            </p>
           </form>
         </section>
       )}

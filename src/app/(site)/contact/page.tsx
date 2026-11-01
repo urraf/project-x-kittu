@@ -4,6 +4,7 @@ import { CalendarCheck2, CreditCard, Mail, MapPin, MessageCircleQuestion, Phone 
 import { Kittu } from "@/components/mascot/Kittu";
 import { ContactForm, STUDENT_TOPICS } from "@/components/site/ContactForm";
 import { SocialLinks } from "@/components/site/Footer";
+import { WhatsAppButton } from "@/components/site/WhatsAppButton";
 import { JsonLd } from "@/components/ui/JsonLd";
 import { getSettings } from "@/lib/services/settings";
 import { SITE_NAME, absoluteUrl } from "@/lib/site";
@@ -79,6 +80,13 @@ export default async function ContactPage({ searchParams }: { searchParams: Prom
             </div>
           </div>
           <aside className="space-y-4 lg:col-span-5">
+            <WhatsAppButton
+              variant="card"
+              number={settings.social.whatsapp}
+              label="Chat with us on WhatsApp"
+              hint={`Fastest way to reach us · ${settings.social.whatsapp}`}
+              message="Hi! I have a question about Life of KittuKun."
+            />
             {HELP.map(({ Icon, title, text, href, cta }) => (
               <div key={title} className="flex gap-4 rounded-2xl border border-line bg-[#fffdf9] p-5">
                 <span className="grid size-11 shrink-0 place-items-center rounded-full bg-accent-soft text-accent-deep"><Icon className="size-5" /></span>

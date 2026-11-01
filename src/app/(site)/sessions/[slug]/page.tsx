@@ -15,6 +15,7 @@ import { safe } from "@/lib/safe";
 import { getMentorStats, getPublicSessionBySlug, listPublicReviews } from "@/lib/services/mentorship";
 import { paymentMode } from "@/lib/services/razorpay";
 import { getSettings } from "@/lib/services/settings";
+import { WhatsAppButton } from "@/components/site/WhatsAppButton";
 import { absoluteUrl } from "@/lib/site";
 import { breadcrumbLd } from "@/lib/seo";
 import { formatDuration, formatPrice, formatSessionDate, formatSessionTime, sessionEnd } from "@/lib/utils/session-time";
@@ -301,6 +302,14 @@ export default async function SessionPage({ params }: Props) {
                   google={isGoogleSignInConfigured()}
                 />
               )}
+              <WhatsAppButton
+                variant="card"
+                className="mt-4"
+                number={settings.social.whatsapp}
+                label="Questions before booking?"
+                hint="Ask us on WhatsApp. We usually reply within a few hours."
+                message={`Hi! I have a question about the session "${session.title}" (${absoluteUrl(`/sessions/${session.slug}`)}).`}
+              />
             </div>
           </aside>
         </div>

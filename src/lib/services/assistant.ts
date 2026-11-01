@@ -6,6 +6,7 @@ import { MentorSession, Opportunity, Post, Product, University, Video } from "@/
 import { GroqError, groqChat } from "@/lib/ai/groq";
 import { logger } from "@/lib/logger";
 import { safe } from "@/lib/safe";
+import { whatsappLink } from "@/lib/utils/whatsapp";
 import { getPublicSessionBySlug, listUpcomingSessions } from "@/lib/services/mentorship";
 import { searchOpportunities } from "@/lib/services/opportunities";
 import { getPublishedPostBySlug, listPublishedPosts } from "@/lib/services/posts";
@@ -64,6 +65,9 @@ async function siteContext() {
       ? opps.items.slice(0, 12).map((o) => `- ${o.title} | ${o.categories.map((c) => c.name).join(", ") || o.categoryLabel} | ${o.country} | ${o.funding} | ${o.deadline ? `deadline ${fmtDate(o.deadline)}` : o.rolling ? "rolling" : "deadline not announced"} | /opportunities/${o.slug}`)
       : ["- None listed right now."]),
     "",
+    ...(settings.social.whatsapp && whatsappLink(settings.social.whatsapp)
+      ? [`CONTACT A HUMAN: WhatsApp ${settings.social.whatsapp} (${whatsappLink(settings.social.whatsapp)}), or the contact form at /contact. Suggest WhatsApp when someone wants to talk to a person, has a payment/booking problem, or needs personal advice beyond what you can give.`]
+      : []),
     `UNIVERSITIES: ${uni.total} Japanese universities in the directory (${uni.byType.national ?? 0} national, ${uni.byType.public ?? 0} public, ${uni.byType.private ?? 0} private). Program details are verified for ${uni.verified}. For personal recommendations, send people to the JapanUniMatch tool at /universities#match.`,
     "",
     "RECENT FREE GUIDES (blog):",

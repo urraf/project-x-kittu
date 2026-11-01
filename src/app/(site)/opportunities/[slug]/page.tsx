@@ -7,6 +7,8 @@ import { DeadlineChip, OpportunityCard, fundingTone } from "@/components/opportu
 import { ShareButton } from "@/components/ui/ShareButton";
 import { degreeLabel, fundingLabel } from "@/lib/opportunities/constants";
 import { safe } from "@/lib/safe";
+import { getSettings } from "@/lib/services/settings";
+import { WhatsAppButton } from "@/components/site/WhatsAppButton";
 import { getPublicOpportunity, relatedOpportunities } from "@/lib/services/opportunities";
 import { absoluteUrl } from "@/lib/site";
 import { cn } from "@/lib/utils/cn";
@@ -44,6 +46,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function OpportunityPage({ params }: Props) {
   const { slug } = await params;
   const o = await safe("opportunity.detail", () => getPublicOpportunity(slug), null);
+  const whatsapp = (await safe("opportunity.settings", () => getSettings(), null))?.social.whatsapp;
   if (!o) notFound();
   const related = await safe("opportunity.related", () => relatedOpportunities(o), []);
   const url = absoluteUrl(`/opportunities/${o.slug}`);
@@ -171,8 +174,11 @@ export default async function OpportunityPage({ params }: Props) {
             </div>
             <div className="rounded-3xl border border-line bg-sakura p-6">
               <p className="display text-2xl">Need help with your application?</p>
-              <p className="mt-1 text-sm text-ink-2">Join a live session on proposals, CVs and interviews.</p>
-              <Link href="/sessions" className="btn btn-ink mt-4 !py-2.5">See sessions</Link>
+              <p className="mt-1 text-sm text-ink-2">Join a live session on proposals, CVs and interviews, or ask us a quick question on WhatsApp.</p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Link href="/sessions" className="btn btn-ink !py-2.5">See sessions</Link>
+                <WhatsAppButton number={whatsapp} label="WhatsApp" className="!py-2.5" message={`Hi! I need help applying for "${o.title}" (${url}).`} />
+              </div>
             </div>
           </div>
         </aside>

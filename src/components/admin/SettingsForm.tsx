@@ -223,6 +223,9 @@ export function SettingsForm({ initial, initialTab, account, integrations }: { i
             </Field>
           ))}
           <Field label="Public contact email (optional)" error={err("social.email")}><input className="field" type="email" value={s.social.email} onChange={(e) => so("email", e.target.value)} /></Field>
+          <Field label="WhatsApp number" error={err("social.whatsapp")} hint="With country code, e.g. +91 82877 09708. Shows “Ask on WhatsApp” on sessions, guides, opportunities, Contact, the chat and the footer. Leave empty to hide.">
+            <input className="field" type="tel" value={s.social.whatsapp} onChange={(e) => so("whatsapp", e.target.value)} placeholder="+91 82877 09708" />
+          </Field>
           <div className="border-t border-line pt-5">
             <p className="text-sm font-medium text-ink">Business details</p>
             <p className="mt-0.5 text-xs text-muted">Shown on the Contact page, in the footer and on the policy pages. Razorpay checks these when verifying the website, so use the same details as on your Razorpay account.</p>

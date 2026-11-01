@@ -12,6 +12,8 @@ import { getStudent } from "@/lib/auth/student";
 import { safe } from "@/lib/safe";
 import { paymentMode } from "@/lib/services/razorpay";
 import { getPublicProductBySlug, listPublishedProducts } from "@/lib/services/store";
+import { getSettings } from "@/lib/services/settings";
+import { WhatsAppButton } from "@/components/site/WhatsAppButton";
 import { absoluteUrl } from "@/lib/site";
 import { breadcrumbLd } from "@/lib/seo";
 
@@ -35,7 +37,7 @@ export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
   const product = await safe("store.detail", () => getPublicProductBySlug(slug), null);
   if (!product) notFound();
-  const [student, more] = await Promise.all([safe("store.student", () => getStudent(), null), safe("store.more", () => listPublishedProducts({ limit: 5 }), [])]);
+  const [student, more, settings] = await Promise.all([safe("store.student", () => getStudent(), null), safe("store.more", () => listPublishedProducts({ limit: 5 }), []), getSettings()]);
   const related = more.filter((p) => p.id !== product.id).slice(0, 4);
   const steps = [
     { Icon: Mail, text: product.price ? "Pay securely. Your receipt arrives by email." : "Enter your details. No payment needed." },
@@ -107,6 +109,14 @@ export default async function ProductPage({ params }: Props) {
         <aside className="lg:col-span-5">
           <div className="lg:sticky lg:top-24">
             <BuyForm product={product} paymentMode={paymentMode()} student={student ? { name: student.name, email: student.email, phone: student.phone ?? "" } : null} google={isGoogleSignInConfigured()} />
+            <WhatsAppButton
+              variant="card"
+              className="mt-4"
+              number={settings.social.whatsapp}
+              label="Not sure it's right for you?"
+              hint="Ask us on WhatsApp before you buy."
+              message={`Hi! I have a question about "${product.title}" (${absoluteUrl(`/store/${product.slug}`)}).`}
+            />
           </div>
         </aside>
       </div>

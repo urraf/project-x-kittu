@@ -6,6 +6,7 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import { Menu, UserRound, X } from "lucide-react";
 import { Logo } from "@/components/site/Logo";
 import { InstagramIcon, LinkedInIcon, YouTubeIcon } from "@/components/ui/icons";
+import { WhatsAppButton } from "@/components/site/WhatsAppButton";
 import { cn } from "@/lib/utils/cn";
 
 const NAV = [
@@ -26,7 +27,7 @@ const readSignedIn = () => /(?:^|;\s*)kk_signed_in=1/.test(document.cookie);
 /** Routes that open with a dark hero — the header starts transparent there. (None: the theme is light.) */
 const DARK_HERO: RegExp[] = [];
 
-export function Header({ youtube, instagram, linkedin }: { youtube?: string; instagram?: string; linkedin?: string }) {
+export function Header({ youtube, instagram, linkedin, whatsapp }: { youtube?: string; instagram?: string; linkedin?: string; whatsapp?: string }) {
   // Social icons appear only for the links filled in under Studio → Settings → Contact & social.
   const socials = [
     { href: instagram, label: "Instagram", Icon: InstagramIcon },
@@ -180,6 +181,7 @@ export function Header({ youtube, instagram, linkedin }: { youtube?: string; ins
                 <YouTubeIcon className="size-4" /> Subscribe on YouTube
               </a>
             )}
+            <WhatsAppButton number={whatsapp} label="Chat on WhatsApp" message="Hi! I have a question about Life of KittuKun." />
             {socials.map(({ href, label, Icon }) => (
               <a key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={label} className="grid size-11 place-items-center rounded-full border border-line text-ink hover:border-ink/40">
                 <Icon className="size-[1.15rem]" />

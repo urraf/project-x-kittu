@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { Logo } from "@/components/site/Logo";
-import { InstagramIcon, LinkedInIcon, XIcon, YouTubeIcon } from "@/components/ui/icons";
+import { InstagramIcon, LinkedInIcon, WhatsAppIcon, XIcon, YouTubeIcon } from "@/components/ui/icons";
+import { whatsappLink } from "@/lib/utils/whatsapp";
 import type { SiteSettings } from "@/lib/validation/settings";
 
 export function SocialLinks({ social, className = "" }: { social: SiteSettings["social"]; className?: string }) {
@@ -10,6 +11,7 @@ export function SocialLinks({ social, className = "" }: { social: SiteSettings["
     { href: social.instagram, label: "Instagram", Icon: InstagramIcon },
     { href: social.linkedin, label: "LinkedIn", Icon: LinkedInIcon },
     { href: social.x, label: "X", Icon: XIcon },
+    { href: social.whatsapp ? (whatsappLink(social.whatsapp, "Hi! I have a question about Life of KittuKun.") ?? "") : "", label: "WhatsApp", Icon: WhatsAppIcon },
   ].filter((i) => i.href);
   return (
     <ul className={`flex items-center gap-2 ${className}`}>
