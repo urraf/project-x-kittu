@@ -7,6 +7,8 @@ import { Fragment, useEffect, useRef, useState } from "react";
 import { ArrowUp, RotateCcw, X } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { WhatsAppButton } from "@/components/site/WhatsAppButton";
+import { WhatsAppIcon } from "@/components/ui/icons";
+import { whatsappLink } from "@/lib/utils/whatsapp";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -188,6 +190,22 @@ export function ChatAssistant({ whatsapp }: { whatsapp?: string }) {
 
   return (
     <div className="print:hidden">
+      {/* WhatsApp: a small round button stacked above Kittu, on every page (hidden while the chat is open). */}
+      {whatsapp && !open && whatsappLink(whatsapp) && (
+        <a
+          href={whatsappLink(whatsapp, "Hi! I have a question about Life of KittuKun.")!}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Chat with us on WhatsApp"
+          className="kk-wa-float group fixed bottom-[5.25rem] right-[1.375rem] z-[60] grid size-12 place-items-center rounded-full bg-[#25D366] text-white shadow-[0_14px_30px_-12px_rgba(18,140,74,0.7)] transition-all hover:-translate-y-0.5 hover:bg-[#1ebe5b] sm:bottom-[6.25rem] sm:right-[1.875rem]"
+        >
+          <WhatsAppIcon className="size-6" />
+          <span className="pointer-events-none absolute right-full mr-3 hidden whitespace-nowrap rounded-full bg-ink px-3 py-1.5 text-xs font-medium text-cream opacity-0 shadow-md transition-opacity group-hover:opacity-100 sm:block">
+            Chat on WhatsApp
+          </span>
+        </a>
+      )}
+
       {/* Launcher */}
       <button
         type="button"

@@ -426,4 +426,8 @@
   body[data-bookbar] .kk-chat-label {
     display: none;
   }
+  /* The WhatsApp button rides above Kittu, so it moves up too. */
+  body[data-bookbar] .kk-wa-float {
+    bottom: calc(10rem + env(safe-area-inset-bottom));
+  }
 }
