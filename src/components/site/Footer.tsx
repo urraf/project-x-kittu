@@ -63,7 +63,8 @@ const COLUMNS = [
 export function Footer({ settings }: { settings: SiteSettings }) {
   const year = new Date().getFullYear();
   return (
-    <footer className="relative overflow-hidden border-t border-line bg-paper-2 text-ink print:hidden">
+    // data-nosnippet: Google should describe pages from their own content, not the footer's email and links.
+    <footer data-nosnippet className="relative overflow-hidden border-t border-line bg-paper-2 text-ink print:hidden">
       <div aria-hidden className="seigaiha pointer-events-none absolute inset-x-0 top-0 h-40 [mask-image:linear-gradient(to_bottom,black,transparent)]" />
       <div className="container-x relative pb-10 pt-16 md:pt-20">
         <div className="grid gap-12 md:grid-cols-12">
@@ -118,10 +119,10 @@ export function Footer({ settings }: { settings: SiteSettings }) {
             © {year} {settings.social.businessName || settings.profile.channelName}. Made with care for students heading to Japan.
           </p>
           <div className="flex flex-wrap gap-x-5 gap-y-2">
-            <Link href="/privacy" className="link-underline">Privacy</Link>
-            <Link href="/terms" className="link-underline">Terms</Link>
-            <Link href="/refund-policy" className="link-underline">Refunds</Link>
-            <a href="/feed.xml" className="link-underline">RSS</a>
+            <Link href="/privacy" className="link-underline">Privacy</Link>{" "}
+            <Link href="/terms" className="link-underline">Terms</Link>{" "}
+            <Link href="/refund-policy" className="link-underline">Refunds</Link>{" "}
+            <a href="/feed.xml" className="link-underline">RSS</a>{" "}
             <a href="/sitemap.xml" className="link-underline">Sitemap</a>
           </div>
         </div>

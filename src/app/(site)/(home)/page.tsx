@@ -34,7 +34,7 @@ import { formatPrice, formatSessionDate, formatSessionTime } from "@/lib/utils/s
 export const revalidate = 300;
 
 export const metadata: Metadata = seoMeta({
-  title: "Study in Japan from India: MEXT & Internships · Life of KittuKun",
+  title: "Life of KittuKun · Study in Japan from India: MEXT & Internships",
   absoluteTitle: true,
   description: SITE_DESCRIPTION,
   path: "/",
@@ -143,7 +143,7 @@ export default async function HomePage() {
             "@id": `${SITE_URL}/#website`,
             // Google uses this as the site name shown above search results.
             name: SITE_NAME,
-            alternateName: ["KittuKun", "Life of Kittu Kun", "lifeofkittukun"],
+            alternateName: ["KittuKun", "Life of Kittu Kun"],
             url: `${SITE_URL}/`,
             inLanguage: "en-IN",
             publisher: { "@id": `${SITE_URL}/#organization` },
