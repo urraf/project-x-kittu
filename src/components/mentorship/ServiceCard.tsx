@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Clock, Download, FileText, Star } from "lucide-react";
+import { RatingBadge } from "@/components/mentorship/RatingBadge";
 import { discountPct } from "@/components/store/ProductCard";
 import { formatDuration, formatPrice, formatSessionTime } from "@/lib/utils/session-time";
 import { cn } from "@/lib/utils/cn";
@@ -95,6 +96,7 @@ export function ProductServiceCard({ product }: { product: ProductDTO }) {
           <FileText className="size-3" /> {product.category} · PDF
         </span>
         <h3 className="mt-1.5 line-clamp-2 text-[0.98rem] font-semibold leading-snug text-ink group-hover:text-accent-deep">{product.title}</h3>
+        {product.rating && <RatingBadge rating={product.rating} className="mt-1" />}
         <div className="mt-auto flex flex-wrap items-baseline gap-x-2 pt-2">
           <span className="display text-xl leading-none text-ink">{product.price ? formatPrice(product.price) : "Free"}</span>
           {product.compareAtPrice && product.compareAtPrice > product.price && <span className="text-xs text-muted line-through">{formatPrice(product.compareAtPrice)}</span>}

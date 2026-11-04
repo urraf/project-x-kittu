@@ -50,7 +50,11 @@ export type ProductDTO = {
   status: "draft" | "published";
   featured: boolean;
   salesCount: number;
+  /** Average of the visible buyer reviews (public reads only; absent with no reviews). */
+  rating?: RatingDTO;
 };
+
+export type RatingDTO = { avg: number; count: number };
 
 export type AdminProductDTO = ProductDTO & {
   delivery: { type: "file" | "link"; fileName?: string; fileSize?: number; url?: string; hasFile: boolean };
@@ -113,12 +117,32 @@ function toProductDTO(p: ProductDoc): ProductDTO {
 /* Public reads                                                        */
 /* ------------------------------------------------------------------ */
 
+const roundRating = (avg: number) => Math.round(avg * 10) / 10;
+
+/** Adds each product's average rating from its visible reviews. */
+async function withRatings(products: ProductDTO[]) {
+  if (!products.length) return products;
+  const rows = await ProductReview.aggregate<{ _id: Types.ObjectId; avg: number; count: number }>([
+    { $match: { status: "visible", product: { $in: products.map((p) => new Types.ObjectId(p.id)) } } },
+    { $group: { _id: "$product", avg: { $avg: "$rating" }, count: { $sum: 1 } } },
+  ]);
+  const byId = new Map(rows.map((r) => [String(r._id), { avg: roundRating(r.avg), count: r.count }]));
+  return products.map((p) => (byId.has(p.id) ? { ...p, rating: byId.get(p.id) } : p));
+}
+
+/** Average across every visible store review (all products). */
+export async function storeRating(): Promise<RatingDTO> {
+  await connectDB();
+  const [r] = await ProductReview.aggregate<{ avg: number; count: number }>([{ $match: { status: "visible" } }, { $group: { _id: null, avg: { $avg: "$rating" }, count: { $sum: 1 } } }]);
+  return r ? { avg: roundRating(r.avg), count: r.count } : { avg: 0, count: 0 };
+}
+
 export async function listPublishedProducts({ category, limit = 60 }: { category?: string; limit?: number } = {}) {
   await connectDB();
   const filter: Record<string, unknown> = { status: "published" };
   if (category) filter.category = category;
   const docs = await Product.find(filter).sort({ featured: -1, createdAt: -1 }).limit(limit).lean<ProductDoc[]>();
-  return docs.map(toProductDTO);
+  return withRatings(docs.map(toProductDTO));
 }
 
 export async function productCategories() {
@@ -130,7 +154,7 @@ export async function productCategories() {
 export async function getPublicProductBySlug(slug: string) {
   await connectDB();
   const doc = await Product.findOne({ slug, status: "published" }).lean<ProductDoc>();
-  return doc ? toProductDTO(doc) : null;
+  return doc ? (await withRatings([toProductDTO(doc)]))[0] : null;
 }
 
 /* ------------------------------------------------------------------ */

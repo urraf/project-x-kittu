@@ -19,11 +19,11 @@ import { YouTubeIcon } from "@/components/ui/icons";
 import { VideoCard } from "@/components/video/VideoCard";
 import { safe } from "@/lib/safe";
 import { cn } from "@/lib/utils/cn";
-import { getMentorStats, listPublicReviews, listUpcomingSessions } from "@/lib/services/mentorship";
+import { getMentorStats, listMixedReviews, listUpcomingSessions } from "@/lib/services/mentorship";
 import { closingSoon, opportunityCounts, opportunityFacets, type OpportunityFacets } from "@/lib/services/opportunities";
 import { listPublishedPosts } from "@/lib/services/posts";
 import { getSettings } from "@/lib/services/settings";
-import { listPublishedProducts, productCategories } from "@/lib/services/store";
+import { listPublishedProducts, productCategories, storeRating } from "@/lib/services/store";
 import { universityStats } from "@/lib/services/universities";
 import { listPublicVideos } from "@/lib/services/videos";
 import { listPublicTestimonials } from "@/lib/services/testimonials";
@@ -70,9 +70,10 @@ const PLATFORM_FAQS = [
 export default async function HomePage() {
   const settings = await getSettings();
   const oppFacets = await safe("home.oppFacets", () => opportunityFacets(), { categories: [], countries: [] } as OpportunityFacets);
+  const storeStatsP = safe("home.storeRating", () => storeRating(), { avg: 0, count: 0 });
   const [upcoming, reviews, stats, posts, videos, products, opportunities, testimonials, oppCounts, uniStats, categories] = await Promise.all([
     safe("home.sessions", () => listUpcomingSessions(12), []),
-    safe("home.reviews", () => listPublicReviews(10), []),
+    safe("home.reviews", () => listMixedReviews(12), []),
     safe("home.stats", () => getMentorStats(), { sessions: 0, students: 0, avgRating: 0, reviewCount: 0 }),
     safe("home.posts", () => listPublishedPosts({ pageSize: 3 }), { items: [], total: 0, page: 1, pages: 1 }),
     safe("home.videos", () => listPublicVideos({ limit: 4 }), []),
@@ -83,6 +84,10 @@ export default async function HomePage() {
     safe("home.uniStats", () => universityStats(), { total: 0, verified: 0, byType: {} }),
     safe("home.categories", () => productCategories(), []),
   ]);
+  const storeStats = await storeStatsP;
+  // Sessions and study store together, weighted by how many reviews each has.
+  const ratingCount = stats.reviewCount + storeStats.count;
+  const ratingAvg = ratingCount ? Math.round(((stats.avgRating * stats.reviewCount + storeStats.avg * storeStats.count) / ratingCount) * 10) / 10 : 0;
   const sessions = upcoming.slice(0, 3);
   const productCount = categories.reduce((n, c) => n + c.count, 0);
   // Quick links: a hanko seal (two kanji, read top to bottom) and a live count.
@@ -97,7 +102,7 @@ export default async function HomePage() {
   const firstName = profile.name.split(" ")[0];
   const next = sessions[0];
   const faqs = [...PLATFORM_FAQS, ...mentorship.faqs].slice(0, 7);
-  // Session reviews first (verified attendees), then kind words from YouTube.
+  // Session and study-store reviews first (verified buyers), then kind words from YouTube.
   const stories = [
     ...reviews.filter((r) => r.text).map((r) => ({ key: `r-${r.id}`, node: <ReviewCard review={r} /> })),
     ...testimonials.map((t) => ({ key: `t-${t.id}`, node: <TestimonialCard t={t} /> })),
@@ -170,8 +175,8 @@ export default async function HomePage() {
               <Link href="/store" className="btn btn-ghost !px-6 !py-3.5 text-base text-ink"><ShoppingBag className="size-4" /> Study store</Link>
             </div>
             <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-ink-2" data-reveal>
-              {stats.reviewCount > 0 && (
-                <span className="flex items-center gap-2"><Stars value={stats.avgRating} /> <strong className="text-ink">{stats.avgRating.toFixed(1)}</strong> from {stats.reviewCount} reviews</span>
+              {ratingCount > 0 && (
+                <span className="flex items-center gap-2"><Stars value={ratingAvg} /> <strong className="text-ink">{ratingAvg.toFixed(1)}</strong> from {ratingCount} review{ratingCount === 1 ? "" : "s"}</span>
               )}
               {stats.students >= 10 && <span className="flex items-center gap-2"><Users className="size-4 text-accent" /> <strong className="text-ink">{stats.students.toLocaleString("en-IN")}+</strong> students guided</span>}
               <span className="flex items-center gap-2"><Check className="size-4 text-moss" /> Free guides, no sign-up needed</span>
@@ -241,7 +246,7 @@ export default async function HomePage() {
             <SectionHeader
               kicker="Student love"
               title={<>What students <em className="text-accent">say</em></>}
-              description={stats.reviewCount > 0 ? `${stats.avgRating.toFixed(1)} / 5 from ${stats.reviewCount} session review${stats.reviewCount === 1 ? "" : "s"}, plus kind words from the YouTube community.` : "Kind words from students and viewers on YouTube."}
+              description={ratingCount > 0 ? `${ratingAvg.toFixed(1)} / 5 from ${ratingCount} review${ratingCount === 1 ? "" : "s"} of sessions and guides, plus kind words from the YouTube community.` : "Kind words from students and viewers on YouTube."}
               href="/sessions"
               linkLabel="Book a session"
             />

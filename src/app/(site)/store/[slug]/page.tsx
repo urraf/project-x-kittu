@@ -13,6 +13,9 @@ import { safe } from "@/lib/safe";
 import { paymentMode } from "@/lib/services/razorpay";
 import { getPublicProductBySlug, listPublishedProducts } from "@/lib/services/store";
 import { getSettings } from "@/lib/services/settings";
+import { listPublicProductReviews } from "@/lib/services/mentorship";
+import { ReviewCard } from "@/components/mentorship/ReviewCard";
+import { RatingBadge } from "@/components/mentorship/RatingBadge";
 import { WhatsAppButton } from "@/components/site/WhatsAppButton";
 import { absoluteUrl } from "@/lib/site";
 import { breadcrumbLd } from "@/lib/seo";
@@ -37,7 +40,12 @@ export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
   const product = await safe("store.detail", () => getPublicProductBySlug(slug), null);
   if (!product) notFound();
-  const [student, more, settings] = await Promise.all([safe("store.student", () => getStudent(), null), safe("store.more", () => listPublishedProducts({ limit: 5 }), []), getSettings()]);
+  const [student, more, settings, reviews] = await Promise.all([
+    safe("store.student", () => getStudent(), null),
+    safe("store.more", () => listPublishedProducts({ limit: 5 }), []),
+    getSettings(),
+    safe("store.reviews", () => listPublicProductReviews({ product: product.id, limit: 12 }), []),
+  ]);
   const related = more.filter((p) => p.id !== product.id).slice(0, 4);
   const steps = [
     { Icon: Mail, text: product.price ? "Pay securely. Your receipt arrives by email." : "Enter your details. No payment needed." },
@@ -57,6 +65,16 @@ export default async function ProductPage({ params }: Props) {
           image: product.coverImage?.url ? absoluteUrl(product.coverImage.url) : undefined,
           category: product.category,
           offers: { "@type": "Offer", price: product.price, priceCurrency: "INR", availability: "https://schema.org/InStock", url: absoluteUrl(`/store/${product.slug}`) },
+          aggregateRating: product.rating ? { "@type": "AggregateRating", ratingValue: product.rating.avg, reviewCount: product.rating.count, bestRating: 5, worstRating: 1 } : undefined,
+          review: reviews.length
+            ? reviews.slice(0, 5).map((r) => ({
+                "@type": "Review",
+                author: { "@type": "Person", name: r.name },
+                datePublished: r.createdAt.slice(0, 10),
+                reviewRating: { "@type": "Rating", ratingValue: r.rating, bestRating: 5, worstRating: 1 },
+                reviewBody: r.text || undefined,
+              }))
+            : undefined,
         }}
       />
       <div className="container-x grid grid-cols-1 gap-12 pb-20 pt-28 md:pt-32 lg:grid-cols-12 lg:gap-14">
@@ -67,6 +85,11 @@ export default async function ProductPage({ params }: Props) {
           <ProductCover product={product} sizes="(min-width: 1024px) 44rem, 100vw" priority className="mt-6 aspect-[16/10] rounded-3xl border border-line" />
           <p className="kicker mt-8 text-accent-deep">{product.category}</p>
           <h1 className="display mt-3 text-[2.5rem] leading-[1.02] md:text-[3.4rem]">{product.title}</h1>
+          {product.rating && (
+            <a href="#reviews" className="mt-3 inline-flex items-center gap-1.5 hover:underline">
+              <RatingBadge rating={product.rating} className="text-sm" /> <span className="text-sm text-ink-2">· See reviews</span>
+            </a>
+          )}
           {product.summary && <p className="mt-4 text-lg leading-relaxed text-ink-2 md:text-xl">{product.summary}</p>}
 
           {product.highlights.length > 0 && (
@@ -104,6 +127,18 @@ export default async function ProductPage({ params }: Props) {
             </ol>
             {product.deliveryNote && <p className="mt-4 text-xs text-muted">Format: {product.deliveryNote}</p>}
           </section>
+
+          {reviews.length > 0 && (
+            <section id="reviews" className="mt-10 scroll-mt-24">
+              <div className="flex flex-wrap items-end justify-between gap-3">
+                <h2 className="display text-3xl">What buyers <em className="text-accent">say</em></h2>
+                {product.rating && <p className="text-sm text-ink-2"><strong className="text-ink">{product.rating.avg.toFixed(1)} / 5</strong> from {product.rating.count} review{product.rating.count === 1 ? "" : "s"}</p>}
+              </div>
+              <div className="mt-5 columns-1 gap-4 sm:columns-2 [&>*]:mb-4 [&>*]:break-inside-avoid">
+                {reviews.map((r) => <ReviewCard key={r.id} review={{ ...r, productTitle: undefined }} />)}
+              </div>
+            </section>
+          )}
         </div>
 
         <aside className="lg:col-span-5">

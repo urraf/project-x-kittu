@@ -23,7 +23,7 @@ export function ReviewCard({ review, tone = "light" }: { review: ReviewDTO; tone
         <span className="min-w-0 text-sm">
           <span className={cn("block font-medium", dark ? "text-cream" : "text-ink")}>{review.name}</span>
           <span className={cn("block truncate text-xs", dark ? "text-cream-muted" : "text-muted")}>
-            {review.sessionTitle ? `${review.sessionTitle} · ` : ""}
+            {review.sessionTitle || review.productTitle ? `${review.sessionTitle ?? review.productTitle} · ` : ""}
             {formatDate(review.createdAt, "short")}
           </span>
         </span>

@@ -186,6 +186,24 @@ export async function listPublicReviews(limit = 24) {
   return (docs as unknown as ReviewDoc[]).map(toReviewDTO);
 }
 
+/** Visible study-store reviews, newest first (featured on top); one product's only when given. */
+export async function listPublicProductReviews({ product, limit = 24 }: { product?: string; limit?: number } = {}) {
+  if (product && !Types.ObjectId.isValid(product)) return [];
+  await connectDB();
+  const docs = await ProductReview.find({ status: "visible", ...(product ? { product } : {}) })
+    .sort({ featured: -1, createdAt: -1 })
+    .limit(limit)
+    .populate("product", "title slug")
+    .lean();
+  return (docs as unknown as ProductReviewDoc[]).map(toProductReviewDTO);
+}
+
+/** Session and store reviews together: featured first, then newest. */
+export async function listMixedReviews(limit = 12) {
+  const [sessions, products] = await Promise.all([listPublicReviews(limit), listPublicProductReviews({ limit })]);
+  return [...sessions, ...products].sort((a, b) => Number(b.featured) - Number(a.featured) || b.createdAt.localeCompare(a.createdAt)).slice(0, limit);
+}
+
 /* ================================================================== */
 /* Booking                                                            */
 /* ================================================================== */

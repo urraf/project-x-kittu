@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Download } from "lucide-react";
+import { RatingBadge } from "@/components/mentorship/RatingBadge";
 import { formatPrice } from "@/lib/utils/session-time";
 import { cn } from "@/lib/utils/cn";
 import type { ProductDTO } from "@/lib/services/store";
@@ -59,8 +60,11 @@ export function ProductCard({ product }: { product: ProductDTO }) {
       </div>
       <div className="flex flex-1 flex-col px-4 pb-4 pt-3">
         <p className="flex items-center justify-between gap-2 text-xs text-muted">
-          {product.category}
-          {product.deliveryNote && <Download className="size-3.5 text-accent" aria-label={product.deliveryNote} />}
+          <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
+            {product.category}
+            {product.rating && <RatingBadge rating={product.rating} />}
+          </span>
+          {product.deliveryNote && <Download className="size-3.5 shrink-0 text-accent" aria-label={product.deliveryNote} />}
         </p>
         <h3 className="mt-1 line-clamp-2 text-[1.05rem] font-semibold leading-snug text-ink group-hover:text-accent-deep">{product.title}</h3>
         <div className="mt-auto flex items-center justify-between gap-2 pt-3">

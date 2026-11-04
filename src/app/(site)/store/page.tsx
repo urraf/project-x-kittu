@@ -4,7 +4,10 @@ import { Download, Infinity as InfinityIcon, ShieldCheck, Zap } from "lucide-rea
 import { ProductCard } from "@/components/store/ProductCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { safe } from "@/lib/safe";
-import { listPublishedProducts, productCategories } from "@/lib/services/store";
+import { listPublishedProducts, productCategories, storeRating } from "@/lib/services/store";
+import { listPublicProductReviews } from "@/lib/services/mentorship";
+import { ReviewCard } from "@/components/mentorship/ReviewCard";
+import { RatingBadge } from "@/components/mentorship/RatingBadge";
 import { JsonLd } from "@/components/ui/JsonLd";
 import { KEYWORDS, breadcrumbLd, collectionLd, seoMeta } from "@/lib/seo";
 import { Kittu } from "@/components/mascot/Kittu";
@@ -18,9 +21,11 @@ export const metadata: Metadata = seoMeta({ title: "MEXT & Study in Japan Guides
 
 export default async function StorePage({ searchParams }: { searchParams: Promise<{ category?: string }> }) {
   const { category } = await searchParams;
-  const [products, categories] = await Promise.all([
+  const [products, categories, reviews, rating] = await Promise.all([
     safe("store.list", () => listPublishedProducts({ category: category || undefined }), []),
     safe("store.categories", () => productCategories(), []),
+    safe("store.reviews", () => listPublicProductReviews({ limit: 12 }), []),
+    safe("store.rating", () => storeRating(), { avg: 0, count: 0 }),
   ]);
 
   return (
@@ -40,6 +45,11 @@ export default async function StorePage({ searchParams }: { searchParams: Promis
             Your digital <em className="text-accent">Japan library.</em>
           </h1>
           <p className="mt-5 max-w-2xl text-lg leading-relaxed text-ink-2">Guides, templates and resource packs made from real applications. Download instantly and keep them forever.</p>
+          {rating.count > 0 && (
+            <a href="#reviews" className="mt-5 inline-flex hover:underline">
+              <RatingBadge rating={rating} className="text-sm" /> <span className="ml-1.5 text-sm text-ink-2">from students who bought them</span>
+            </a>
+          )}
           <ul className="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-sm text-ink-2">
             <li className="flex items-center gap-2"><Zap className="size-4 text-gold" /> Instant download</li>
             <li className="flex items-center gap-2"><InfinityIcon className="size-4 text-indigo" /> Lifetime access in your library</li>
@@ -66,6 +76,17 @@ export default async function StorePage({ searchParams }: { searchParams: Promis
             </div>
           ) : (
             <EmptyState title={category ? "Nothing in this category yet" : "The store opens soon"} description={category ? "Try another category." : "Guides and templates are being prepared. Check back soon, or book a live session meanwhile."} />
+          )}
+          {reviews.length > 0 && (
+            <section id="reviews" className="mt-20 scroll-mt-24">
+              <div className="flex flex-wrap items-end justify-between gap-3">
+                <h2 className="display text-3xl md:text-4xl">What students say about <em className="text-accent">the guides</em></h2>
+                {rating.count > 0 && <p className="text-sm text-ink-2"><strong className="text-ink">{rating.avg.toFixed(1)} / 5</strong> from {rating.count} review{rating.count === 1 ? "" : "s"}</p>}
+              </div>
+              <div className="mt-6 columns-1 gap-4 sm:columns-2 lg:columns-3 [&>*]:mb-4 [&>*]:break-inside-avoid">
+                {reviews.map((r) => <ReviewCard key={r.id} review={r} />)}
+              </div>
+            </section>
           )}
           <p className="mt-14 flex items-center justify-center gap-2 text-center text-sm text-muted"><Download className="size-4" /> Bought something? Find it any time in <Link href="/account?tab=library" className="underline underline-offset-4">My library</Link>.</p>
         </div>
