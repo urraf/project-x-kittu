@@ -13,6 +13,7 @@
     "secrets": "tsx scripts/gen-secrets.ts",
     "db:local": "tsx scripts/local-db.ts",
     "admin:reset-password": "tsx --conditions=react-server scripts/reset-admin-password.ts",
+    "admin:confirm-order": "tsx --conditions=react-server scripts/confirm-order.ts",
     "google:auth": "tsx scripts/google-auth.ts"
   },
   "dependencies": {
