@@ -43,3 +43,6 @@ next-env.d.ts
 
 # local development database (npm run db:local)
 /.data
+
+# Server deploy kit for the Hostinger VPS (kept local only)
+/hostinger-deploy/
