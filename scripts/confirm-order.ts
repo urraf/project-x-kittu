@@ -7,6 +7,9 @@
  *   npm run admin:confirm-order <email-or-order-id> [optional-payment-id]
  */
 import "./load-env";
+if (!process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_SITE_URL.includes("localhost")) {
+  process.env.NEXT_PUBLIC_SITE_URL = "https://www.lifeofkittukun.com";
+}
 import { Types } from "mongoose";
 import { connectDB } from "../src/lib/db/connect";
 import { confirmOrder, listStudentOrders } from "../src/lib/services/store";
